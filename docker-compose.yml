@@ -1,0 +1,107 @@
+version: "3.8"
+
+services:
+    postgres:
+        image: postgres:16-alpine
+        container_name: docplatform_postgres
+        environment:
+            POSTGRES_USER: ${DB_USER:-postgres}
+            POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
+            POSTGRES_DB: ${DB_NAME:-docplatform}
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - docplatform
+
+    redis:
+        image: redis:7-alpine
+        container_name: docplatform_redis
+        ports:
+            - "6379:6379"
+        volumes:
+            - redis_data:/data
+        healthcheck:
+            test: ["CMD", "redis-cli", "ping"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+        networks:
+            - docplatform
+
+    # backend:
+    #   build:
+    #     context: ./backend
+    #     dockerfile: Dockerfile
+    #     target: development
+    #   container_name: docplatform_backend
+    #   ports:
+    #     - '3000:3000'
+    #   environment:
+    #     NODE_ENV: development
+    #     DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-postgres}@postgres:5432/${DB_NAME:-docplatform}?schema=public
+    #     REDIS_HOST: redis
+    #     REDIS_PORT: 6379
+    #     JWT_SECRET: ${JWT_SECRET:-super-secret-jwt-key-change-in-production}
+    #     JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET:-super-secret-refresh-key-change-in-production}
+    #     JWT_ACCESS_EXPIRY: ${JWT_ACCESS_EXPIRY:-15m}
+    #     JWT_REFRESH_EXPIRY: ${JWT_REFRESH_EXPIRY:-7d}
+    #     GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+    #     GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+    #     GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL:-http://localhost:3000/api/auth/google/callback}
+    #     STORAGE_PROVIDER: ${STORAGE_PROVIDER:-local}
+    #     UPLOAD_DIR: ./uploads
+    #     AWS_S3_BUCKET: ${AWS_S3_BUCKET:-}
+    #     AWS_REGION: ${AWS_REGION:-}
+    #     AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+    #     AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+    #     SMTP_HOST: ${SMTP_HOST:-}
+    #     SMTP_PORT: ${SMTP_PORT:-587}
+    #     SMTP_USER: ${SMTP_USER:-}
+    #     SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+    #     SMTP_FROM: ${SMTP_FROM:-noreply@docplatform.com}
+    #     FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+    #   depends_on:
+    #     postgres:
+    #       condition: service_healthy
+    #     redis:
+    #       condition: service_healthy
+    #   volumes:
+    #     - ./backend:/app
+    #     - /app/node_modules
+    #     - backend_uploads:/app/uploads
+    #   networks:
+    #     - docplatform
+
+    # frontend:
+    #   build:
+    #     context: ./frontend
+    #     dockerfile: Dockerfile
+    #     target: development
+    #   container_name: docplatform_frontend
+    #   ports:
+    #     - '5173:5173'
+    #   environment:
+    #     VITE_API_URL: http://localhost:3000/api
+    #   depends_on:
+    #     - backend
+    #   volumes:
+    #     - ./frontend:/app
+    #     - /app/node_modules
+    #   networks:
+    #     - docplatform
+
+networks:
+    docplatform:
+        driver: bridge
+
+volumes:
+    postgres_data:
+    redis_data:
+    backend_uploads:

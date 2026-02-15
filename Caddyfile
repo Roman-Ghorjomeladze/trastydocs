@@ -1,0 +1,4 @@
+{$DOMAIN:localhost} {
+    # Frontend (Nginx serves SPA + proxies API internally)
+    reverse_proxy frontend:80
+}

@@ -1,0 +1,413 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────
+// ENUMS
+// ─────────────────────────────────────────────
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+enum MembershipStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum DocumentStatus {
+  DRAFT
+  PENDING_SIGNATURE
+  SIGNED
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+enum TemplateVisibility {
+  PRIVATE
+  COMPANY
+  USER_GLOBAL
+}
+
+enum ContactType {
+  BUYER
+  SELLER
+}
+
+enum VehicleType {
+  TRUCK
+  TRAILER
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  VIEW
+  EXPORT
+  DUPLICATE
+  SIGN
+  SEND
+  LOGIN
+  LOGOUT
+}
+
+enum TokenType {
+  ACCESS
+  REFRESH
+}
+
+// ─────────────────────────────────────────────
+// USER & AUTH
+// ─────────────────────────────────────────────
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String?
+  name          String
+  avatarUrl     String?
+  isActive      Boolean   @default(true)
+  googleId      String?   @unique
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  memberships                Membership[]
+  templates                  DocumentTemplate[]
+  documents                  Document[]
+  signatures                 SignatureAsset[]
+  uploadedStamps             StampAsset[]
+  uploadedCompanySignatures  CompanySignature[]
+  refreshTokens              RefreshToken[]
+  auditLogs                  AuditLog[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}
+
+model TokenBlacklist {
+  id        String    @id @default(cuid())
+  jti       String    @unique
+  tokenType TokenType
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([jti])
+  @@index([expiresAt])
+  @@map("token_blacklist")
+}
+
+// ─────────────────────────────────────────────
+// COMPANY & MEMBERSHIP
+// ─────────────────────────────────────────────
+
+model Company {
+  id        String  @id @default(cuid())
+  name      String
+  slug      String  @unique
+  logoUrl   String?
+  address   String?
+  phone     String?
+  email     String?
+  taxId     String?
+  isActive  Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  memberships        Membership[]
+  templates          DocumentTemplate[]
+  documents          Document[]
+  contacts           Contact[]
+  stamps             StampAsset[]
+  companySignatures  CompanySignature[]
+  vehicles           Vehicle[]
+  documentSequences  DocumentSequence[]
+  auditLogs          AuditLog[]
+
+  @@map("companies")
+}
+
+model Membership {
+  id        String           @id @default(cuid())
+  userId    String
+  companyId String
+  role      MembershipRole   @default(MEMBER)
+  status    MembershipStatus @default(ACTIVE)
+  joinedAt  DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, companyId])
+  @@index([userId])
+  @@index([companyId])
+  @@map("memberships")
+}
+
+// ─────────────────────────────────────────────
+// DOCUMENT TEMPLATES
+// ─────────────────────────────────────────────
+
+model DocumentTemplate {
+  id          String             @id @default(cuid())
+  name        String
+  description String?
+  creatorId   String
+  companyId   String?
+  visibility  TemplateVisibility @default(PRIVATE)
+  schema      Json
+  basePdfUrl  String?
+  thumbnail   String?
+  version     Int                @default(1)
+  isArchived  Boolean            @default(false)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  creator   User      @relation(fields: [creatorId], references: [id])
+  company   Company?  @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  documents Document[]
+
+  @@index([creatorId])
+  @@index([companyId])
+  @@index([visibility])
+  @@map("document_templates")
+}
+
+// ─────────────────────────────────────────────
+// DOCUMENTS
+// ─────────────────────────────────────────────
+
+model Document {
+  id             String         @id @default(cuid())
+  name           String
+  documentNumber String?
+  templateId     String?
+  companyId      String
+  createdById    String
+  status         DocumentStatus @default(DRAFT)
+  inputData      Json           @default("{}")
+  pdfUrl         String?
+  pdfSize        Int?
+  buyerId        String?
+  sellerId       String?
+  notes          String?
+  metadata       Json?
+  duplicatedFromId String?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  completedAt DateTime?
+
+  template       DocumentTemplate?  @relation(fields: [templateId], references: [id])
+  company        Company            @relation(fields: [companyId], references: [id])
+  createdBy      User               @relation(fields: [createdById], references: [id])
+  buyer          Contact?           @relation("DocumentBuyer", fields: [buyerId], references: [id])
+  seller         Contact?           @relation("DocumentSeller", fields: [sellerId], references: [id])
+  duplicatedFrom Document?          @relation("DocumentDuplication", fields: [duplicatedFromId], references: [id], onDelete: SetNull)
+  duplicates     Document[]         @relation("DocumentDuplication")
+  documentSignatures DocumentSignature[]
+
+  @@unique([companyId, documentNumber])
+  @@index([companyId])
+  @@index([createdById])
+  @@index([templateId])
+  @@index([status])
+  @@map("documents")
+}
+
+// ─────────────────────────────────────────────
+// DOCUMENT NUMBERING
+// ─────────────────────────────────────────────
+
+model DocumentSequence {
+  id        String @id @default(cuid())
+  companyId String
+  prefix    String @default("DOC")
+  year      Int
+  counter   Int    @default(0)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, prefix, year])
+  @@map("document_sequences")
+}
+
+// ─────────────────────────────────────────────
+// CONTACTS
+// ─────────────────────────────────────────────
+
+model Contact {
+  id            String      @id @default(cuid())
+  companyId     String
+  type          ContactType
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  taxId         String?
+  bankAccounts  Json?
+  contactPerson String?
+  notes         String?
+  metadata      Json?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  company         Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  buyerDocuments  Document[] @relation("DocumentBuyer")
+  sellerDocuments Document[] @relation("DocumentSeller")
+
+  @@index([companyId, type])
+  @@index([companyId, name])
+  @@map("contacts")
+}
+
+// ─────────────────────────────────────────────
+// SIGNATURES & STAMPS
+// ─────────────────────────────────────────────
+
+model SignatureAsset {
+  id        String  @id @default(cuid())
+  userId    String
+  name      String  @default("Default Signature")
+  imageUrl  String
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documentSignatures DocumentSignature[]
+
+  @@index([userId])
+  @@map("signature_assets")
+}
+
+model StampAsset {
+  id        String  @id @default(cuid())
+  companyId String
+  userId    String
+  name      String  @default("Company Stamp")
+  imageUrl  String
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company            Company             @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadedBy         User                @relation(fields: [userId], references: [id])
+  documentSignatures DocumentSignature[]
+
+  @@index([companyId])
+  @@map("stamp_assets")
+}
+
+model CompanySignature {
+  id        String  @id @default(cuid())
+  companyId String
+  userId    String
+  name      String  @default("Company Signature")
+  imageUrl  String
+  isDefault Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company    Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  uploadedBy User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@map("company_signatures")
+}
+
+model DocumentSignature {
+  id          String  @id @default(cuid())
+  documentId  String
+  signatureId String?
+  stampId     String?
+  pageNumber  Int     @default(1)
+  positionX   Float
+  positionY   Float
+  width       Float
+  height      Float
+  appliedAt   DateTime @default(now())
+
+  document  Document        @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  signature SignatureAsset? @relation(fields: [signatureId], references: [id])
+  stamp     StampAsset?     @relation(fields: [stampId], references: [id])
+
+  @@index([documentId])
+  @@map("document_signatures")
+}
+
+// ─────────────────────────────────────────────
+// VEHICLES
+// ─────────────────────────────────────────────
+
+model Vehicle {
+  id           String      @id @default(cuid())
+  companyId    String
+  model        String
+  licensePlate String
+  type         VehicleType
+  notes        String?
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([companyId, licensePlate])
+  @@index([companyId, type])
+  @@map("vehicles")
+}
+
+// ─────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────
+
+model AuditLog {
+  id        String      @id @default(cuid())
+  userId    String?
+  companyId String?
+  action    AuditAction
+  entity    String
+  entityId  String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime    @default(now())
+
+  user    User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

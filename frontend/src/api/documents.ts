@@ -1,0 +1,157 @@
+import type {
+  ApiResponse,
+  DashboardStats,
+  Document,
+  DocumentSignature,
+  DocumentStatus,
+} from '../types/index.ts';
+import apiClient from './client.ts';
+
+export async function getDocuments(
+  companyId: string,
+  status?: DocumentStatus,
+  search?: string,
+): Promise<Document[]> {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (search) params.set('search', search);
+  const query = params.toString();
+  const url = `/companies/${companyId}/documents${query ? `?${query}` : ''}`;
+  const response = await apiClient.get<ApiResponse<Document[]>>(url);
+  return response.data.data;
+}
+
+export async function getDocument(id: string): Promise<Document> {
+  const response = await apiClient.get<ApiResponse<Document>>(
+    `/documents/${id}`,
+  );
+  return response.data.data;
+}
+
+export async function getNextDocumentNumber(
+  companyId: string,
+): Promise<string> {
+  const response = await apiClient.get<
+    ApiResponse<{ documentNumber: string }>
+  >(`/companies/${companyId}/documents/next-number`);
+  return response.data.data.documentNumber;
+}
+
+export async function checkDocumentNumber(
+  companyId: string,
+  number: string,
+): Promise<boolean> {
+  const response = await apiClient.get<ApiResponse<{ available: boolean }>>(
+    `/companies/${companyId}/documents/check-number?number=${encodeURIComponent(number)}`,
+  );
+  return response.data.data.available;
+}
+
+export async function createDocument(
+  companyId: string,
+  data: {
+    name: string;
+    documentNumber?: string;
+    buyerId?: string;
+    sellerId?: string;
+    inputData?: Record<string, unknown>;
+    notes?: string;
+  },
+): Promise<Document> {
+  const response = await apiClient.post<ApiResponse<Document>>(
+    `/companies/${companyId}/documents`,
+    data,
+  );
+  return response.data.data;
+}
+
+export async function updateDocument(
+  id: string,
+  data: {
+    name?: string;
+    inputData?: Record<string, unknown>;
+    notes?: string | null;
+    status?: DocumentStatus;
+    buyerId?: string | null;
+    sellerId?: string | null;
+  },
+): Promise<Document> {
+  const response = await apiClient.patch<ApiResponse<Document>>(
+    `/documents/${id}`,
+    data,
+  );
+  return response.data.data;
+}
+
+export async function deleteDocument(id: string): Promise<void> {
+  await apiClient.delete(`/documents/${id}`);
+}
+
+export async function sendDocument(
+  id: string,
+  data: { recipientEmail: string; message?: string },
+): Promise<void> {
+  await apiClient.post(`/documents/${id}/send`, data);
+}
+
+export async function duplicateDocument(id: string): Promise<Document> {
+  const response = await apiClient.post<ApiResponse<Document>>(
+    `/documents/${id}/duplicate`,
+  );
+  return response.data.data;
+}
+
+export async function uploadPdf(
+  id: string,
+  pdfBase64: string,
+): Promise<Document> {
+  const response = await apiClient.patch<ApiResponse<Document>>(
+    `/documents/${id}/upload-pdf`,
+    { pdfBase64 },
+  );
+  return response.data.data;
+}
+
+export async function applySignature(
+  documentId: string,
+  data: {
+    signatureId?: string;
+    stampId?: string;
+    pageNumber?: number;
+    positionX: number;
+    positionY: number;
+    width: number;
+    height: number;
+  },
+): Promise<DocumentSignature> {
+  const response = await apiClient.post<ApiResponse<DocumentSignature>>(
+    `/documents/${documentId}/signatures`,
+    data,
+  );
+  return response.data.data;
+}
+
+export async function listSignatures(
+  documentId: string,
+): Promise<DocumentSignature[]> {
+  const response = await apiClient.get<ApiResponse<DocumentSignature[]>>(
+    `/documents/${documentId}/signatures`,
+  );
+  return response.data.data;
+}
+
+export async function removeSignature(
+  documentId: string,
+  signatureId: string,
+): Promise<void> {
+  await apiClient.delete(
+    `/documents/${documentId}/signatures/${signatureId}`,
+  );
+}
+
+export async function getDashboardStats(): Promise<DashboardStats> {
+  const response = await apiClient.get<ApiResponse<DashboardStats>>(
+    '/documents/dashboard/stats',
+  );
+  return response.data.data;
+}
