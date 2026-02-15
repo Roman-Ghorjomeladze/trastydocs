@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Copy, Trash2, Ban, SlidersHorizontal, X, RotateCcw } from 'lucide-react';
+import { Copy, Trash2, Ban, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { useDocumentStore } from '../../stores/document.store.ts';
 import { useContactStore } from '../../stores/contact.store.ts';
 import { getNextDocumentNumber, checkDocumentNumber } from '../../api/documents.ts';
@@ -105,7 +105,15 @@ export function DocumentListPage() {
         dateTo: dateTo || undefined,
       });
     }
-  }, [companyId, statusFilters, debouncedSearch, contractorFilters, dateFrom, dateTo, fetchDocuments]);
+  }, [
+    companyId,
+    statusFilters,
+    debouncedSearch,
+    contractorFilters,
+    dateFrom,
+    dateTo,
+    fetchDocuments,
+  ]);
 
   // Load contacts when filter panel opens (for contractor chips display)
   useEffect(() => {
