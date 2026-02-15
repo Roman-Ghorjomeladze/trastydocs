@@ -1,12 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { Copy, Trash2, Ban } from 'lucide-react';
 import { useDocumentStore } from '../../stores/document.store.ts';
 import { useContactStore } from '../../stores/contact.store.ts';
 import { getNextDocumentNumber, checkDocumentNumber } from '../../api/documents.ts';
 import { useDebounce } from '../../hooks/use-debounce.ts';
 import { ROUTES, STATUS_COLORS } from '../../lib/constants.ts';
 import { cn } from '../../lib/utils.ts';
+import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
+import { Tooltip } from '../../components/shared/Tooltip.tsx';
 import type { DocumentStatus, Contact, DocumentType } from '../../types/index.ts';
 
 const STATUS_TABS: (DocumentStatus | 'ALL')[] = [
@@ -29,6 +32,7 @@ export function DocumentListPage() {
     createDocument,
     deleteDocument,
     duplicateDocument,
+    updateDocument,
   } = useDocumentStore();
   const { contacts, fetchContacts } = useContactStore();
   const [statusFilter, setStatusFilter] = useState<DocumentStatus | 'ALL'>('ALL');
@@ -43,6 +47,10 @@ export function DocumentListPage() {
   const [docNumberError, setDocNumberError] = useState('');
   const [isCheckingNumber, setIsCheckingNumber] = useState(false);
   const debouncedDocNumber = useDebounce(docNumber, 400);
+  const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
   useEffect(() => {
     if (companyId) {
@@ -118,8 +126,26 @@ export function DocumentListPage() {
     await duplicateDocument(id);
   };
 
-  const handleDelete = async (id: string) => {
-    await deleteDocument(id);
+  const handleDeleteConfirm = async () => {
+    if (!deleteTargetId) return;
+    setIsDeleting(true);
+    try {
+      await deleteDocument(deleteTargetId);
+    } finally {
+      setIsDeleting(false);
+      setDeleteTargetId(null);
+    }
+  };
+
+  const handleCancelConfirm = async () => {
+    if (!cancelTargetId) return;
+    setIsCancelling(true);
+    try {
+      await updateDocument(cancelTargetId, { status: 'CANCELLED' });
+    } finally {
+      setIsCancelling(false);
+      setCancelTargetId(null);
+    }
   };
 
   const formatDate = (dateStr: string) => {
@@ -243,25 +269,38 @@ export function DocumentListPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div
-                      className="flex items-center justify-end gap-2"
+                      className="flex items-center justify-end gap-1"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
-                        type="button"
-                        onClick={() => handleDuplicate(doc.id)}
-                        className="text-xs text-accent hover:text-accent-hover"
-                      >
-                        {t('documents.duplicate')}
-                      </button>
-                      {doc.status === 'DRAFT' && (
+                      <Tooltip content={t('documents.duplicate')}>
                         <button
                           type="button"
-                          onClick={() => handleDelete(doc.id)}
-                          className="text-xs text-danger hover:text-danger-hover"
+                          onClick={() => handleDuplicate(doc.id)}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-muted transition-colors"
                         >
-                          {t('documents.cancel')}
+                          <Copy className="w-4 h-4" />
                         </button>
+                      </Tooltip>
+                      {doc.status !== 'CANCELLED' && (
+                        <Tooltip content={t('documents.cancel')}>
+                          <button
+                            type="button"
+                            onClick={() => setCancelTargetId(doc.id)}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-orange-500 hover:bg-muted transition-colors"
+                          >
+                            <Ban className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
                       )}
+                      <Tooltip content={t('common.delete')}>
+                        <button
+                          type="button"
+                          onClick={() => setDeleteTargetId(doc.id)}
+                          className="p-1.5 rounded-md text-muted-foreground hover:text-danger hover:bg-muted transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </Tooltip>
                     </div>
                   </td>
                 </tr>
@@ -365,6 +404,30 @@ export function DocumentListPage() {
           </div>
         </div>
       )}
+
+      {/* Cancel Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!cancelTargetId}
+        title={t('documents.cancelDocument')}
+        message={t('documents.confirmCancel')}
+        confirmLabel={t('documents.cancel')}
+        variant="danger"
+        isLoading={isCancelling}
+        onConfirm={handleCancelConfirm}
+        onCancel={() => setCancelTargetId(null)}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={!!deleteTargetId}
+        title={t('documents.deleteDocument')}
+        message={t('documents.confirmDelete')}
+        confirmLabel={t('common.delete')}
+        variant="danger"
+        isLoading={isDeleting}
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeleteTargetId(null)}
+      />
     </div>
   );
 }

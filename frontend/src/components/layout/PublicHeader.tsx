@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../stores/auth.store.ts';
 import { ThemeLangControls } from '../shared/ThemeLangControls.tsx';
+import { AppLogo } from '../shared/AppLogo.tsx';
 import { ROUTES } from '../../lib/constants.ts';
 
 export function PublicHeader() {
@@ -12,9 +13,7 @@ export function PublicHeader() {
     <header className="h-16 bg-card border-b border-border flex items-center justify-between px-6">
       {/* Brand */}
       <Link to="/" className="flex items-center gap-2">
-        <div className="w-8 h-8 bg-accent rounded-lg flex items-center justify-center">
-          <span className="text-white font-bold text-sm">T</span>
-        </div>
+        <AppLogo size={32} />
         <span className="text-lg font-bold text-foreground">Trasty Docs</span>
       </Link>
 

@@ -12,6 +12,7 @@ interface ConfirmModalProps {
   confirmLabel?: string;
   cancelLabel?: string;
   variant?: 'danger' | 'default';
+  isLoading?: boolean;
 }
 
 export function ConfirmModal({
@@ -23,6 +24,7 @@ export function ConfirmModal({
   confirmLabel,
   cancelLabel,
   variant = 'default',
+  isLoading = false,
 }: ConfirmModalProps) {
   const { t } = useTranslation();
 
@@ -57,20 +59,22 @@ export function ConfirmModal({
         <div className="flex justify-end gap-3">
           <button
             onClick={onCancel}
-            className="px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-border rounded-lg transition-colors"
+            disabled={isLoading}
+            className="px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-border rounded-lg transition-colors disabled:opacity-50"
           >
             {cancelLabel || t('common.cancel')}
           </button>
           <button
             onClick={onConfirm}
+            disabled={isLoading}
             className={cn(
-              'px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors',
+              'px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50',
               variant === 'danger'
                 ? 'bg-danger hover:bg-danger-hover'
                 : 'bg-accent hover:bg-accent-hover',
             )}
           >
-            {confirmLabel || t('common.confirm')}
+            {isLoading ? t('common.loading') : (confirmLabel || t('common.confirm'))}
           </button>
         </div>
       </div>

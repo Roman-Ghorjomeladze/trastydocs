@@ -6,6 +6,7 @@ import { ROUTES, STATUS_COLORS } from "../../lib/constants.ts";
 import { cn } from "../../lib/utils.ts";
 import { isInvoiceData } from "../../lib/invoice-utils.ts";
 import { exportInvoicePdf } from "../../lib/pdf-export.ts";
+import { ConfirmModal } from "../../components/shared/ConfirmModal.tsx";
 import type { DocumentStatus, InvoiceData } from "../../types/index.ts";
 
 export function DocumentDetailPage() {
@@ -34,6 +35,8 @@ export function DocumentDetailPage() {
 	const [isSending, setIsSending] = useState(false);
 	const [isGenerating, setIsGenerating] = useState(false);
 	const [pdfError, setPdfError] = useState<string | null>(null);
+	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+	const [isDeleting, setIsDeleting] = useState(false);
 
 	useEffect(() => {
 		if (documentId) fetchDocument(documentId);
@@ -86,9 +89,15 @@ export function DocumentDetailPage() {
 		if (companyId) navigate(ROUTES.DOCUMENT_DETAIL(companyId, dup.id));
 	};
 
-	const handleDelete = async () => {
-		await deleteDocument(doc.id);
-		if (companyId) navigate(ROUTES.DOCUMENTS(companyId));
+	const handleDeleteConfirm = async () => {
+		setIsDeleting(true);
+		try {
+			await deleteDocument(doc.id);
+			if (companyId) navigate(ROUTES.DOCUMENTS(companyId));
+		} finally {
+			setIsDeleting(false);
+			setShowDeleteConfirm(false);
+		}
 	};
 
 	const handleGeneratePdf = async () => {
@@ -232,7 +241,7 @@ export function DocumentDetailPage() {
 					</button>
 					<button
 						type="button"
-						onClick={handleDelete}
+						onClick={() => setShowDeleteConfirm(true)}
 						className="px-3 py-1.5 text-sm text-danger border border-danger rounded-lg hover:bg-danger/10"
 					>
 						{t('common.delete')}
@@ -473,6 +482,18 @@ export function DocumentDetailPage() {
 					</div>
 				</div>
 			)}
+
+			{/* Delete Confirmation Modal */}
+			<ConfirmModal
+				isOpen={showDeleteConfirm}
+				title={t('documents.deleteDocument')}
+				message={t('documents.confirmDelete')}
+				confirmLabel={t('common.delete')}
+				variant="danger"
+				isLoading={isDeleting}
+				onConfirm={handleDeleteConfirm}
+				onCancel={() => setShowDeleteConfirm(false)}
+			/>
 		</div>
 	);
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
   LayoutDashboard,
@@ -20,6 +20,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useCompanyStore } from '../../stores/company.store.ts';
 import { cn, getInitials } from '../../lib/utils.ts';
 import { ROUTES } from '../../lib/constants.ts';
+import { AppLogo } from '../shared/AppLogo.tsx';
 import type { Company } from '../../types/index.ts';
 
 interface NavItem {
@@ -31,6 +32,7 @@ interface NavItem {
 export function Sidebar() {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const { companies, activeCompany, setActiveCompany } = useCompanyStore();
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -88,8 +90,15 @@ export function Sidebar() {
     : [];
 
   const handleSwitchCompany = (company: Company) => {
+    const prevId = activeCompany?.id;
     setActiveCompany(company);
     setSwitcherOpen(false);
+
+    // If currently on a company-specific page, navigate to the same page for the new company
+    if (prevId && location.pathname.startsWith(`/companies/${prevId}`)) {
+      const suffix = location.pathname.slice(`/companies/${prevId}`.length);
+      navigate(`/companies/${company.id}${suffix}`);
+    }
   };
 
   const isActive = (item: NavItem) =>
@@ -121,9 +130,7 @@ export function Sidebar() {
           className="flex items-center gap-2.5 rounded-md hover:opacity-80"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
-          <span className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center text-base font-bold flex-shrink-0">
-            T
-          </span>
+          <AppLogo size={32} className="flex-shrink-0" />
           <span className={cn('text-lg font-semibold text-sidebar-foreground', textCls)}>
             {t('app.name')}
           </span>

@@ -182,15 +182,31 @@ export class DocumentsService {
   }
 
   /**
-   * Cancel (soft-delete) a document.
+   * Permanently delete a document and its related records.
    */
   async remove(id: string, userId: string) {
     const doc = await this.findById(id);
 
-    const cancelled = await this.prisma.document.update({
-      where: { id },
-      data: { status: 'CANCELLED' },
+    // Delete related records first, then the document itself
+    await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      await tx.documentSignature.deleteMany({ where: { documentId: id } });
+      // Clear self-referencing duplicatedFromId on any copies
+      await tx.document.updateMany({
+        where: { duplicatedFromId: id },
+        data: { duplicatedFromId: null },
+      });
+      await tx.document.delete({ where: { id } });
     });
+
+    // Also delete the PDF from storage if it exists
+    if (doc.pdfUrl) {
+      const path = `documents/${doc.companyId}/${id}.pdf`;
+      try {
+        await this.storage.delete(path);
+      } catch {
+        // Ignore storage deletion errors — the DB record is already gone
+      }
+    }
 
     await this.audit.log({
       action: 'DELETE',
@@ -198,10 +214,10 @@ export class DocumentsService {
       entityId: id,
       userId,
       companyId: doc.companyId,
-      details: { name: doc.name },
+      details: { name: doc.name, number: doc.documentNumber },
     });
 
-    return cancelled;
+    return { message: 'Document deleted' };
   }
 
   /**

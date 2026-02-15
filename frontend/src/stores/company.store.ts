@@ -32,7 +32,7 @@ export const useCompanyStore = create<CompanyState & CompanyActions>((set, get) 
       const companies = await companiesApi.getCompanies();
       set({ companies, isLoading: false });
 
-      // If there is a persisted active company ID, restore it
+      // After fetching, hydrate the active company from session
       const state = get();
       if (!state.activeCompany) {
         state.hydrateActiveCompany();
@@ -45,9 +45,9 @@ export const useCompanyStore = create<CompanyState & CompanyActions>((set, get) 
   setActiveCompany: (company) => {
     set({ activeCompany: company });
     if (company) {
-      localStorage.setItem(ACTIVE_COMPANY_KEY, company.id);
+      sessionStorage.setItem(ACTIVE_COMPANY_KEY, company.id);
     } else {
-      localStorage.removeItem(ACTIVE_COMPANY_KEY);
+      sessionStorage.removeItem(ACTIVE_COMPANY_KEY);
     }
   },
 
@@ -71,21 +71,33 @@ export const useCompanyStore = create<CompanyState & CompanyActions>((set, get) 
 
   deleteCompany: async (id) => {
     await companiesApi.deleteCompany(id);
+    const wasActive = get().activeCompany?.id === id;
     set((state) => ({
       companies: state.companies.filter((c) => c.id !== id),
       activeCompany: state.activeCompany?.id === id ? null : state.activeCompany,
     }));
-    localStorage.removeItem(ACTIVE_COMPANY_KEY);
+    if (wasActive) {
+      sessionStorage.removeItem(ACTIVE_COMPANY_KEY);
+      // Auto-select another company if available
+      get().hydrateActiveCompany();
+    }
   },
 
   hydrateActiveCompany: () => {
-    const savedId = localStorage.getItem(ACTIVE_COMPANY_KEY);
+    const state = get();
+    const savedId = sessionStorage.getItem(ACTIVE_COMPANY_KEY);
     if (savedId) {
-      const state = get();
       const found = state.companies.find((c) => c.id === savedId);
       if (found) {
         set({ activeCompany: found });
+        return;
       }
+    }
+    // No saved company or it was deleted — auto-select the first one
+    if (state.companies.length > 0) {
+      const first = state.companies[0];
+      set({ activeCompany: first });
+      sessionStorage.setItem(ACTIVE_COMPANY_KEY, first.id);
     }
   },
 }));
