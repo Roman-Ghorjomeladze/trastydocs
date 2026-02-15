@@ -110,7 +110,14 @@
     "completedAt": "Дата завершения",
     "markAs": "Отметить как",
     "notFound": "Документ не найден",
-    "searchPlaceholder": "Поиск по названию, номеру или покупателю..."
+    "searchPlaceholder": "Поиск по названию, номеру или покупателю...",
+    "filters": "Фильтры",
+    "clearFilters": "Очистить все",
+    "allStatuses": "Все статусы",
+    "allContractors": "Все контрагенты",
+    "contractor": "Контрагент",
+    "dateFrom": "Дата от",
+    "dateTo": "Дата до"
   },
   "companies": {
     "title": "Ваши компании",

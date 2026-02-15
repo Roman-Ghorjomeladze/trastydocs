@@ -110,7 +110,14 @@
     "completedAt": "დასრულების თარიღი",
     "markAs": "მონიშვნა როგორც",
     "notFound": "დოკუმენტი ვერ მოიძებნა",
-    "searchPlaceholder": "ძიება სახელით, ნომრით ან მყიდველით..."
+    "searchPlaceholder": "ძიება სახელით, ნომრით ან მყიდველით...",
+    "filters": "ფილტრები",
+    "clearFilters": "ყველას გასუფთავება",
+    "allStatuses": "ყველა სტატუსი",
+    "allContractors": "ყველა კონტრაქტორი",
+    "contractor": "კონტრაქტორი",
+    "dateFrom": "თარიღიდან",
+    "dateTo": "თარიღამდე"
   },
   "companies": {
     "title": "თქვენი კომპანიები",

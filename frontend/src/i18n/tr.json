@@ -110,7 +110,14 @@
     "completedAt": "Tamamlanma Tarihi",
     "markAs": "Olarak işaretle",
     "notFound": "Belge bulunamadı",
-    "searchPlaceholder": "Ad, numara veya aliciya gore ara..."
+    "searchPlaceholder": "Ad, numara veya aliciya gore ara...",
+    "filters": "Filtreler",
+    "clearFilters": "Tumunu temizle",
+    "allStatuses": "Tum durumlar",
+    "allContractors": "Tum yukleniciler",
+    "contractor": "Yuklenici",
+    "dateFrom": "Baslangic tarihi",
+    "dateTo": "Bitis tarihi"
   },
   "companies": {
     "title": "Sirketleriniz",

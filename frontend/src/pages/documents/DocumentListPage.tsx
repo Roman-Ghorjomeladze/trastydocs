@@ -1,24 +1,27 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Copy, Trash2, Ban } from 'lucide-react';
+import { Copy, Trash2, Ban, SlidersHorizontal, X, RotateCcw } from 'lucide-react';
 import { useDocumentStore } from '../../stores/document.store.ts';
 import { useContactStore } from '../../stores/contact.store.ts';
 import { getNextDocumentNumber, checkDocumentNumber } from '../../api/documents.ts';
+import { getContacts } from '../../api/contacts.ts';
 import { useDebounce } from '../../hooks/use-debounce.ts';
 import { ROUTES, STATUS_COLORS } from '../../lib/constants.ts';
 import { cn } from '../../lib/utils.ts';
 import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { Tooltip } from '../../components/shared/Tooltip.tsx';
+import { MultiSelect } from '../../components/shared/MultiSelect.tsx';
+import type { MultiSelectOption } from '../../components/shared/MultiSelect.tsx';
 import type { DocumentStatus, Contact, DocumentType } from '../../types/index.ts';
 
-const STATUS_TABS: (DocumentStatus | 'ALL')[] = [
-  'ALL',
+const ALL_STATUSES: DocumentStatus[] = [
   'DRAFT',
   'PENDING_SIGNATURE',
   'SIGNED',
   'COMPLETED',
   'CANCELLED',
+  'ARCHIVED',
 ];
 
 export function DocumentListPage() {
@@ -35,9 +38,17 @@ export function DocumentListPage() {
     updateDocument,
   } = useDocumentStore();
   const { contacts, fetchContacts } = useContactStore();
-  const [statusFilter, setStatusFilter] = useState<DocumentStatus | 'ALL'>('ALL');
+
+  // Filters
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilters, setStatusFilters] = useState<string[]>([]);
+  const [contractorFilters, setContractorFilters] = useState<string[]>([]);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearch = useDebounce(searchQuery, 400);
+
+  // Create modal
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newDocName, setNewDocName] = useState('');
   const [selectedBuyerId, setSelectedBuyerId] = useState('');
@@ -47,20 +58,61 @@ export function DocumentListPage() {
   const [docNumberError, setDocNumberError] = useState('');
   const [isCheckingNumber, setIsCheckingNumber] = useState(false);
   const debouncedDocNumber = useDebounce(docNumber, 400);
+
+  // Confirm modals
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
 
+  // Active filter count for badge
+  const activeFilterCount =
+    (statusFilters.length > 0 ? 1 : 0) +
+    (contractorFilters.length > 0 ? 1 : 0) +
+    (dateFrom ? 1 : 0) +
+    (dateTo ? 1 : 0);
+
+  // Status options for MultiSelect
+  const statusOptions: MultiSelectOption[] = ALL_STATUSES.map((s) => ({
+    value: s,
+    label: t(`status.${s}`),
+  }));
+
+  // Contractor search handler for MultiSelect async
+  const handleContractorSearch = useCallback(
+    async (query: string): Promise<MultiSelectOption[]> => {
+      if (!companyId) return [];
+      const results = await getContacts(companyId, query);
+      return results
+        .filter((c) => c.isActive)
+        .map((c) => ({
+          value: c.id,
+          label: c.name,
+          sublabel: c.taxId || undefined,
+        }));
+    },
+    [companyId],
+  );
+
+  // Fetch documents with all filters
   useEffect(() => {
     if (companyId) {
-      fetchDocuments(
-        companyId,
-        statusFilter === 'ALL' ? undefined : statusFilter,
-        debouncedSearch.trim() || undefined,
-      );
+      fetchDocuments(companyId, {
+        statuses: statusFilters.length > 0 ? (statusFilters as DocumentStatus[]) : undefined,
+        search: debouncedSearch.trim() || undefined,
+        buyerIds: contractorFilters.length > 0 ? contractorFilters : undefined,
+        dateFrom: dateFrom || undefined,
+        dateTo: dateTo || undefined,
+      });
     }
-  }, [companyId, statusFilter, debouncedSearch, fetchDocuments]);
+  }, [companyId, statusFilters, debouncedSearch, contractorFilters, dateFrom, dateTo, fetchDocuments]);
+
+  // Load contacts when filter panel opens (for contractor chips display)
+  useEffect(() => {
+    if (companyId && showFilters) {
+      fetchContacts(companyId);
+    }
+  }, [companyId, showFilters, fetchContacts]);
 
   useEffect(() => {
     if (companyId && showCreateModal) {
@@ -148,6 +200,13 @@ export function DocumentListPage() {
     }
   };
 
+  const clearAllFilters = () => {
+    setStatusFilters([]);
+    setContractorFilters([]);
+    setDateFrom('');
+    setDateTo('');
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
@@ -174,36 +233,121 @@ export function DocumentListPage() {
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div className="mb-4">
+      {/* Search Bar + Filter Toggle */}
+      <div className="flex items-center gap-2 mb-4">
         <input
           type="text"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           placeholder={t('documents.searchPlaceholder')}
-          className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-input text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+          className="flex-1 px-3 py-2 border border-border rounded-lg text-sm bg-input text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
           style={{ maxWidth: '434px' }}
         />
-      </div>
-
-      {/* Status Tabs */}
-      <div className="flex items-center gap-1 mb-6 border-b border-border">
-        {STATUS_TABS.map((tab) => (
+        <Tooltip content={t('documents.filters')}>
           <button
-            key={tab}
             type="button"
-            onClick={() => setStatusFilter(tab)}
+            onClick={() => setShowFilters(!showFilters)}
             className={cn(
-              'px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px',
-              statusFilter === tab
-                ? 'border-accent text-accent'
-                : 'border-transparent text-muted-foreground hover:text-foreground',
+              'relative p-2 border rounded-lg transition-colors',
+              showFilters
+                ? 'border-accent bg-accent/10 text-accent'
+                : 'border-border text-muted-foreground hover:text-foreground hover:border-accent/50',
             )}
           >
-            {tab === 'ALL' ? t('documents.all') : t(`status.${tab}`)}
+            <SlidersHorizontal className="w-5 h-5" />
+            {activeFilterCount > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-accent text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {activeFilterCount}
+              </span>
+            )}
           </button>
-        ))}
+        </Tooltip>
       </div>
+
+      {/* Filter Panel */}
+      {showFilters && (
+        <div className="mb-6 p-4 bg-card border border-border rounded-lg space-y-4 animate-fade-in">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-foreground">{t('documents.filters')}</h3>
+            <Tooltip content={t('documents.clearFilters')}>
+              <button
+                type="button"
+                onClick={clearAllFilters}
+                disabled={activeFilterCount === 0}
+                className={cn(
+                  'p-1.5 rounded-md transition-colors',
+                  activeFilterCount > 0
+                    ? 'text-accent hover:text-accent-hover hover:bg-accent/10'
+                    : 'text-muted-foreground/40 cursor-default',
+                )}
+              >
+                <RotateCcw className="w-4 h-4" />
+              </button>
+            </Tooltip>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Status Filter */}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                {t('documents.status')}
+              </label>
+              <MultiSelect
+                options={statusOptions}
+                value={statusFilters}
+                onChange={setStatusFilters}
+                placeholder={t('documents.allStatuses')}
+              />
+            </div>
+
+            {/* Contractor Filter */}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                {t('documents.contractor')}
+              </label>
+              <MultiSelect
+                options={contacts
+                  .filter((c) => c.isActive)
+                  .map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                    sublabel: c.taxId || undefined,
+                  }))}
+                value={contractorFilters}
+                onChange={setContractorFilters}
+                placeholder={t('documents.allContractors')}
+                onSearch={handleContractorSearch}
+              />
+            </div>
+
+            {/* Date From */}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                {t('documents.dateFrom')}
+              </label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-card text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              />
+            </div>
+
+            {/* Date To */}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">
+                {t('documents.dateTo')}
+              </label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-card text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Loading */}
       {isLoading && (

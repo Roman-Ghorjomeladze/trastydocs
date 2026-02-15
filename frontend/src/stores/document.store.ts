@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import type { Document, DocumentStatus } from '../types/index.ts';
 import * as documentsApi from '../api/documents.ts';
+import type { DocumentFilters } from '../api/documents.ts';
 
 interface DocumentState {
   documents: Document[];
@@ -9,7 +10,7 @@ interface DocumentState {
 }
 
 interface DocumentActions {
-  fetchDocuments: (companyId: string, status?: DocumentStatus, search?: string) => Promise<void>;
+  fetchDocuments: (companyId: string, filters?: DocumentFilters) => Promise<void>;
   fetchDocument: (id: string) => Promise<void>;
   createDocument: (
     companyId: string,
@@ -49,10 +50,10 @@ export const useDocumentStore = create<DocumentState & DocumentActions>(
     currentDocument: null,
     isLoading: false,
 
-    fetchDocuments: async (companyId, status, search) => {
+    fetchDocuments: async (companyId, filters) => {
       set({ isLoading: true });
       try {
-        const documents = await documentsApi.getDocuments(companyId, status, search);
+        const documents = await documentsApi.getDocuments(companyId, filters);
         set({ documents, isLoading: false });
       } catch {
         set({ isLoading: false });

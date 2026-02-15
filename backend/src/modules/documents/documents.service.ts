@@ -97,20 +97,54 @@ export class DocumentsService {
   }
 
   /**
-   * List documents for a company, optionally filtered by status and search keyword.
+   * List documents for a company with optional filters.
    */
-  async findAll(companyId: string, status?: DocumentStatus, search?: string) {
-    const where: Prisma.DocumentWhereInput = {
-      companyId,
-      ...(status && { status }),
-    };
+  async findAll(
+    companyId: string,
+    filters?: {
+      status?: DocumentStatus;
+      statuses?: DocumentStatus[];
+      search?: string;
+      buyerIds?: string[];
+      dateFrom?: string;
+      dateTo?: string;
+    },
+  ) {
+    const where: Prisma.DocumentWhereInput = { companyId };
 
-    if (search) {
+    // Status filter: multi-status takes priority over single status
+    if (filters?.statuses?.length) {
+      where.status = { in: filters.statuses };
+    } else if (filters?.status) {
+      where.status = filters.status;
+    }
+
+    // Buyer filter (multi-select)
+    if (filters?.buyerIds?.length) {
+      where.buyerId = { in: filters.buyerIds };
+    }
+
+    // Date range filter
+    if (filters?.dateFrom || filters?.dateTo) {
+      where.createdAt = {};
+      if (filters.dateFrom) {
+        (where.createdAt as Prisma.DateTimeFilter).gte = new Date(filters.dateFrom);
+      }
+      if (filters.dateTo) {
+        // Include the entire end day
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        (where.createdAt as Prisma.DateTimeFilter).lte = endDate;
+      }
+    }
+
+    // Text search
+    if (filters?.search) {
       where.OR = [
-        { name: { contains: search, mode: 'insensitive' } },
-        { documentNumber: { contains: search, mode: 'insensitive' } },
-        { buyer: { name: { contains: search, mode: 'insensitive' } } },
-        { seller: { name: { contains: search, mode: 'insensitive' } } },
+        { name: { contains: filters.search, mode: 'insensitive' } },
+        { documentNumber: { contains: filters.search, mode: 'insensitive' } },
+        { buyer: { name: { contains: filters.search, mode: 'insensitive' } } },
+        { seller: { name: { contains: filters.search, mode: 'insensitive' } } },
       ];
     }
 

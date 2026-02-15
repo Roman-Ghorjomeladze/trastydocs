@@ -60,8 +60,19 @@ export class CompanyDocumentsController {
   async findAll(
     @Param('companyId') companyId: string,
     @Query('status') status?: DocumentStatus,
+    @Query('statuses') statuses?: string,
     @Query('search') search?: string,
+    @Query('buyerIds') buyerIds?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
   ) {
-    return this.documentsService.findAll(companyId, status, search);
+    return this.documentsService.findAll(companyId, {
+      status,
+      statuses: statuses ? (statuses.split(',') as DocumentStatus[]) : undefined,
+      search,
+      buyerIds: buyerIds ? buyerIds.split(',') : undefined,
+      dateFrom,
+      dateTo,
+    });
   }
 }

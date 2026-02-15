@@ -110,7 +110,14 @@
     "completedAt": "Completed At",
     "markAs": "Mark as",
     "notFound": "Document not found",
-    "searchPlaceholder": "Search by name, number or buyer..."
+    "searchPlaceholder": "Search by name, number or buyer...",
+    "filters": "Filters",
+    "clearFilters": "Clear all",
+    "allStatuses": "All statuses",
+    "allContractors": "All contractors",
+    "contractor": "Contractor",
+    "dateFrom": "Date from",
+    "dateTo": "Date to"
   },
   "companies": {
     "title": "Your Companies",

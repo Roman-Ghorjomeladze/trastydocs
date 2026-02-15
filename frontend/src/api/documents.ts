@@ -7,14 +7,26 @@ import type {
 } from '../types/index.ts';
 import apiClient from './client.ts';
 
+export interface DocumentFilters {
+  status?: DocumentStatus;
+  statuses?: DocumentStatus[];
+  search?: string;
+  buyerIds?: string[];
+  dateFrom?: string;
+  dateTo?: string;
+}
+
 export async function getDocuments(
   companyId: string,
-  status?: DocumentStatus,
-  search?: string,
+  filters?: DocumentFilters,
 ): Promise<Document[]> {
   const params = new URLSearchParams();
-  if (status) params.set('status', status);
-  if (search) params.set('search', search);
+  if (filters?.status) params.set('status', filters.status);
+  if (filters?.statuses?.length) params.set('statuses', filters.statuses.join(','));
+  if (filters?.search) params.set('search', filters.search);
+  if (filters?.buyerIds?.length) params.set('buyerIds', filters.buyerIds.join(','));
+  if (filters?.dateFrom) params.set('dateFrom', filters.dateFrom);
+  if (filters?.dateTo) params.set('dateTo', filters.dateTo);
   const query = params.toString();
   const url = `/companies/${companyId}/documents${query ? `?${query}` : ''}`;
   const response = await apiClient.get<ApiResponse<Document[]>>(url);
