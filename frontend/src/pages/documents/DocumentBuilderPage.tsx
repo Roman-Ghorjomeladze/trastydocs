@@ -363,7 +363,6 @@ export function DocumentBuilderPage() {
   // Export PDF (default layout)
   const handleExportPdf = async () => {
     setIsExporting(true);
-    setShowExportMenu(false);
     try {
       const pdfBytes = await exportInvoicePdf(invoiceData);
       const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
