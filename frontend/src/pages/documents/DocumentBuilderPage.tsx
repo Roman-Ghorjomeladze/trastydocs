@@ -12,7 +12,6 @@ import {
   createEmptyInvoiceData,
   calculateTotals,
   populateFromContact,
-  populateFromCompany,
   isInvoiceData,
 } from '../../lib/invoice-utils.ts';
 import { getInvoiceLabels } from '../../lib/invoice-i18n.ts';
@@ -59,6 +58,7 @@ export function DocumentBuilderPage() {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [selectedBankAccountIds, setSelectedBankAccountIds] = useState<string[]>([]);
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -154,6 +154,12 @@ export function DocumentBuilderPage() {
           data = loaded.inputData as unknown as InvoiceData;
         } else {
           data = createEmptyInvoiceData();
+          // Preserve documentType from creation (e.g. transport_invoice)
+          const raw = loaded.inputData as Record<string, unknown> | null;
+          if (raw?.documentType === 'transport_invoice') {
+            data.documentType = 'transport_invoice';
+            data.currency = 'GEL';
+          }
         }
 
         // Auto-fill from document number
@@ -161,19 +167,44 @@ export function DocumentBuilderPage() {
           data = { ...data, invoiceNumber: loaded.documentNumber };
         }
 
-        // Auto-fill from buyer contact
+        // Resolve current document language for translations
+        const docLang = data.language || 'en';
+
+        // Auto-fill from buyer contact (using translated name/address)
         if (loaded.buyer) {
-          data = populateFromContact(data, loaded.buyer, 'buyer');
+          data = populateFromContact(data, loaded.buyer, 'buyer', docLang);
         }
 
-        // Auto-fill from seller contact
-        if (loaded.seller) {
-          data = populateFromContact(data, loaded.seller, 'seller');
-        }
+        // Always populate seller from the active company (using translated name/address)
+        if (activeCompany) {
+          // Auto-select default bank account(s)
+          const companyBanks = activeCompany.bankAccounts ?? [];
+          const defaultBanks = companyBanks.filter((ba) => ba.isDefault);
+          const defaultIds = defaultBanks.map((ba) => ba.id);
+          const bankStr = defaultBanks
+            .map((ba) => `${ba.bankName}: ${ba.accountNumber}`)
+            .join('\n');
 
-        // Auto-fill from active company if no seller data
-        if (!data.companyName && activeCompany) {
-          data = populateFromCompany(data, activeCompany);
+          // Resolve translated company name & address
+          const nameTranslations = activeCompany.nameTranslations as Record<string, string> | undefined;
+          const addressTranslations = activeCompany.addressTranslations as Record<string, string> | undefined;
+          const companyName = nameTranslations?.[docLang] || activeCompany.name || '';
+          const companyAddress = addressTranslations?.[docLang] || activeCompany.address || '';
+
+          data = {
+            ...data,
+            companyName,
+            companyAddress,
+            companyTaxId: activeCompany.taxId || '',
+            companyPhone: activeCompany.phone || '',
+            companyEmail: activeCompany.email || '',
+            companyBankAccounts: data.companyBankAccounts || bankStr,
+          };
+
+          // Only set default selection if no bank accounts are already in the data
+          if (!data.companyBankAccounts || data.companyBankAccounts === bankStr) {
+            setSelectedBankAccountIds(defaultIds);
+          }
         }
 
         // Recalculate totals
@@ -243,7 +274,30 @@ export function DocumentBuilderPage() {
   const handleFieldChange = useCallback(
     (field: string, value: string) => {
       setInvoiceData((prev) => {
-        const next = { ...prev, [field]: value };
+        let next = { ...prev, [field]: value };
+
+        // When language changes, re-populate translated name/address for seller & buyer
+        if (field === 'language') {
+          const newLang = value;
+
+          // Re-populate seller (company) name & address from translations
+          if (activeCompany) {
+            const nameT = activeCompany.nameTranslations as Record<string, string> | undefined;
+            const addrT = activeCompany.addressTranslations as Record<string, string> | undefined;
+            next.companyName = nameT?.[newLang] || activeCompany.name || '';
+            next.companyAddress = addrT?.[newLang] || activeCompany.address || '';
+          }
+
+          // Re-populate buyer name & address from translations
+          if (doc?.buyer) {
+            const buyer = doc.buyer;
+            const nameT = buyer.nameTranslations as Record<string, string> | undefined;
+            const addrT = buyer.addressTranslations as Record<string, string> | undefined;
+            next.buyerName = nameT?.[newLang] || buyer.name || '';
+            next.buyerAddress = addrT?.[newLang] || buyer.address || '';
+          }
+        }
+
         const totals = calculateTotals(next);
         const updated = { ...next, ...totals };
 
@@ -258,7 +312,7 @@ export function DocumentBuilderPage() {
         return updated;
       });
     },
-    [saveToServer],
+    [saveToServer, activeCompany, doc],
   );
 
   // Line items change handler
@@ -303,30 +357,43 @@ export function DocumentBuilderPage() {
     [saveToServer],
   );
 
-  // Auto-fill from company
-  const handleAutoFillCompany = useCallback(() => {
-    if (!activeCompany) return;
-    setInvoiceData((prev) => {
-      const updated = {
-        ...prev,
-        companyName: activeCompany.name || prev.companyName,
-        companyAddress: activeCompany.address || prev.companyAddress,
-        companyTaxId: activeCompany.taxId || prev.companyTaxId,
-        companyPhone: activeCompany.phone || prev.companyPhone,
-        companyEmail: activeCompany.email || prev.companyEmail,
-      };
 
-      setHasUnsavedChanges(true);
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-      autoSaveTimerRef.current = setTimeout(() => {
-        saveToServer(updated);
-      }, AUTO_SAVE_DELAY);
+  // Bank account toggle handler
+  const handleBankAccountToggle = useCallback(
+    (bankId: string) => {
+      setSelectedBankAccountIds((prev) => {
+        const next = prev.includes(bankId)
+          ? prev.filter((id) => id !== bankId)
+          : [...prev, bankId];
 
-      return updated;
-    });
-  }, [activeCompany, saveToServer]);
+        // Serialize selected bank accounts into the companyBankAccounts string
+        const companyBanks = activeCompany?.bankAccounts ?? [];
+        const bankStr = next
+          .map((id) => companyBanks.find((ba) => ba.id === id))
+          .filter(Boolean)
+          .map((ba) => `${ba!.bankName}: ${ba!.accountNumber}`)
+          .join('\n');
 
-  // Auto-fill from buyer contact
+        // Update invoice data with the serialized bank accounts
+        setInvoiceData((prevData) => {
+          const updated = { ...prevData, companyBankAccounts: bankStr };
+
+          setHasUnsavedChanges(true);
+          if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+          autoSaveTimerRef.current = setTimeout(() => {
+            saveToServer(updated);
+          }, AUTO_SAVE_DELAY);
+
+          return updated;
+        });
+
+        return next;
+      });
+    },
+    [activeCompany, saveToServer],
+  );
+
+  // Auto-fill from buyer contact (with language-aware translations)
   const handleAutoFillBuyer = useCallback(() => {
     if (!doc?.buyer) return;
     setInvoiceData((prev) => {
@@ -342,6 +409,7 @@ export function DocumentBuilderPage() {
         },
         doc.buyer!,
         'buyer',
+        prev.language || 'en',
       );
 
       setHasUnsavedChanges(true);
@@ -567,7 +635,9 @@ export function DocumentBuilderPage() {
                 data={invoiceData}
                 labels={labels}
                 onChange={handleFieldChange}
-                onAutoFill={activeCompany ? handleAutoFillCompany : undefined}
+                bankAccounts={activeCompany?.bankAccounts}
+                selectedBankAccountIds={selectedBankAccountIds}
+                onBankAccountToggle={handleBankAccountToggle}
               />
             </div>
 

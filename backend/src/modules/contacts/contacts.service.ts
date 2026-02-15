@@ -19,7 +19,6 @@ export class ContactsService {
     const contact = await this.prisma.contact.create({
       data: {
         companyId,
-        type: dto.type,
         name: dto.name,
         email: dto.email,
         phone: dto.phone,
@@ -39,7 +38,7 @@ export class ContactsService {
         entityId: contact.id,
         userId,
         companyId,
-        details: { name: contact.name, type: contact.type },
+        details: { name: contact.name },
       });
     }
 
@@ -51,13 +50,11 @@ export class ContactsService {
    */
   async findAll(
     companyId: string,
-    type?: 'BUYER' | 'SELLER',
     search?: string,
   ) {
     const where: Prisma.ContactWhereInput = {
       companyId,
       isActive: true,
-      ...(type && { type }),
     };
 
     if (search) {

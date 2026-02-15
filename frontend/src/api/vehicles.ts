@@ -20,6 +20,7 @@ export async function createVehicle(
     licensePlate: string;
     type: 'TRUCK' | 'TRAILER';
     notes?: string;
+    defaultTrailerId?: string;
   },
 ): Promise<Vehicle> {
   const response = await apiClient.post<ApiResponse<Vehicle>>(
@@ -37,6 +38,7 @@ export async function updateVehicle(
     licensePlate?: string;
     notes?: string;
     isActive?: boolean;
+    defaultTrailerId?: string | null;
   },
 ): Promise<Vehicle> {
   const response = await apiClient.patch<ApiResponse<Vehicle>>(

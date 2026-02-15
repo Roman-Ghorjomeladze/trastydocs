@@ -5,6 +5,7 @@ export const UpdateVehicleSchema = z.object({
   licensePlate: z.string().min(1).max(20).optional(),
   notes: z.string().max(500).optional(),
   isActive: z.boolean().optional(),
+  defaultTrailerId: z.string().nullable().optional(),
 });
 
 export type UpdateVehicleDto = z.infer<typeof UpdateVehicleSchema>;

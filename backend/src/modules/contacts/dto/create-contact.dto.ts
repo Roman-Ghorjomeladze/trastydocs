@@ -5,8 +5,9 @@ const BankAccountSchema = z.object({
   accountNumber: z.string().min(1, 'Account number is required').max(100),
 });
 
+const TranslationsSchema = z.record(z.string(), z.string().max(500)).optional();
+
 export const CreateContactSchema = z.object({
-  type: z.enum(['BUYER', 'SELLER']),
   name: z.string().min(1, 'Contact name is required').max(255),
   email: z.string().email().optional(),
   phone: z.string().max(50).optional(),
@@ -16,6 +17,8 @@ export const CreateContactSchema = z.object({
   contactPerson: z.string().max(255).optional(),
   notes: z.string().max(2000).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  nameTranslations: TranslationsSchema,
+  addressTranslations: TranslationsSchema,
 });
 
 export type CreateContactDto = z.infer<typeof CreateContactSchema>;

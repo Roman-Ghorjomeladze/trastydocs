@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "DocFlow"
+    "name": "Trasty Docs"
   },
   "sidebar": {
     "dashboard": "Dashboard",
@@ -8,7 +8,7 @@
     "signatures": "My Signatures",
     "members": "Members",
     "documents": "Documents",
-    "contacts": "Contacts",
+    "contractors": "Contractors",
     "stamps": "Stamps",
     "vehicles": "Vehicles",
     "auditLog": "Audit Log",
@@ -27,7 +27,9 @@
     "signingUp": "Creating account...",
     "signingYouIn": "Signing you in...",
     "loginFailed": "Login failed. Please try again.",
-    "registerFailed": "Registration failed. Please try again."
+    "registerFailed": "Registration failed. Please try again.",
+    "googleSignIn": "Sign in with Google",
+    "googleSignUp": "Sign up with Google"
   },
   "dashboard": {
     "title": "Dashboard",
@@ -106,7 +108,7 @@
     "completedAt": "Completed At",
     "markAs": "Mark as",
     "notFound": "Document not found",
-    "searchPlaceholder": "Search by name, number, buyer or seller..."
+    "searchPlaceholder": "Search by name, number or buyer..."
   },
   "companies": {
     "title": "Your Companies",
@@ -154,34 +156,47 @@
     "confirmLeave": "Are you sure you want to leave this company?",
     "confirmRemoveMember": "Remove {{name}} from this company?",
     "leaveCompany": "Leave Company",
-    "removeMember": "Remove Member"
+    "removeMember": "Remove Member",
+    "bankAccounts": "Bank Accounts",
+    "bankName": "Bank Name",
+    "accountNumber": "Account Number",
+    "addBankAccount": "Add Bank Account",
+    "noBankAccounts": "No bank accounts added yet",
+    "defaultAccount": "Default",
+    "setDefault": "Set as Default",
+    "removeBankAccount": "Remove",
+    "nameTranslations": "Company Name Translations",
+    "addressTranslations": "Address Translations",
+    "nameInLang": "Name in {{lang}}",
+    "addressInLang": "Address in {{lang}}"
   },
-  "contacts": {
-    "title": "Contacts",
-    "subtitle": "Manage your buyers and sellers",
-    "create": "New Contact",
+  "contractors": {
+    "title": "Contractors",
+    "subtitle": "Manage your contractor companies",
+    "create": "New Contractor",
     "name": "Name",
-    "type": "Type",
-    "buyer": "Buyer",
-    "seller": "Seller",
-    "all": "All",
     "email": "Email",
     "phone": "Phone",
     "address": "Address",
     "taxId": "Tax ID",
+    "contactPerson": "Contact Person",
     "bankAccounts": "Bank Accounts",
     "bankName": "Bank Name",
     "accountNumber": "Account Number",
     "bankCode": "Bank Code / SWIFT",
     "addBank": "Add Bank Account",
-    "noContacts": "No contacts found",
-    "createFirst": "Create your first contact to get started",
+    "noContractors": "No contractors found",
+    "createFirst": "Create your first contractor to get started",
     "creating": "Creating...",
     "actions": "Actions",
     "edit": "Edit",
     "delete": "Delete",
     "active": "Active",
-    "inactive": "Inactive"
+    "inactive": "Inactive",
+    "searchPlaceholder": "Search contractors...",
+    "tryDifferentSearch": "Try a different search term",
+    "selectCompany": "Select a company to view contractors",
+    "translations": "Name & Address Translations"
   },
   "vehicles": {
     "title": "Vehicles",
@@ -208,7 +223,10 @@
     "inactive": "Inactive",
     "delete": "Delete",
     "update": "Update",
-    "saving": "Saving..."
+    "saving": "Saving...",
+    "defaultTrailer": "Default Trailer",
+    "selectDefaultTrailer": "Select default trailer",
+    "noDefaultTrailer": "None"
   },
   "stamps": {
     "title": "Company Stamps",
@@ -279,7 +297,9 @@
     "updateFailed": "Failed to update profile",
     "passwordChanged": "Password changed successfully",
     "passwordMismatch": "Passwords do not match",
-    "memberSince": "Member since"
+    "memberSince": "Member since",
+    "logOut": "Log Out",
+    "logOutDescription": "Sign out of your account on this device."
   },
   "status": {
     "DRAFT": "Draft",
@@ -299,10 +319,6 @@
     "ACTIVE": "Active",
     "INVITED": "Invited",
     "SUSPENDED": "Suspended"
-  },
-  "contactType": {
-    "BUYER": "Buyer",
-    "SELLER": "Seller"
   },
   "auditActions": {
     "CREATE": "Created",
@@ -330,6 +346,27 @@
     "saving": "Saving...",
     "personal": "My Signatures",
     "company": "Company"
+  },
+  "landing": {
+    "heroTitle": "Professional Document Management Made Simple",
+    "heroSubtitle": "Create invoices, transport documents, and manage your business paperwork with digital signatures, multi-company support, and PDF export.",
+    "getStarted": "Get Started Free",
+    "featuresTitle": "Everything You Need to Manage Documents",
+    "featureInvoicesTitle": "Invoice Builder",
+    "featureInvoicesDesc": "Create professional invoices with an intuitive builder. Auto-calculate totals and taxes.",
+    "featureTransportTitle": "Transport Invoices",
+    "featureTransportDesc": "Specialized transport invoice support with vehicle management, routes, and trailer tracking.",
+    "featureSignaturesTitle": "Digital Signatures",
+    "featureSignaturesDesc": "Draw or upload signatures and stamps. Apply them to documents with a single click.",
+    "featureCompaniesTitle": "Multi-Company",
+    "featureCompaniesDesc": "Manage multiple companies from one account. Invite team members with role-based access.",
+    "featurePdfTitle": "PDF Export",
+    "featurePdfDesc": "Generate professional PDF documents instantly. Download or send via email directly from the platform.",
+    "featureMultilangTitle": "Multi-Language",
+    "featureMultilangDesc": "Full support for Georgian, English, Russian, and Turkish. Create documents in any language.",
+    "ctaTitle": "Ready to Get Started?",
+    "ctaSubtitle": "Create your free account and start managing your documents today.",
+    "createAccount": "Create Free Account"
   },
   "common": {
     "save": "Save",

@@ -47,8 +47,8 @@ export function Sidebar() {
 
   const mainNav: NavItem[] = [
     { label: t('sidebar.dashboard'), href: ROUTES.DASHBOARD, icon: LayoutDashboard },
-    { label: t('sidebar.companies'), href: ROUTES.COMPANIES, icon: Building2 },
     { label: t('sidebar.signatures'), href: ROUTES.SIGNATURES, icon: PenTool },
+    { label: t('sidebar.companies'), href: ROUTES.COMPANIES, icon: Building2 },
   ];
 
   const companyNav: NavItem[] = activeCompany
@@ -69,8 +69,8 @@ export function Sidebar() {
           icon: FileText,
         },
         {
-          label: t('sidebar.contacts'),
-          href: ROUTES.CONTACTS(activeCompany.id),
+          label: t('sidebar.contractors'),
+          href: ROUTES.CONTRACTORS(activeCompany.id),
           icon: Contact,
         },
         { label: t('sidebar.stamps'), href: ROUTES.STAMPS(activeCompany.id), icon: Stamp },
@@ -122,7 +122,7 @@ export function Sidebar() {
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <span className="w-8 h-8 rounded-lg bg-accent text-white flex items-center justify-center text-base font-bold flex-shrink-0">
-            D
+            T
           </span>
           <span className={cn('text-lg font-semibold text-sidebar-foreground', textCls)}>
             {t('app.name')}

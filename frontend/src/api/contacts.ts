@@ -8,11 +8,9 @@ import apiClient from './client.ts';
 
 export async function getContacts(
   companyId: string,
-  type?: 'BUYER' | 'SELLER',
   search?: string,
 ): Promise<Contact[]> {
   const params = new URLSearchParams();
-  if (type) params.set('type', type);
   if (search) params.set('search', search);
 
   const query = params.toString();

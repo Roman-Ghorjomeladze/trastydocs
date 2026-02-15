@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "DocFlow"
+    "name": "Trasty Docs"
   },
   "sidebar": {
     "dashboard": "Kontrol Paneli",
@@ -8,7 +8,7 @@
     "signatures": "Imzalarim",
     "members": "Uyeler",
     "documents": "Belgeler",
-    "contacts": "Kisiler",
+    "contractors": "Yukleniciler",
     "stamps": "Kaseler",
     "vehicles": "Araclar",
     "auditLog": "Denetim Kaydi",
@@ -27,7 +27,9 @@
     "signingUp": "Hesap olusturuluyor...",
     "signingYouIn": "Giris yapiliyor...",
     "loginFailed": "Giris basarisiz. Lutfen tekrar deneyin.",
-    "registerFailed": "Kayit basarisiz. Lutfen tekrar deneyin."
+    "registerFailed": "Kayit basarisiz. Lutfen tekrar deneyin.",
+    "googleSignIn": "Google ile giris yap",
+    "googleSignUp": "Google ile kaydol"
   },
   "dashboard": {
     "title": "Kontrol Paneli",
@@ -106,7 +108,7 @@
     "completedAt": "Tamamlanma Tarihi",
     "markAs": "Olarak işaretle",
     "notFound": "Belge bulunamadı",
-    "searchPlaceholder": "Ad, numara, alıcı veya satıcıya göre ara..."
+    "searchPlaceholder": "Ad, numara veya aliciya gore ara..."
   },
   "companies": {
     "title": "Sirketleriniz",
@@ -153,34 +155,47 @@
     "confirmLeave": "Bu sirketten ayrilmak istediginizden emin misiniz?",
     "confirmRemoveMember": "{{name}} bu sirketten kaldirilsin mi?",
     "leaveCompany": "Sirketten Ayril",
-    "removeMember": "Uyeyi Kaldir"
+    "removeMember": "Uyeyi Kaldir",
+    "bankAccounts": "Banka Hesaplari",
+    "bankName": "Banka Adi",
+    "accountNumber": "Hesap Numarasi",
+    "addBankAccount": "Banka Hesabi Ekle",
+    "noBankAccounts": "Henuz banka hesabi eklenmedi",
+    "defaultAccount": "Varsayilan",
+    "setDefault": "Varsayilan Yap",
+    "removeBankAccount": "Kaldir",
+    "nameTranslations": "Sirket Adi Cevirileri",
+    "addressTranslations": "Adres Cevirileri",
+    "nameInLang": "{{lang}} dilinde ad",
+    "addressInLang": "{{lang}} dilinde adres"
   },
-  "contacts": {
-    "title": "Kisiler",
-    "subtitle": "Alici ve saticilarinizi yonetin",
-    "create": "Yeni Kisi",
+  "contractors": {
+    "title": "Yukleniciler",
+    "subtitle": "Yuklenici sirketlerinizi yonetin",
+    "create": "Yeni Yuklenici",
     "name": "Ad",
-    "type": "Tur",
-    "buyer": "Alici",
-    "seller": "Satici",
-    "all": "Tumu",
     "email": "E-posta",
     "phone": "Telefon",
     "address": "Adres",
     "taxId": "Vergi Numarasi",
+    "contactPerson": "Irtibat Kisisi",
     "bankAccounts": "Banka Hesaplari",
     "bankName": "Banka Adi",
     "accountNumber": "Hesap Numarasi",
     "bankCode": "Banka Kodu / SWIFT",
     "addBank": "Banka Hesabi Ekle",
-    "noContacts": "Kisi bulunamadi",
-    "createFirst": "Baslamak icin ilk kisinizi olusturun",
+    "noContractors": "Yuklenici bulunamadi",
+    "createFirst": "Baslamak icin ilk yukleniciyi olusturun",
     "creating": "Olusturuluyor...",
     "actions": "Islemler",
     "edit": "Duzenle",
     "delete": "Sil",
     "active": "Aktif",
-    "inactive": "Pasif"
+    "inactive": "Pasif",
+    "searchPlaceholder": "Yuklenici ara...",
+    "tryDifferentSearch": "Farkli bir arama terimi deneyin",
+    "selectCompany": "Yuklenicileri gormek icin bir sirket secin",
+    "translations": "Ad ve Adres Cevirileri"
   },
   "vehicles": {
     "title": "Araclar",
@@ -207,7 +222,10 @@
     "inactive": "Pasif",
     "delete": "Sil",
     "update": "Güncelle",
-    "saving": "Kaydediliyor..."
+    "saving": "Kaydediliyor...",
+    "defaultTrailer": "Varsayilan Romork",
+    "selectDefaultTrailer": "Varsayilan romork secin",
+    "noDefaultTrailer": "Yok"
   },
   "stamps": {
     "title": "Sirket Kaseleri",
@@ -278,7 +296,9 @@
     "updateFailed": "Profil güncellenemedi",
     "passwordChanged": "Sifre basariyla degistirildi",
     "passwordMismatch": "Sifreler eslesmiyor",
-    "memberSince": "Uyelik tarihi"
+    "memberSince": "Uyelik tarihi",
+    "logOut": "Cikis Yap",
+    "logOutDescription": "Bu cihazdaki hesabinizdan cikis yapin."
   },
   "status": {
     "DRAFT": "Taslak",
@@ -298,10 +318,6 @@
     "ACTIVE": "Aktif",
     "INVITED": "Davet Edildi",
     "SUSPENDED": "Askiya Alindi"
-  },
-  "contactType": {
-    "BUYER": "Alici",
-    "SELLER": "Satici"
   },
   "auditActions": {
     "CREATE": "Olusturuldu",
@@ -329,6 +345,27 @@
     "saving": "Kaydediliyor...",
     "personal": "Imzalarim",
     "company": "Sirket"
+  },
+  "landing": {
+    "heroTitle": "Profesyonel Belge Yonetimi Kolaylastirildi",
+    "heroSubtitle": "Faturalar, nakliye belgeleri olusturun ve is evraklarinizi dijital imzalar, coklu sirket destegi ve PDF aktarimi ile yonetin.",
+    "getStarted": "Ucretsiz Baslayin",
+    "featuresTitle": "Belge Yonetimi Icin Ihtiyaciniz Olan Her Sey",
+    "featureInvoicesTitle": "Fatura Olusturucu",
+    "featureInvoicesDesc": "Sezgisel bir olusturucu ile profesyonel faturalar olusturun. Otomatik toplam ve vergi hesaplama.",
+    "featureTransportTitle": "Nakliye Faturalari",
+    "featureTransportDesc": "Arac yonetimi, rotalar ve romork takibi ile ozel nakliye faturasi destegi.",
+    "featureSignaturesTitle": "Dijital Imzalar",
+    "featureSignaturesDesc": "Imza ve kaseleri cizin veya yukleyin. Tek tikla belgelere uygulayin.",
+    "featureCompaniesTitle": "Coklu Sirket",
+    "featureCompaniesDesc": "Tek hesaptan birden fazla sirketi yonetin. Rol tabanli erisimle ekip uyelerini davet edin.",
+    "featurePdfTitle": "PDF Aktarimi",
+    "featurePdfDesc": "Aninda profesyonel PDF belgeleri olusturun. Platformdan dogrudan indirin veya e-posta ile gonderin.",
+    "featureMultilangTitle": "Cok Dilli",
+    "featureMultilangDesc": "Gurcuce, Ingilizce, Rusca ve Turkce icin tam destek. Herhangi bir dilde belge olusturun.",
+    "ctaTitle": "Baslamaya Hazir misiniz?",
+    "ctaSubtitle": "Ucretsiz hesabinizi olusturun ve belgelerinizi bugun yonetmeye baslayin.",
+    "createAccount": "Ucretsiz Hesap Olustur"
   },
   "common": {
     "save": "Kaydet",

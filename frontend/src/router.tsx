@@ -5,6 +5,10 @@ import { useAuthStore } from './stores/auth.store.ts';
 // Layouts
 import { DashboardLayout } from './components/layout/DashboardLayout.tsx';
 import { AuthLayout } from './components/layout/AuthLayout.tsx';
+import { PublicLayout } from './components/layout/PublicLayout.tsx';
+
+// Public pages
+import { LandingPage } from './pages/LandingPage.tsx';
 
 // Auth pages
 import { LoginPage } from './pages/auth/LoginPage.tsx';
@@ -53,21 +57,30 @@ function GuestGuard({ children }: { children: ReactNode }) {
 // ── Router Configuration ──
 
 export const router = createBrowserRouter([
-  // Public routes
+  // Public routes (landing, login, register) — all under PublicLayout
   {
-    element: (
-      <GuestGuard>
-        <AuthLayout />
-      </GuestGuard>
-    ),
+    element: <PublicLayout />,
     children: [
       {
-        path: '/login',
-        element: <LoginPage />,
+        path: '/',
+        element: <LandingPage />,
       },
       {
-        path: '/register',
-        element: <RegisterPage />,
+        element: (
+          <GuestGuard>
+            <AuthLayout />
+          </GuestGuard>
+        ),
+        children: [
+          {
+            path: '/login',
+            element: <LoginPage />,
+          },
+          {
+            path: '/register',
+            element: <RegisterPage />,
+          },
+        ],
       },
     ],
   },
@@ -111,7 +124,7 @@ export const router = createBrowserRouter([
         element: <DocumentBuilderPage />,
       },
       {
-        path: '/companies/:companyId/contacts',
+        path: '/companies/:companyId/contractors',
         element: <ContactsPage />,
       },
       {
@@ -144,6 +157,6 @@ export const router = createBrowserRouter([
   // Catch-all redirect
   {
     path: '*',
-    element: <Navigate to="/dashboard" replace />,
+    element: <Navigate to="/" replace />,
   },
 ]);

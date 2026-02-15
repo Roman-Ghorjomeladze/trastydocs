@@ -37,7 +37,6 @@ export function DocumentListPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newDocName, setNewDocName] = useState('');
   const [selectedBuyerId, setSelectedBuyerId] = useState('');
-  const [selectedSellerId, setSelectedSellerId] = useState('');
   const [selectedDocType, setSelectedDocType] = useState<DocumentType>('invoice');
   const [isCreating, setIsCreating] = useState(false);
   const [docNumber, setDocNumber] = useState('');
@@ -101,13 +100,11 @@ export function DocumentListPage() {
         name: newDocName.trim(),
         documentNumber: docNumber.trim() || undefined,
         buyerId: selectedBuyerId || undefined,
-        sellerId: selectedSellerId || undefined,
         inputData: { documentType: selectedDocType },
       });
       setShowCreateModal(false);
       setNewDocName('');
       setSelectedBuyerId('');
-      setSelectedSellerId('');
       setSelectedDocType('invoice');
       setDocNumber('');
       setDocNumberError('');
@@ -133,8 +130,7 @@ export function DocumentListPage() {
     });
   };
 
-  const buyers = contacts.filter((c: Contact) => c.type === 'BUYER' && c.isActive);
-  const sellers = contacts.filter((c: Contact) => c.type === 'SELLER' && c.isActive);
+  const buyers = contacts.filter((c: Contact) => c.isActive);
 
   return (
     <div>
@@ -342,23 +338,6 @@ export function DocumentListPage() {
                 >
                   <option value="">{t('documents.none')}</option>
                   {buyers.map((c: Contact) => (
-                    <option key={c.id} value={c.id}>
-                      {c.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-foreground mb-1">
-                  {t('documents.seller')} {t('common.optional')}
-                </label>
-                <select
-                  value={selectedSellerId}
-                  onChange={(e) => setSelectedSellerId(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
-                >
-                  <option value="">{t('documents.none')}</option>
-                  {sellers.map((c: Contact) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>

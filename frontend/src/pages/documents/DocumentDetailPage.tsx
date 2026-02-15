@@ -362,11 +362,7 @@ export function DocumentDetailPage() {
 								<dt className="text-xs font-medium text-muted-foreground uppercase">{t('documents.buyer')}</dt>
 								<dd className="text-sm text-foreground mt-0.5">{doc.buyer?.name || "-"}</dd>
 							</div>
-							<div>
-								<dt className="text-xs font-medium text-muted-foreground uppercase">{t('documents.seller')}</dt>
-								<dd className="text-sm text-foreground mt-0.5">{doc.seller?.name || "-"}</dd>
-							</div>
-							<div>
+								<div>
 								<dt className="text-xs font-medium text-muted-foreground uppercase">{t('documents.createdBy')}</dt>
 								<dd className="text-sm text-foreground mt-0.5">{doc.createdBy?.name || "-"}</dd>
 							</div>

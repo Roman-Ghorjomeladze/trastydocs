@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../stores/auth.store.ts';
 import { useUiStore } from '../../stores/ui.store.ts';
 import type { Theme } from '../../stores/ui.store.ts';
+import { useAuth } from '../../hooks/use-auth.ts';
 import { changePassword, updateProfile } from '../../api/auth.ts';
 import { getInitials, formatDate } from '../../lib/utils.ts';
 import { cn } from '../../lib/utils.ts';
@@ -35,8 +36,10 @@ export function ProfilePage() {
   const { t, i18n } = useTranslation();
   const user = useAuthStore((s) => s.user);
   const setUser = useAuthStore((s) => s.setUser);
+  const { logout } = useAuth();
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Name form state
   const initialName = user ? splitName(user.name) : { firstName: '', lastName: '' };
@@ -318,6 +321,27 @@ export function ProfilePage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Log Out */}
+      <div className="bg-card border border-border rounded-lg p-6 mt-6">
+        <h2 className="text-lg font-semibold text-foreground mb-2">
+          {t('profile.logOut')}
+        </h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          {t('profile.logOutDescription')}
+        </p>
+        <button
+          type="button"
+          onClick={async () => {
+            setIsLoggingOut(true);
+            await logout();
+          }}
+          disabled={isLoggingOut}
+          className="px-4 py-2 text-sm text-white bg-danger rounded-lg hover:bg-danger-hover disabled:opacity-50 transition-colors"
+        >
+          {isLoggingOut ? t('common.loading') : t('profile.logOut')}
+        </button>
       </div>
     </div>
   );

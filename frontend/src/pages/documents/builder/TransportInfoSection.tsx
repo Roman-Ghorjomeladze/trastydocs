@@ -1,5 +1,7 @@
+import { useMemo, useState } from 'react';
 import type { InvoiceData, Vehicle } from '../../../types/index.ts';
 import type { InvoiceLabels } from '../../../lib/invoice-i18n.ts';
+import { SearchSelect } from '../../../components/shared/SearchSelect.tsx';
 
 interface Props {
   data: Pick<
@@ -13,20 +15,55 @@ interface Props {
 }
 
 export function TransportInfoSection({ data, labels, onChange, trucks, trailers }: Props) {
+  const [selectedTruckId, setSelectedTruckId] = useState('');
+  const [selectedTrailerId, setSelectedTrailerId] = useState('');
+
+  const truckOptions = useMemo(
+    () =>
+      (trucks || [])
+        .filter((v) => v.isActive)
+        .map((v) => ({ value: v.id, label: v.model, sublabel: v.licensePlate })),
+    [trucks],
+  );
+
+  const trailerOptions = useMemo(
+    () =>
+      (trailers || [])
+        .filter((v) => v.isActive)
+        .map((v) => ({ value: v.id, label: v.model, sublabel: v.licensePlate })),
+    [trailers],
+  );
+
   const handleVehicleSelect = (vehicleId: string) => {
+    setSelectedTruckId(vehicleId);
     const vehicle = trucks?.find((v) => v.id === vehicleId);
     if (vehicle) {
       onChange('vehicleModel', vehicle.model);
       onChange('vehiclePlate', vehicle.licensePlate);
+      // Auto-populate trailer from default trailer if trailer plate is empty
+      if (!data.trailerPlate && vehicle.defaultTrailer) {
+        onChange('trailerPlate', vehicle.defaultTrailer.licensePlate);
+        setSelectedTrailerId(vehicle.defaultTrailer.id);
+      }
+    } else {
+      // Cleared selection
+      onChange('vehicleModel', '');
+      onChange('vehiclePlate', '');
     }
   };
 
   const handleTrailerSelect = (trailerId: string) => {
+    setSelectedTrailerId(trailerId);
     const trailer = trailers?.find((v) => v.id === trailerId);
     if (trailer) {
       onChange('trailerPlate', trailer.licensePlate);
+    } else {
+      onChange('trailerPlate', '');
     }
   };
+
+  const hasTrucks = truckOptions.length > 0;
+  const hasTrailers = trailerOptions.length > 0;
 
   return (
     <div className="bg-card border border-border rounded-lg p-5">
@@ -60,76 +97,106 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">
-              {labels.vehicleModel}
-              {trucks && trucks.length > 0 && (
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) handleVehicleSelect(e.target.value);
-                  }}
-                  className="ml-2 text-xs text-accent bg-transparent border-none outline-none cursor-pointer"
-                  value=""
-                >
-                  <option value="">Select...</option>
-                  {trucks.filter((v) => v.isActive).map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.model} ({v.licensePlate})
-                    </option>
-                  ))}
-                </select>
-              )}
-            </label>
-            <input
-              type="text"
-              value={data.vehicleModel}
-              onChange={(e) => onChange('vehicleModel', e.target.value)}
-              placeholder="Mercedes Actros 1845"
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
-            />
+        {/* Truck — SearchSelect if vehicles exist, otherwise manual inputs */}
+        {hasTrucks ? (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                {labels.vehicleModel}
+              </label>
+              <SearchSelect
+                options={truckOptions}
+                value={selectedTruckId}
+                onChange={handleVehicleSelect}
+                placeholder="Select truck..."
+              />
+            </div>
+            {selectedTruckId && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.vehicleModel}</label>
+                  <input
+                    type="text"
+                    value={data.vehicleModel}
+                    readOnly
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-muted text-foreground outline-none cursor-default"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.vehiclePlate}</label>
+                  <input
+                    type="text"
+                    value={data.vehiclePlate}
+                    readOnly
+                    className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono bg-muted text-foreground outline-none cursor-default"
+                  />
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.vehicleModel}</label>
+              <input
+                type="text"
+                value={data.vehicleModel}
+                onChange={(e) => onChange('vehicleModel', e.target.value)}
+                placeholder="Mercedes Actros 1845"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.vehiclePlate}</label>
+              <input
+                type="text"
+                value={data.vehiclePlate}
+                onChange={(e) => onChange('vehiclePlate', e.target.value)}
+                placeholder="ABC-123"
+                className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              />
+            </div>
           </div>
+        )}
 
+        {/* Trailer — SearchSelect if trailers exist, otherwise manual input */}
+        {hasTrailers ? (
+          <>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1">
+                {labels.trailerPlate}
+              </label>
+              <SearchSelect
+                options={trailerOptions}
+                value={selectedTrailerId}
+                onChange={handleTrailerSelect}
+                placeholder="Select trailer..."
+              />
+            </div>
+            {selectedTrailerId && (
+              <div>
+                <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.trailerPlate}</label>
+                <input
+                  type="text"
+                  value={data.trailerPlate}
+                  readOnly
+                  className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono bg-muted text-foreground outline-none cursor-default"
+                />
+              </div>
+            )}
+          </>
+        ) : (
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.vehiclePlate}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.trailerPlate}</label>
             <input
               type="text"
-              value={data.vehiclePlate}
-              onChange={(e) => onChange('vehiclePlate', e.target.value)}
-              placeholder="ABC-123"
+              value={data.trailerPlate}
+              onChange={(e) => onChange('trailerPlate', e.target.value)}
+              placeholder="XYZ-789"
               className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>
-        </div>
-
-        <div>
-          <label className="block text-xs font-medium text-muted-foreground mb-1">
-            {labels.trailerPlate}
-            {trailers && trailers.length > 0 && (
-              <select
-                onChange={(e) => {
-                  if (e.target.value) handleTrailerSelect(e.target.value);
-                }}
-                className="ml-2 text-xs text-accent bg-transparent border-none outline-none cursor-pointer"
-                value=""
-              >
-                <option value="">Select...</option>
-                {trailers.filter((v) => v.isActive).map((v) => (
-                  <option key={v.id} value={v.id}>
-                    {v.model} ({v.licensePlate})
-                  </option>
-                ))}
-              </select>
-            )}
-          </label>
-          <input
-            type="text"
-            value={data.trailerPlate}
-            onChange={(e) => onChange('trailerPlate', e.target.value)}
-            placeholder="XYZ-789"
-            className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-accent focus:border-accent outline-none"
-          />
-        </div>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <div>

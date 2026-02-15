@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import type {
   Contact,
-  ContactType,
   CreateContactDto,
   UpdateContactDto,
 } from '../types/index.ts';
@@ -15,7 +14,6 @@ interface ContactState {
 interface ContactActions {
   fetchContacts: (
     companyId: string,
-    type?: ContactType,
     search?: string,
   ) => Promise<void>;
   createContact: (
@@ -38,10 +36,10 @@ export const useContactStore = create<ContactState & ContactActions>(
     isLoading: false,
 
     // ── Actions ──
-    fetchContacts: async (companyId, type, search) => {
+    fetchContacts: async (companyId, search) => {
       set({ isLoading: true });
       try {
-        const contacts = await contactsApi.getContacts(companyId, type, search);
+        const contacts = await contactsApi.getContacts(companyId, search);
         set({ contacts, isLoading: false });
       } catch {
         set({ isLoading: false });

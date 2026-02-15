@@ -1,0 +1,37 @@
+name: Deploy to Hetzner
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.HETZNER_HOST }}
+          username: ${{ secrets.HETZNER_USER }}
+          key: ${{ secrets.HETZNER_SSH_KEY }}
+          port: ${{ secrets.HETZNER_SSH_PORT || 22 }}
+          script_stop: true
+          script: |
+            cd ${{ secrets.APP_DIR || '~/trastydocs' }}
+
+            echo "==> Pulling latest code..."
+            git pull origin main
+
+            echo "==> Building and restarting containers..."
+            docker compose -f docker-compose.prod.yml build --no-cache backend frontend
+            docker compose -f docker-compose.prod.yml up -d
+
+            echo "==> Waiting for backend health check..."
+            sleep 10
+            docker compose -f docker-compose.prod.yml ps
+
+            echo "==> Cleaning up old images..."
+            docker image prune -f
+
+            echo "==> Deploy complete!"

@@ -14,7 +14,7 @@ export const ROUTES = {
     `/companies/${companyId}/documents/${documentId}`,
   DOCUMENT_BUILDER: (companyId: string, documentId: string) =>
     `/companies/${companyId}/documents/${documentId}/builder`,
-  CONTACTS: (companyId: string) => `/companies/${companyId}/contacts`,
+  CONTRACTORS: (companyId: string) => `/companies/${companyId}/contractors`,
   COMPANY_SIGNATURES: (companyId: string) => `/companies/${companyId}/signatures`,
   STAMPS: (companyId: string) => `/companies/${companyId}/stamps`,
   VEHICLES: (companyId: string) => `/companies/${companyId}/vehicles`,
@@ -67,20 +67,6 @@ export const STATUS_COLORS: Record<string, string> = {
   COMPLETED: 'bg-green-100 text-green-800',
   CANCELLED: 'bg-red-100 text-red-800',
   ARCHIVED: 'bg-orange-100 text-orange-800',
-};
-
-// ── Contact Type Labels ──
-
-export const CONTACT_TYPE_LABELS: Record<string, string> = {
-  BUYER: 'Buyer',
-  SELLER: 'Seller',
-};
-
-// ── Contact Type Colors (Tailwind classes) ──
-
-export const CONTACT_TYPE_COLORS: Record<string, string> = {
-  BUYER: 'bg-emerald-100 text-emerald-800',
-  SELLER: 'bg-orange-100 text-orange-800',
 };
 
 // ── Audit Action Labels ──

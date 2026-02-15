@@ -12,12 +12,19 @@ export type DocumentStatus =
   | 'CANCELLED'
   | 'ARCHIVED';
 
-export type ContactType = 'BUYER' | 'SELLER';
-
 export interface BankAccount {
   name: string;
   accountNumber: string;
 }
+
+export interface CompanyBankAccount {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  isDefault: boolean;
+}
+
+export type Translations = Record<string, string>;
 
 export type VehicleType = 'TRUCK' | 'TRAILER';
 
@@ -54,6 +61,9 @@ export interface Company {
   phone?: string;
   email?: string;
   taxId?: string;
+  bankAccounts?: CompanyBankAccount[];
+  nameTranslations?: Translations;
+  addressTranslations?: Translations;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -176,7 +186,6 @@ export interface InvoiceData {
 export interface Contact {
   id: string;
   companyId: string;
-  type: ContactType;
   name: string;
   email?: string;
   phone?: string;
@@ -186,6 +195,8 @@ export interface Contact {
   contactPerson?: string;
   notes?: string;
   metadata?: Record<string, unknown>;
+  nameTranslations?: Translations;
+  addressTranslations?: Translations;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -231,6 +242,8 @@ export interface Vehicle {
   type: VehicleType;
   notes?: string;
   isActive: boolean;
+  defaultTrailerId?: string | null;
+  defaultTrailer?: Vehicle | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -324,6 +337,9 @@ export interface UpdateCompanyDto {
   address?: string;
   taxId?: string;
   logoUrl?: string;
+  bankAccounts?: CompanyBankAccount[];
+  nameTranslations?: Translations;
+  addressTranslations?: Translations;
 }
 
 export interface AddMemberDto {
@@ -337,7 +353,6 @@ export interface UpdateMemberDto {
 }
 
 export interface CreateContactDto {
-  type: ContactType;
   name: string;
   email?: string;
   phone?: string;
@@ -346,6 +361,8 @@ export interface CreateContactDto {
   bankAccounts?: BankAccount[];
   contactPerson?: string;
   notes?: string;
+  nameTranslations?: Translations;
+  addressTranslations?: Translations;
 }
 
 export interface UpdateContactDto {
@@ -357,6 +374,8 @@ export interface UpdateContactDto {
   bankAccounts?: BankAccount[] | null;
   contactPerson?: string | null;
   notes?: string | null;
+  nameTranslations?: Translations | null;
+  addressTranslations?: Translations | null;
 }
 
 export interface CreateDocumentDto {

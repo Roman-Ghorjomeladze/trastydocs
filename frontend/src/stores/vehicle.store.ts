@@ -16,6 +16,7 @@ interface VehicleActions {
       licensePlate: string;
       type: VehicleType;
       notes?: string;
+      defaultTrailerId?: string;
     },
   ) => Promise<Vehicle>;
   updateVehicle: (
@@ -26,6 +27,7 @@ interface VehicleActions {
       licensePlate?: string;
       notes?: string;
       isActive?: boolean;
+      defaultTrailerId?: string | null;
     },
   ) => Promise<Vehicle>;
   deleteVehicle: (companyId: string, id: string) => Promise<void>;

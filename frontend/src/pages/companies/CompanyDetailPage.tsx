@@ -13,8 +13,10 @@ import { cn, formatDate, getInitials } from '../../lib/utils.ts';
 import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import type {
   Company,
+  CompanyBankAccount,
   Membership,
   MembershipRole,
+  Translations,
   UpdateCompanyDto,
 } from '../../types/index.ts';
 
@@ -545,6 +547,31 @@ function SettingsTab({
     onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
 
+  // Bank accounts state
+  const [bankAccounts, setBankAccounts] = useState<CompanyBankAccount[]>(
+    company.bankAccounts ?? [],
+  );
+  const [showAddBank, setShowAddBank] = useState(false);
+  const [newBankName, setNewBankName] = useState('');
+  const [newAccountNumber, setNewAccountNumber] = useState('');
+  const [bankSaving, setBankSaving] = useState(false);
+
+  // Translations state
+  const LANGS = [
+    { code: 'en', label: 'English' },
+    { code: 'ka', label: 'ქართული' },
+    { code: 'ru', label: 'Русский' },
+    { code: 'tr', label: 'Türkçe' },
+  ];
+  const [nameTranslations, setNameTranslations] = useState<Translations>(
+    company.nameTranslations ?? {},
+  );
+  const [addressTranslations, setAddressTranslations] = useState<Translations>(
+    company.addressTranslations ?? {},
+  );
+  const [translationsSaving, setTranslationsSaving] = useState(false);
+  const [translationsSaved, setTranslationsSaved] = useState(false);
+
   useEffect(() => {
     if (errorBanner) {
       const timer = setTimeout(() => setErrorBanner(''), 5000);
@@ -578,6 +605,64 @@ function SettingsTab({
     } finally {
       setSaving(false);
     }
+  };
+
+  const saveBankAccounts = async (accounts: CompanyBankAccount[]) => {
+    setBankSaving(true);
+    try {
+      await onUpdate({ bankAccounts: accounts });
+      setBankAccounts(accounts);
+    } catch (err: unknown) {
+      setErrorBanner(err instanceof Error ? err.message : 'Failed to save bank accounts');
+    } finally {
+      setBankSaving(false);
+    }
+  };
+
+  const handleSaveTranslations = async () => {
+    setTranslationsSaving(true);
+    try {
+      await onUpdate({ nameTranslations, addressTranslations });
+      setTranslationsSaved(true);
+      setTimeout(() => setTranslationsSaved(false), 3000);
+    } catch (err: unknown) {
+      setErrorBanner(err instanceof Error ? err.message : 'Failed to save translations');
+    } finally {
+      setTranslationsSaving(false);
+    }
+  };
+
+  const handleAddBankAccount = async () => {
+    if (!newBankName.trim() || !newAccountNumber.trim()) return;
+    const isFirst = bankAccounts.length === 0;
+    const newAccount: CompanyBankAccount = {
+      id: crypto.randomUUID(),
+      bankName: newBankName.trim(),
+      accountNumber: newAccountNumber.trim(),
+      isDefault: isFirst,
+    };
+    await saveBankAccounts([...bankAccounts, newAccount]);
+    setNewBankName('');
+    setNewAccountNumber('');
+    setShowAddBank(false);
+  };
+
+  const handleRemoveBankAccount = async (id: string) => {
+    const filtered = bankAccounts.filter((ba) => ba.id !== id);
+    // If removed account was default and there are remaining accounts, set first as default
+    const hadDefault = bankAccounts.find((ba) => ba.id === id)?.isDefault;
+    if (hadDefault && filtered.length > 0) {
+      filtered[0].isDefault = true;
+    }
+    await saveBankAccounts(filtered);
+  };
+
+  const handleSetDefaultBank = async (id: string) => {
+    const updated = bankAccounts.map((ba) => ({
+      ...ba,
+      isDefault: ba.id === id,
+    }));
+    await saveBankAccounts(updated);
   };
 
   const handleDelete = () => {
@@ -689,6 +774,171 @@ function SettingsTab({
           )}
         </div>
       </form>
+
+      {/* Name & Address Translations */}
+      <div className="bg-card border rounded-lg p-6">
+        <h2 className="text-lg font-semibold mb-1">{t('companies.nameTranslations')}</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Provide the company name and address in different languages for multilingual invoices.
+        </p>
+
+        <div className="space-y-4">
+          {LANGS.map((lang) => (
+            <div key={lang.code} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  {t('companies.nameInLang', { lang: lang.label })}
+                </label>
+                <input
+                  type="text"
+                  value={nameTranslations[lang.code] ?? ''}
+                  onChange={(e) =>
+                    setNameTranslations((prev) => ({ ...prev, [lang.code]: e.target.value }))
+                  }
+                  placeholder={`${company.name}`}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  {t('companies.addressInLang', { lang: lang.label })}
+                </label>
+                <input
+                  type="text"
+                  value={addressTranslations[lang.code] ?? ''}
+                  onChange={(e) =>
+                    setAddressTranslations((prev) => ({ ...prev, [lang.code]: e.target.value }))
+                  }
+                  placeholder={company.address ?? ''}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-4 flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleSaveTranslations}
+            disabled={translationsSaving}
+            className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors"
+          >
+            {translationsSaving ? t('companies.saving') : t('companies.saveChanges')}
+          </button>
+          {translationsSaved && (
+            <span className="text-sm text-success">{t('companies.changesSaved')}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Bank Accounts */}
+      <div className="bg-card border rounded-lg p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold">{t('companies.bankAccounts')}</h2>
+          <button
+            type="button"
+            onClick={() => setShowAddBank(!showAddBank)}
+            disabled={bankSaving}
+            className="px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors"
+          >
+            {showAddBank ? t('common.cancel') : t('companies.addBankAccount')}
+          </button>
+        </div>
+
+        {showAddBank && (
+          <div className="mb-4 p-4 border border-border rounded-lg bg-muted">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  {t('companies.bankName')}
+                </label>
+                <input
+                  type="text"
+                  value={newBankName}
+                  onChange={(e) => setNewBankName(e.target.value)}
+                  placeholder="Bank of Georgia"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  {t('companies.accountNumber')}
+                </label>
+                <input
+                  type="text"
+                  value={newAccountNumber}
+                  onChange={(e) => setNewAccountNumber(e.target.value)}
+                  placeholder="GE00TB0000000000000000"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none font-mono"
+                />
+              </div>
+            </div>
+            <div className="mt-3">
+              <button
+                type="button"
+                onClick={handleAddBankAccount}
+                disabled={bankSaving || !newBankName.trim() || !newAccountNumber.trim()}
+                className="px-4 py-2 bg-accent text-white text-sm rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {bankSaving ? t('companies.saving') : t('companies.addBankAccount')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {bankAccounts.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-4 text-center">
+            {t('companies.noBankAccounts')}
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {bankAccounts.map((ba) => (
+              <div
+                key={ba.id}
+                className="flex items-center justify-between p-3 border border-border rounded-lg"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {ba.bankName}
+                    </p>
+                    <p className="text-xs text-muted-foreground font-mono truncate">
+                      {ba.accountNumber}
+                    </p>
+                  </div>
+                  {ba.isDefault && (
+                    <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-accent/10 text-accent">
+                      {t('companies.defaultAccount')}
+                    </span>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0 ml-3">
+                  {!ba.isDefault && (
+                    <button
+                      type="button"
+                      onClick={() => handleSetDefaultBank(ba.id)}
+                      disabled={bankSaving}
+                      className="text-xs text-accent hover:text-accent-hover font-medium disabled:opacity-50"
+                    >
+                      {t('companies.setDefault')}
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveBankAccount(ba.id)}
+                    disabled={bankSaving}
+                    className="text-xs text-danger hover:text-danger-hover disabled:opacity-50"
+                  >
+                    {t('companies.removeBankAccount')}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Danger Zone */}
       {isOwner && (

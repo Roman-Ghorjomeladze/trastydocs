@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useVehicleStore } from '../../stores/vehicle.store.ts';
+import { SearchSelect } from '../../components/shared/SearchSelect.tsx';
 import { cn } from '../../lib/utils.ts';
 import type { Vehicle, VehicleType } from '../../types/index.ts';
 
@@ -27,6 +28,16 @@ export function VehiclesPage() {
   const [formPlate, setFormPlate] = useState('');
   const [formType, setFormType] = useState<VehicleType>('TRUCK');
   const [formNotes, setFormNotes] = useState('');
+  const [formDefaultTrailerId, setFormDefaultTrailerId] = useState('');
+
+  // Trailer options for the default trailer selector
+  const trailerOptions = useMemo(
+    () =>
+      vehicles
+        .filter((v) => v.type === 'TRAILER' && v.isActive)
+        .map((v) => ({ value: v.id, label: v.model, sublabel: v.licensePlate })),
+    [vehicles],
+  );
 
   useEffect(() => {
     if (companyId) fetchVehicles(companyId);
@@ -42,6 +53,7 @@ export function VehiclesPage() {
     setFormPlate('');
     setFormType('TRUCK');
     setFormNotes('');
+    setFormDefaultTrailerId('');
     setShowModal(true);
   };
 
@@ -51,6 +63,7 @@ export function VehiclesPage() {
     setFormPlate(vehicle.licensePlate);
     setFormType(vehicle.type);
     setFormNotes(vehicle.notes ?? '');
+    setFormDefaultTrailerId(vehicle.defaultTrailerId ?? '');
     setShowModal(true);
   };
 
@@ -58,11 +71,15 @@ export function VehiclesPage() {
     if (!companyId || !formModel.trim() || !formPlate.trim()) return;
     setIsSaving(true);
     try {
+      const effectiveType = editingVehicle ? editingVehicle.type : formType;
       if (editingVehicle) {
         await updateVehicle(companyId, editingVehicle.id, {
           model: formModel.trim(),
           licensePlate: formPlate.trim(),
           notes: formNotes.trim() || undefined,
+          ...(effectiveType === 'TRUCK' && {
+            defaultTrailerId: formDefaultTrailerId || null,
+          }),
         });
       } else {
         await createVehicle(companyId, {
@@ -70,6 +87,9 @@ export function VehiclesPage() {
           licensePlate: formPlate.trim(),
           type: formType,
           notes: formNotes.trim() || undefined,
+          ...(formType === 'TRUCK' && formDefaultTrailerId && {
+            defaultTrailerId: formDefaultTrailerId,
+          }),
         });
       }
       setShowModal(false);
@@ -205,7 +225,9 @@ export function VehiclesPage() {
                     {vehicle.licensePlate}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
-                    {vehicle.notes || '—'}
+                    {vehicle.type === 'TRUCK' && vehicle.defaultTrailer
+                      ? `${vehicle.defaultTrailer.model} (${vehicle.defaultTrailer.licensePlate})`
+                      : vehicle.notes || '—'}
                   </td>
                   <td className="px-4 py-3">
                     <button
@@ -311,6 +333,21 @@ export function VehiclesPage() {
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none resize-none"
                 />
               </div>
+
+              {/* Default trailer selector - only for trucks */}
+              {((editingVehicle && editingVehicle.type === 'TRUCK') || (!editingVehicle && formType === 'TRUCK')) && trailerOptions.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-foreground mb-1">
+                    {t('vehicles.defaultTrailer')}
+                  </label>
+                  <SearchSelect
+                    options={trailerOptions}
+                    value={formDefaultTrailerId}
+                    onChange={setFormDefaultTrailerId}
+                    placeholder={t('vehicles.selectDefaultTrailer')}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 mt-6">

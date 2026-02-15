@@ -110,19 +110,47 @@ function serializeBankAccounts(
 }
 
 /**
+ * Resolve a translated value: pick the translation for the given language,
+ * falling back to the entity's default value.
+ */
+function resolveTranslation(
+  translations: Record<string, string> | undefined | null,
+  lang: string,
+  fallback: string,
+): string {
+  if (translations && translations[lang]) return translations[lang];
+  return fallback;
+}
+
+/**
  * Populate invoice data from a Contact (buyer or seller).
  * Only fills EMPTY fields — never overwrites user edits.
+ * Uses nameTranslations / addressTranslations when available,
+ * falling back to the default name / address.
  */
 export function populateFromContact(
   data: InvoiceData,
   contact: Contact,
   role: 'buyer' | 'seller',
+  lang?: string,
 ): InvoiceData {
   const result = { ...data };
+  const docLang = lang || result.language || 'en';
+
+  const translatedName = resolveTranslation(
+    contact.nameTranslations as Record<string, string> | undefined,
+    docLang,
+    contact.name || '',
+  );
+  const translatedAddress = resolveTranslation(
+    contact.addressTranslations as Record<string, string> | undefined,
+    docLang,
+    contact.address || '',
+  );
 
   if (role === 'buyer') {
-    if (!result.buyerName) result.buyerName = contact.name || '';
-    if (!result.buyerAddress) result.buyerAddress = contact.address || '';
+    if (!result.buyerName) result.buyerName = translatedName;
+    if (!result.buyerAddress) result.buyerAddress = translatedAddress;
     if (!result.buyerTaxId) result.buyerTaxId = contact.taxId || '';
     if (!result.buyerPhone) result.buyerPhone = contact.phone || '';
     if (!result.buyerEmail) result.buyerEmail = contact.email || '';
@@ -130,8 +158,8 @@ export function populateFromContact(
       result.buyerBankAccounts = serializeBankAccounts(contact.bankAccounts);
     }
   } else {
-    if (!result.companyName) result.companyName = contact.name || '';
-    if (!result.companyAddress) result.companyAddress = contact.address || '';
+    if (!result.companyName) result.companyName = translatedName;
+    if (!result.companyAddress) result.companyAddress = translatedAddress;
     if (!result.companyTaxId) result.companyTaxId = contact.taxId || '';
     if (!result.companyPhone) result.companyPhone = contact.phone || '';
     if (!result.companyEmail) result.companyEmail = contact.email || '';
@@ -146,15 +174,29 @@ export function populateFromContact(
 /**
  * Populate company/seller info from the Company entity.
  * Only fills EMPTY fields.
+ * Uses nameTranslations / addressTranslations when available.
  */
 export function populateFromCompany(
   data: InvoiceData,
   company: Company,
+  lang?: string,
 ): InvoiceData {
   const result = { ...data };
+  const docLang = lang || result.language || 'en';
 
-  if (!result.companyName) result.companyName = company.name || '';
-  if (!result.companyAddress) result.companyAddress = company.address || '';
+  const translatedName = resolveTranslation(
+    company.nameTranslations as Record<string, string> | undefined,
+    docLang,
+    company.name || '',
+  );
+  const translatedAddress = resolveTranslation(
+    company.addressTranslations as Record<string, string> | undefined,
+    docLang,
+    company.address || '',
+  );
+
+  if (!result.companyName) result.companyName = translatedName;
+  if (!result.companyAddress) result.companyAddress = translatedAddress;
   if (!result.companyTaxId) result.companyTaxId = company.taxId || '';
   if (!result.companyPhone) result.companyPhone = company.phone || '';
   if (!result.companyEmail) result.companyEmail = company.email || '';

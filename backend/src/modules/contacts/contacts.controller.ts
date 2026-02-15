@@ -39,10 +39,9 @@ export class ContactsController {
   @Roles('OWNER', 'ADMIN', 'MEMBER', 'VIEWER')
   async findAll(
     @Param('companyId') companyId: string,
-    @Query('type') type?: 'BUYER' | 'SELLER',
     @Query('search') search?: string,
   ) {
-    return this.contactsService.findAll(companyId, type, search);
+    return this.contactsService.findAll(companyId, search);
   }
 
   @Get(':id')

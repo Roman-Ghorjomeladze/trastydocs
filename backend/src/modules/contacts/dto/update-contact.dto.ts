@@ -5,6 +5,8 @@ const BankAccountSchema = z.object({
   accountNumber: z.string().min(1, 'Account number is required').max(100),
 });
 
+const TranslationsSchema = z.record(z.string(), z.string().max(500)).nullable().optional();
+
 export const UpdateContactSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   email: z.string().email().nullable().optional(),
@@ -15,6 +17,8 @@ export const UpdateContactSchema = z.object({
   contactPerson: z.string().max(255).nullable().optional(),
   notes: z.string().max(2000).nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).nullable().optional(),
+  nameTranslations: TranslationsSchema,
+  addressTranslations: TranslationsSchema,
 });
 
 export type UpdateContactDto = z.infer<typeof UpdateContactSchema>;

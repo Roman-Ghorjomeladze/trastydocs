@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import type { CreateVehicleDto } from './dto/create-vehicle.dto.js';
@@ -11,6 +11,33 @@ export class VehiclesService {
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
   ) {}
+
+  /**
+   * Validate that a defaultTrailerId is valid for a truck.
+   */
+  private async validateDefaultTrailer(
+    companyId: string,
+    defaultTrailerId: string | null | undefined,
+    vehicleType: string,
+  ) {
+    if (!defaultTrailerId) return;
+
+    if (vehicleType !== 'TRUCK') {
+      throw new BadRequestException('Default trailer can only be set for trucks');
+    }
+
+    const trailer = await this.prisma.vehicle.findUnique({
+      where: { id: defaultTrailerId },
+    });
+
+    if (!trailer || trailer.companyId !== companyId) {
+      throw new NotFoundException('Default trailer not found');
+    }
+
+    if (trailer.type !== 'TRAILER') {
+      throw new BadRequestException('Selected vehicle is not a trailer');
+    }
+  }
 
   /**
    * Create a new vehicle for a company.
@@ -32,6 +59,9 @@ export class VehiclesService {
       );
     }
 
+    // Validate default trailer if provided
+    await this.validateDefaultTrailer(companyId, dto.defaultTrailerId, dto.type);
+
     const vehicle = await this.prisma.vehicle.create({
       data: {
         companyId,
@@ -39,6 +69,10 @@ export class VehiclesService {
         licensePlate: dto.licensePlate,
         type: dto.type,
         notes: dto.notes,
+        ...(dto.defaultTrailerId && { defaultTrailerId: dto.defaultTrailerId }),
+      },
+      include: {
+        defaultTrailer: true,
       },
     });
 
@@ -67,6 +101,9 @@ export class VehiclesService {
         companyId,
         ...(type && { type }),
       },
+      include: {
+        defaultTrailer: true,
+      },
       orderBy: [{ isActive: 'desc' }, { createdAt: 'desc' }],
     });
   }
@@ -77,6 +114,9 @@ export class VehiclesService {
   async findById(id: string, companyId: string) {
     const vehicle = await this.prisma.vehicle.findUnique({
       where: { id },
+      include: {
+        defaultTrailer: true,
+      },
     });
 
     if (!vehicle || vehicle.companyId !== companyId) {
@@ -95,7 +135,7 @@ export class VehiclesService {
     userId: string,
     dto: UpdateVehicleDto,
   ) {
-    await this.findById(id, companyId);
+    const current = await this.findById(id, companyId);
 
     // Check for duplicate license plate if updating it
     if (dto.licensePlate) {
@@ -115,6 +155,11 @@ export class VehiclesService {
       }
     }
 
+    // Validate default trailer if provided
+    if (dto.defaultTrailerId !== undefined) {
+      await this.validateDefaultTrailer(companyId, dto.defaultTrailerId, current.type);
+    }
+
     const updated = await this.prisma.vehicle.update({
       where: { id },
       data: {
@@ -124,6 +169,12 @@ export class VehiclesService {
         }),
         ...(dto.notes !== undefined && { notes: dto.notes }),
         ...(dto.isActive !== undefined && { isActive: dto.isActive }),
+        ...(dto.defaultTrailerId !== undefined && {
+          defaultTrailerId: dto.defaultTrailerId,
+        }),
+      },
+      include: {
+        defaultTrailer: true,
       },
     });
 

@@ -3,14 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
 import { useContactStore } from '../../stores/contact.store.ts';
 import { useCompanyStore } from '../../stores/company.store.ts';
-import {
-  CONTACT_TYPE_LABELS,
-  CONTACT_TYPE_COLORS,
-} from '../../lib/constants.ts';
-import { cn } from '../../lib/utils.ts';
-import type { ContactType, CreateContactDto, UpdateContactDto, BankAccount } from '../../types/index.ts';
-
-type TabType = 'ALL' | 'BUYER' | 'SELLER';
+import type { CreateContactDto, UpdateContactDto, BankAccount, Translations } from '../../types/index.ts';
 
 export function ContactsPage() {
   const { t } = useTranslation();
@@ -25,7 +18,6 @@ export function ContactsPage() {
     deleteContact,
   } = useContactStore();
 
-  const [activeTab, setActiveTab] = useState<TabType>('ALL');
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -33,23 +25,32 @@ export function ContactsPage() {
 
   // Create form state
   const [formData, setFormData] = useState<CreateContactDto>({
-    type: 'BUYER',
     name: '',
   });
   const [createBankAccounts, setCreateBankAccounts] = useState<BankAccount[]>([]);
+  const [createNameTranslations, setCreateNameTranslations] = useState<Translations>({});
+  const [createAddressTranslations, setCreateAddressTranslations] = useState<Translations>({});
   const [submitting, setSubmitting] = useState(false);
 
   // Edit form state
   const [editData, setEditData] = useState<UpdateContactDto>({});
   const [editBankAccounts, setEditBankAccounts] = useState<BankAccount[]>([]);
+  const [editNameTranslations, setEditNameTranslations] = useState<Translations>({});
+  const [editAddressTranslations, setEditAddressTranslations] = useState<Translations>({});
+
+  const LANGS = [
+    { code: 'en', label: 'English' },
+    { code: 'ka', label: 'ქართული' },
+    { code: 'ru', label: 'Русский' },
+    { code: 'tr', label: 'Türkçe' },
+  ];
 
   const resolvedCompanyId = companyId || activeCompany?.id;
 
   const loadContacts = useCallback(() => {
     if (!resolvedCompanyId) return;
-    const type = activeTab === 'ALL' ? undefined : activeTab;
-    fetchContacts(resolvedCompanyId, type, search || undefined);
-  }, [resolvedCompanyId, activeTab, search, fetchContacts]);
+    fetchContacts(resolvedCompanyId, search || undefined);
+  }, [resolvedCompanyId, search, fetchContacts]);
 
   useEffect(() => {
     loadContacts();
@@ -65,17 +66,23 @@ export function ContactsPage() {
       const validAccounts = createBankAccounts.filter(
         (a) => a.name.trim() && a.accountNumber.trim(),
       );
+      const hasNameTranslations = Object.values(createNameTranslations).some((v) => v.trim());
+      const hasAddrTranslations = Object.values(createAddressTranslations).some((v) => v.trim());
       await createContact(resolvedCompanyId, {
         ...formData,
         name: formData.name.trim(),
         bankAccounts: validAccounts.length > 0 ? validAccounts : undefined,
+        nameTranslations: hasNameTranslations ? createNameTranslations : undefined,
+        addressTranslations: hasAddrTranslations ? createAddressTranslations : undefined,
       });
-      setFormData({ type: 'BUYER', name: '' });
+      setFormData({ name: '' });
       setCreateBankAccounts([]);
+      setCreateNameTranslations({});
+      setCreateAddressTranslations({});
       setShowCreate(false);
     } catch (err: unknown) {
       const message =
-        err instanceof Error ? err.message : 'Failed to create contact';
+        err instanceof Error ? err.message : 'Failed to create contractor';
       setError(message);
     } finally {
       setSubmitting(false);
@@ -92,10 +99,14 @@ export function ContactsPage() {
       await updateContact(resolvedCompanyId, id, {
         ...editData,
         bankAccounts: validAccounts.length > 0 ? validAccounts : null,
+        nameTranslations: editNameTranslations,
+        addressTranslations: editAddressTranslations,
       });
       setEditingId(null);
       setEditData({});
       setEditBankAccounts([]);
+      setEditNameTranslations({});
+      setEditAddressTranslations({});
     } catch {
       // silently handle
     } finally {
@@ -124,33 +135,32 @@ export function ContactsPage() {
       notes: contact.notes,
     });
     setEditBankAccounts(contact.bankAccounts || []);
+    setEditNameTranslations(contact.nameTranslations ?? {});
+    setEditAddressTranslations(contact.addressTranslations ?? {});
   };
 
   if (!resolvedCompanyId) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">
-          Please select a company to view contacts.
+          {t('contractors.selectCompany')}
         </p>
       </div>
     );
   }
 
-  const tabs: { key: TabType; label: string }[] = [
-    { key: 'ALL', label: t('contacts.all') },
-    { key: 'BUYER', label: t('contacts.buyer') },
-    { key: 'SELLER', label: t('contacts.seller') },
-  ];
-
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">{t('contacts.title')}</h1>
+        <div>
+          <h1 className="text-2xl font-bold">{t('contractors.title')}</h1>
+          <p className="text-sm text-muted-foreground mt-1">{t('contractors.subtitle')}</p>
+        </div>
         <button
           onClick={() => setShowCreate(!showCreate)}
           className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
         >
-          {showCreate ? t('common.cancel') : t('contacts.create')}
+          {showCreate ? t('common.cancel') : t('contractors.create')}
         </button>
       </div>
 
@@ -163,25 +173,7 @@ export function ContactsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                {t('contacts.type')} *
-              </label>
-              <select
-                value={formData.type}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    type: e.target.value as ContactType,
-                  })
-                }
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
-              >
-                <option value="BUYER">{t('contacts.buyer')}</option>
-                <option value="SELLER">{t('contacts.seller')}</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-foreground mb-1">
-                {t('contacts.name')} *
+                {t('contractors.name')} *
               </label>
               <input
                 type="text"
@@ -189,14 +181,14 @@ export function ContactsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, name: e.target.value })
                 }
-                placeholder="Contact name"
+                placeholder={t('contractors.name')}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
                 autoFocus
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                {t('contacts.email')}
+                {t('contractors.email')}
               </label>
               <input
                 type="email"
@@ -210,7 +202,7 @@ export function ContactsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                {t('contacts.phone')}
+                {t('contractors.phone')}
               </label>
               <input
                 type="text"
@@ -224,7 +216,7 @@ export function ContactsPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                Contact Person
+                {t('contractors.contactPerson')}
               </label>
               <input
                 type="text"
@@ -235,13 +227,13 @@ export function ContactsPage() {
                     contactPerson: e.target.value || undefined,
                   })
                 }
-                placeholder="Point of contact"
+                placeholder={t('contractors.contactPerson')}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-foreground mb-1">
-                {t('contacts.taxId')}
+                {t('contractors.taxId')}
               </label>
               <input
                 type="text"
@@ -249,13 +241,13 @@ export function ContactsPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, taxId: e.target.value || undefined })
                 }
-                placeholder="Tax identification number"
+                placeholder={t('contractors.taxId')}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
               />
             </div>
             <div className="md:col-span-2 lg:col-span-3">
               <label className="block text-sm font-medium text-foreground mb-1">
-                {t('contacts.address')}
+                {t('contractors.address')}
               </label>
               <input
                 type="text"
@@ -266,14 +258,14 @@ export function ContactsPage() {
                     address: e.target.value || undefined,
                   })
                 }
-                placeholder="Full address"
+                placeholder={t('contractors.address')}
                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
               />
             </div>
             {/* Bank Accounts */}
             <div className="md:col-span-2 lg:col-span-3">
               <label className="block text-sm font-medium text-foreground mb-2">
-                {t('contacts.bankAccounts')}
+                {t('contractors.bankAccounts')}
               </label>
               {createBankAccounts.map((account, index) => (
                 <div key={index} className="flex gap-2 mb-2">
@@ -285,7 +277,7 @@ export function ContactsPage() {
                       updated[index] = { ...updated[index], name: e.target.value };
                       setCreateBankAccounts(updated);
                     }}
-                    placeholder="Account name (e.g. Main Account)"
+                    placeholder={t('contractors.bankName')}
                     className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
                   />
                   <input
@@ -296,7 +288,7 @@ export function ContactsPage() {
                       updated[index] = { ...updated[index], accountNumber: e.target.value };
                       setCreateBankAccounts(updated);
                     }}
-                    placeholder="Account number"
+                    placeholder={t('contractors.accountNumber')}
                     className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
                   />
                   <button
@@ -317,8 +309,38 @@ export function ContactsPage() {
                 }
                 className="mt-1 px-3 py-1.5 text-sm text-accent hover:bg-accent/10 rounded-lg transition-colors"
               >
-                + Add Bank Account
+                + {t('contractors.addBank')}
               </button>
+            </div>
+            {/* Name & Address Translations */}
+            <div className="md:col-span-2 lg:col-span-3">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                {t('contractors.translations')}
+              </label>
+              <div className="space-y-2">
+                {LANGS.map((lang) => (
+                  <div key={lang.code} className="grid grid-cols-2 gap-2">
+                    <input
+                      type="text"
+                      value={createNameTranslations[lang.code] ?? ''}
+                      onChange={(e) =>
+                        setCreateNameTranslations((prev) => ({ ...prev, [lang.code]: e.target.value }))
+                      }
+                      placeholder={`${t('contractors.name')} (${lang.label})`}
+                      className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none text-sm"
+                    />
+                    <input
+                      type="text"
+                      value={createAddressTranslations[lang.code] ?? ''}
+                      onChange={(e) =>
+                        setCreateAddressTranslations((prev) => ({ ...prev, [lang.code]: e.target.value }))
+                      }
+                      placeholder={`${t('contractors.address')} (${lang.label})`}
+                      className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
           <div className="flex justify-end gap-3">
@@ -326,53 +348,39 @@ export function ContactsPage() {
               type="button"
               onClick={() => {
                 setShowCreate(false);
-                setFormData({ type: 'BUYER', name: '' });
+                setFormData({ name: '' });
                 setCreateBankAccounts([]);
+                setCreateNameTranslations({});
+                setCreateAddressTranslations({});
               }}
               className="px-4 py-2 text-foreground border rounded-lg hover:bg-muted transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={submitting || !formData.name.trim()}
               className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {submitting ? 'Creating...' : 'Create Contact'}
+              {submitting ? t('contractors.creating') : t('contractors.create')}
             </button>
           </div>
           {error && <p className="mt-2 text-sm text-danger">{error}</p>}
         </form>
       )}
 
-      {/* Tabs + Search */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
-        <div className="flex border rounded-lg overflow-hidden">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                'px-4 py-2 text-sm font-medium transition-colors',
-                activeTab === tab.key
-                  ? 'bg-accent text-white'
-                  : 'bg-card text-foreground hover:bg-muted',
-              )}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {/* Search */}
+      <div className="flex items-center justify-end mb-4">
         <input
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search contacts..."
+          placeholder={t('contractors.searchPlaceholder')}
           className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none w-full sm:w-64"
         />
       </div>
 
-      {/* Contacts table */}
+      {/* Contractors table */}
       {isLoading ? (
         <div className="bg-card border rounded-lg">
           {[1, 2, 3, 4, 5].map((i) => (
@@ -380,7 +388,6 @@ export function ContactsPage() {
               key={i}
               className="flex items-center gap-4 p-4 border-b last:border-b-0 animate-pulse"
             >
-              <div className="h-5 bg-muted rounded w-16" />
               <div className="h-5 bg-muted rounded w-40" />
               <div className="h-5 bg-muted rounded w-48" />
               <div className="h-5 bg-muted rounded w-32" />
@@ -390,19 +397,19 @@ export function ContactsPage() {
       ) : contacts.length === 0 ? (
         <div className="text-center py-12 bg-card border rounded-lg">
           <h3 className="text-lg font-medium text-foreground mb-2">
-            No contacts found
+            {t('contractors.noContractors')}
           </h3>
           <p className="text-muted-foreground mb-4">
             {search
-              ? 'Try a different search term.'
-              : 'Add your first contact to get started.'}
+              ? t('contractors.tryDifferentSearch')
+              : t('contractors.createFirst')}
           </p>
           {!search && (
             <button
               onClick={() => setShowCreate(true)}
               className="px-4 py-2 bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
             >
-              Add Contact
+              {t('contractors.create')}
             </button>
           )}
         </div>
@@ -410,13 +417,12 @@ export function ContactsPage() {
         <div className="bg-card border rounded-lg overflow-hidden">
           {/* Header */}
           <div className="hidden md:grid grid-cols-12 gap-4 px-4 py-3 bg-muted border-b text-sm font-medium text-muted-foreground">
-            <div className="col-span-1">Type</div>
-            <div className="col-span-2">Name</div>
-            <div className="col-span-2">Email</div>
-            <div className="col-span-2">Phone</div>
-            <div className="col-span-2">Contact Person</div>
-            <div className="col-span-1">Tax ID</div>
-            <div className="col-span-2 text-right">Actions</div>
+            <div className="col-span-3">{t('contractors.name')}</div>
+            <div className="col-span-2">{t('contractors.email')}</div>
+            <div className="col-span-2">{t('contractors.phone')}</div>
+            <div className="col-span-2">{t('contractors.contactPerson')}</div>
+            <div className="col-span-1">{t('contractors.taxId')}</div>
+            <div className="col-span-2 text-right">{t('common.actions')}</div>
           </div>
 
           {/* Rows */}
@@ -428,7 +434,7 @@ export function ContactsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1">
-                        Name
+                        {t('contractors.name')}
                       </label>
                       <input
                         type="text"
@@ -441,7 +447,7 @@ export function ContactsPage() {
                     </div>
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1">
-                        Email
+                        {t('contractors.email')}
                       </label>
                       <input
                         type="email"
@@ -457,7 +463,7 @@ export function ContactsPage() {
                     </div>
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1">
-                        Phone
+                        {t('contractors.phone')}
                       </label>
                       <input
                         type="text"
@@ -473,7 +479,7 @@ export function ContactsPage() {
                     </div>
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1">
-                        Contact Person
+                        {t('contractors.contactPerson')}
                       </label>
                       <input
                         type="text"
@@ -489,7 +495,7 @@ export function ContactsPage() {
                     </div>
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1">
-                        Tax ID
+                        {t('contractors.taxId')}
                       </label>
                       <input
                         type="text"
@@ -505,7 +511,7 @@ export function ContactsPage() {
                     </div>
                     <div>
                       <label className="block text-xs text-muted-foreground mb-1">
-                        Address
+                        {t('contractors.address')}
                       </label>
                       <input
                         type="text"
@@ -523,7 +529,7 @@ export function ContactsPage() {
                   {/* Bank Accounts in edit */}
                   <div className="mb-3">
                     <label className="block text-xs text-muted-foreground mb-1">
-                      Bank Accounts
+                      {t('contractors.bankAccounts')}
                     </label>
                     {editBankAccounts.map((account, index) => (
                       <div key={index} className="flex gap-2 mb-2">
@@ -535,7 +541,7 @@ export function ContactsPage() {
                             updated[index] = { ...updated[index], name: e.target.value };
                             setEditBankAccounts(updated);
                           }}
-                          placeholder="Account name"
+                          placeholder={t('contractors.bankName')}
                           className="flex-1 px-2 py-1.5 border rounded text-sm focus:ring-2 focus:ring-accent outline-none"
                         />
                         <input
@@ -546,7 +552,7 @@ export function ContactsPage() {
                             updated[index] = { ...updated[index], accountNumber: e.target.value };
                             setEditBankAccounts(updated);
                           }}
-                          placeholder="Account number"
+                          placeholder={t('contractors.accountNumber')}
                           className="flex-1 px-2 py-1.5 border rounded text-sm focus:ring-2 focus:ring-accent outline-none"
                         />
                         <button
@@ -556,7 +562,7 @@ export function ContactsPage() {
                           }
                           className="px-2 py-1 text-xs text-danger hover:bg-danger/10 rounded"
                         >
-                          Remove
+                          {t('common.delete')}
                         </button>
                       </div>
                     ))}
@@ -567,8 +573,38 @@ export function ContactsPage() {
                       }
                       className="mt-1 px-2 py-1 text-xs text-accent hover:bg-accent/10 rounded"
                     >
-                      + Add Bank Account
+                      + {t('contractors.addBank')}
                     </button>
+                  </div>
+                  {/* Name & Address Translations (edit) */}
+                  <div className="mb-3">
+                    <label className="block text-xs text-muted-foreground mb-1">
+                      {t('contractors.translations')}
+                    </label>
+                    <div className="space-y-2">
+                      {LANGS.map((lang) => (
+                        <div key={lang.code} className="grid grid-cols-2 gap-2">
+                          <input
+                            type="text"
+                            value={editNameTranslations[lang.code] ?? ''}
+                            onChange={(e) =>
+                              setEditNameTranslations((prev) => ({ ...prev, [lang.code]: e.target.value }))
+                            }
+                            placeholder={`${t('contractors.name')} (${lang.label})`}
+                            className="px-2 py-1.5 border rounded text-sm focus:ring-2 focus:ring-accent outline-none"
+                          />
+                          <input
+                            type="text"
+                            value={editAddressTranslations[lang.code] ?? ''}
+                            onChange={(e) =>
+                              setEditAddressTranslations((prev) => ({ ...prev, [lang.code]: e.target.value }))
+                            }
+                            placeholder={`${t('contractors.address')} (${lang.label})`}
+                            className="px-2 py-1.5 border rounded text-sm focus:ring-2 focus:ring-accent outline-none"
+                          />
+                        </div>
+                      ))}
+                    </div>
                   </div>
                   <div className="flex justify-end gap-2">
                     <button
@@ -576,35 +612,26 @@ export function ContactsPage() {
                         setEditingId(null);
                         setEditData({});
                         setEditBankAccounts([]);
+                        setEditNameTranslations({});
+                        setEditAddressTranslations({});
                       }}
                       className="px-3 py-1.5 text-sm text-foreground border rounded hover:bg-muted"
                     >
-                      Cancel
+                      {t('common.cancel')}
                     </button>
                     <button
                       onClick={() => handleUpdate(contact.id)}
                       disabled={submitting}
                       className="px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
                     >
-                      {submitting ? 'Saving...' : 'Save'}
+                      {submitting ? t('common.saving') : t('common.save')}
                     </button>
                   </div>
                 </div>
               ) : (
                 /* Display row */
                 <div className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted">
-                  <div className="col-span-12 md:col-span-1">
-                    <span
-                      className={cn(
-                        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                        CONTACT_TYPE_COLORS[contact.type] ||
-                          'bg-gray-100 text-gray-800',
-                      )}
-                    >
-                      {CONTACT_TYPE_LABELS[contact.type]}
-                    </span>
-                  </div>
-                  <div className="col-span-12 md:col-span-2 font-medium text-foreground truncate">
+                  <div className="col-span-12 md:col-span-3 font-medium text-foreground truncate">
                     {contact.name}
                   </div>
                   <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground truncate">
@@ -624,13 +651,13 @@ export function ContactsPage() {
                       onClick={() => startEditing(contact)}
                       className="px-2 py-1 text-xs text-accent hover:text-accent-hover hover:bg-accent/10 rounded transition-colors"
                     >
-                      Edit
+                      {t('common.edit')}
                     </button>
                     <button
                       onClick={() => handleDelete(contact.id)}
                       className="px-2 py-1 text-xs text-danger hover:text-danger-hover hover:bg-danger/10 rounded transition-colors"
                     >
-                      Delete
+                      {t('common.delete')}
                     </button>
                   </div>
                 </div>
