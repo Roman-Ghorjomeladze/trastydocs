@@ -19,6 +19,7 @@ export function createLineItem(): InvoiceLineItem {
 export function createEmptyInvoiceData(): InvoiceData {
   return {
     documentType: 'invoice',
+    template: 'classic',
     language: 'en',
 
     invoiceNumber: '',

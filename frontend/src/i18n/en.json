@@ -373,6 +373,10 @@
     "featurePdfDesc": "Generate professional PDF documents instantly. Download or send via email directly from the platform.",
     "featureMultilangTitle": "Multi-Language",
     "featureMultilangDesc": "Full support for Georgian, English, Russian, and Turkish. Create documents in any language.",
+    "featureResponsiveTitle": "Responsive Design",
+    "featureResponsiveDesc": "Work seamlessly on any device. The platform adapts to desktop, tablet, and mobile screens for productivity on the go.",
+    "featureTemplatesTitle": "Document Templates",
+    "featureTemplatesDesc": "Choose from 5 distinct invoice styles — Classic, Modern, Minimal, Bold, and Compact — to match your brand identity.",
     "ctaTitle": "Ready to Get Started?",
     "ctaSubtitle": "Create your free account and start managing your documents today.",
     "createAccount": "Create Free Account"

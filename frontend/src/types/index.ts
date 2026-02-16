@@ -126,9 +126,12 @@ export interface InvoiceLineItem {
 
 export type DocumentType = 'invoice' | 'transport_invoice';
 
+export type TemplateStyle = 'classic' | 'modern' | 'minimal' | 'bold' | 'compact';
+
 export interface InvoiceData {
   // Meta
   documentType: DocumentType;
+  template: TemplateStyle;
   language: string;
 
   // Header

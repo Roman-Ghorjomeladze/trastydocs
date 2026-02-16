@@ -60,6 +60,24 @@ export function LandingPage() {
       title: t('landing.featureMultilangTitle'),
       description: t('landing.featureMultilangDesc'),
     },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2zM9.5 9h5M9.5 12h5" />
+        </svg>
+      ),
+      title: t('landing.featureResponsiveTitle'),
+      description: t('landing.featureResponsiveDesc'),
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+        </svg>
+      ),
+      title: t('landing.featureTemplatesTitle'),
+      description: t('landing.featureTemplatesDesc'),
+    },
   ];
 
   return (
@@ -96,7 +114,7 @@ export function LandingPage() {
           <h2 className="text-2xl font-bold text-foreground text-center mb-12">
             {t('landing.featuresTitle')}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {features.map((feature, idx) => (
               <div
                 key={idx}

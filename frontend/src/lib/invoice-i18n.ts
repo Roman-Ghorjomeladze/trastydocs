@@ -66,6 +66,14 @@ export interface InvoiceLabels {
   stamp: string;
   signerName: string;
 
+  // Template
+  template: string;
+  templateClassic: string;
+  templateModern: string;
+  templateMinimal: string;
+  templateBold: string;
+  templateCompact: string;
+
   // Auto-fill
   autoFill: string;
 }
@@ -128,6 +136,12 @@ const en: InvoiceLabels = {
   stamp: 'Stamp',
   signerName: 'Signer Name',
 
+  template: 'Template',
+  templateClassic: 'Classic',
+  templateModern: 'Modern',
+  templateMinimal: 'Minimal',
+  templateBold: 'Bold',
+  templateCompact: 'Compact',
   autoFill: 'Auto-fill',
 };
 
@@ -189,6 +203,12 @@ const ru: InvoiceLabels = {
   stamp: 'Печать',
   signerName: 'Имя подписанта',
 
+  template: 'Шаблон',
+  templateClassic: 'Классический',
+  templateModern: 'Современный',
+  templateMinimal: 'Минимальный',
+  templateBold: 'Жирный',
+  templateCompact: 'Компактный',
   autoFill: 'Автозаполнение',
 };
 
@@ -250,6 +270,12 @@ const ka: InvoiceLabels = {
   stamp: 'ბეჭედი',
   signerName: 'ხელმომწერის სახელი',
 
+  template: 'შაბლონი',
+  templateClassic: 'კლასიკური',
+  templateModern: 'თანამედროვე',
+  templateMinimal: 'მინიმალისტური',
+  templateBold: 'მუქი',
+  templateCompact: 'კომპაქტური',
   autoFill: 'ავტომატური შევსება',
 };
 
@@ -311,6 +337,12 @@ const tr: InvoiceLabels = {
   stamp: 'Mühür',
   signerName: 'İmza Sahibi',
 
+  template: 'Şablon',
+  templateClassic: 'Klasik',
+  templateModern: 'Modern',
+  templateMinimal: 'Minimal',
+  templateBold: 'Kalın',
+  templateCompact: 'Kompakt',
   autoFill: 'Otomatik Doldur',
 };
 

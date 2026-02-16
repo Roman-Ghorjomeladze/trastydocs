@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, LayoutDashboard } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth.store.ts';
 import { ThemeLangControls } from '../shared/ThemeLangControls.tsx';
 import { AppLogo } from '../shared/AppLogo.tsx';
 import { ROUTES } from '../../lib/constants.ts';
+import { getInitials } from '../../lib/utils.ts';
 
 export function PublicHeader() {
   const { t } = useTranslation();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const user = useAuthStore((s) => s.user);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
@@ -26,12 +28,23 @@ export function PublicHeader() {
           <ThemeLangControls />
 
           {isAuthenticated ? (
-            <Link
-              to={ROUTES.DASHBOARD}
-              className="px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
-            >
-              {t('dashboard.title')}
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                to={ROUTES.DASHBOARD}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                {t('dashboard.title')}
+              </Link>
+              <Link
+                to={ROUTES.DASHBOARD}
+                className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              >
+                <div className="w-8 h-8 rounded-full bg-accent text-white flex items-center justify-center text-sm font-medium">
+                  {user ? getInitials(user.name) : '?'}
+                </div>
+              </Link>
+            </div>
           ) : (
             <div className="flex items-center gap-2">
               <Link
@@ -73,13 +86,27 @@ export function PublicHeader() {
 
               <div className="border-t border-border pt-4 space-y-2">
                 {isAuthenticated ? (
-                  <Link
-                    to={ROUTES.DASHBOARD}
-                    onClick={() => setMobileOpen(false)}
-                    className="block w-full text-center px-4 py-2.5 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
-                  >
-                    {t('dashboard.title')}
-                  </Link>
+                  <>
+                    {user && (
+                      <div className="flex items-center gap-3 px-2 py-2 mb-2">
+                        <div className="w-9 h-9 rounded-full bg-accent text-white flex items-center justify-center text-sm font-medium flex-shrink-0">
+                          {getInitials(user.name)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-foreground truncate">{user.name}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        </div>
+                      </div>
+                    )}
+                    <Link
+                      to={ROUTES.DASHBOARD}
+                      onClick={() => setMobileOpen(false)}
+                      className="flex items-center justify-center gap-2 w-full px-4 py-2.5 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      {t('dashboard.title')}
+                    </Link>
+                  </>
                 ) : (
                   <>
                     <Link

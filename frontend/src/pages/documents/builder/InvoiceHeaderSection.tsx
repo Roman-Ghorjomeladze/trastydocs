@@ -1,6 +1,7 @@
 import type { InvoiceData, DocumentType } from '../../../types/index.ts';
 import type { InvoiceLabels } from '../../../lib/invoice-i18n.ts';
 import { INVOICE_LANGUAGES } from '../../../lib/invoice-i18n.ts';
+import { TEMPLATE_OPTIONS } from '../../../lib/pdf-templates/index.ts';
 
 const CURRENCIES = ['USD', 'EUR', 'GBP', 'ILS', 'GEL', 'JPY', 'CAD', 'AUD', 'CHF'];
 
@@ -10,7 +11,7 @@ const DOCUMENT_TYPES: { value: DocumentType; labelKey: 'invoice' | 'transportInv
 ];
 
 interface Props {
-  data: Pick<InvoiceData, 'invoiceNumber' | 'invoiceDate' | 'dueDate' | 'currency' | 'language' | 'documentType'>;
+  data: Pick<InvoiceData, 'invoiceNumber' | 'invoiceDate' | 'dueDate' | 'currency' | 'language' | 'documentType' | 'template'>;
   labels: InvoiceLabels;
   onChange: (field: string, value: string) => void;
 }
@@ -53,6 +54,22 @@ export function InvoiceHeaderSection({ data, labels, onChange }: Props) {
             {INVOICE_LANGUAGES.map((lang) => (
               <option key={lang.value} value={lang.value}>
                 {lang.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Template */}
+        <div className="col-span-2">
+          <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.template}</label>
+          <select
+            value={data.template || 'classic'}
+            onChange={(e) => onChange('template', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-card"
+          >
+            {TEMPLATE_OPTIONS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {labels[t.labelKey]}
               </option>
             ))}
           </select>

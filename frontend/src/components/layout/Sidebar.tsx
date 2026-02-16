@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import {
@@ -128,12 +128,11 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     <aside
       className={cn(
         'bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border shadow-[4px_0_12px_rgba(0,0,0,0.15)] overflow-hidden',
-        // Mobile: always full-width drawer, no collapse
-        'md:min-h-screen md:transition-[width] md:duration-300 md:ease-in-out',
-        // Desktop: collapsible width
+        // Mobile: full-width drawer, fixed height
+        'h-full w-72',
+        // Desktop: collapsible width with smooth transition
+        'md:min-h-screen md:h-auto md:transition-[width] md:duration-300 md:ease-in-out',
         collapsed ? 'md:w-16' : 'md:w-64',
-        // Mobile: fixed height, full width
-        'h-full w-72 md:w-auto',
       )}
     >
       {/* Header — fixed h-16, icon always at same position */}
@@ -333,6 +332,32 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     </aside>
   );
 
+  // ── Mobile drawer animation state ──
+  // Keep the drawer in the DOM during exit animation so CSS transitions play out
+  const [mobileVisible, setMobileVisible] = useState(false);
+  const [mobileAnimating, setMobileAnimating] = useState(false);
+  const animationTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    if (mobileOpen) {
+      // Mount element off-screen first, then after browser paints trigger the slide-in
+      setMobileVisible(true);
+      clearTimeout(animationTimer.current);
+      // Small delay ensures the browser has painted the off-screen state before transitioning
+      animationTimer.current = setTimeout(() => {
+        setMobileAnimating(true);
+      }, 20);
+    } else {
+      // Trigger exit animation, then unmount after transition ends
+      setMobileAnimating(false);
+      clearTimeout(animationTimer.current);
+      animationTimer.current = setTimeout(() => {
+        setMobileVisible(false);
+      }, 350); // matches transition duration
+    }
+    return () => clearTimeout(animationTimer.current);
+  }, [mobileOpen]);
+
   return (
     <>
       {/* Desktop sidebar — always visible */}
@@ -340,16 +365,24 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         {sidebarContent}
       </div>
 
-      {/* Mobile sidebar — overlay drawer */}
-      {mobileOpen && (
+      {/* Mobile sidebar — animated overlay drawer */}
+      {mobileVisible && (
         <div className="md:hidden fixed inset-0 z-50 flex">
           {/* Backdrop */}
           <div
-            className="fixed inset-0 bg-black/50"
+            className={cn(
+              'fixed inset-0 bg-black/50 transition-opacity duration-[350ms] ease-in-out',
+              mobileAnimating ? 'opacity-100' : 'opacity-0',
+            )}
             onClick={onMobileClose}
           />
           {/* Drawer */}
-          <div className="relative z-50 h-full">
+          <div
+            className={cn(
+              'relative z-50 h-full transition-transform duration-[350ms] ease-out',
+              mobileAnimating ? 'translate-x-0' : '-translate-x-full',
+            )}
+          >
             {sidebarContent}
           </div>
         </div>
