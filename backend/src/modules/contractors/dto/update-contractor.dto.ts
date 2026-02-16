@@ -7,7 +7,7 @@ const BankAccountSchema = z.object({
 
 const TranslationsSchema = z.record(z.string(), z.string().max(500)).nullable().optional();
 
-export const UpdateContactSchema = z.object({
+export const UpdateContractorSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   email: z.string().email().nullable().optional(),
   phone: z.string().max(50).nullable().optional(),
@@ -21,4 +21,4 @@ export const UpdateContactSchema = z.object({
   addressTranslations: TranslationsSchema,
 });
 
-export type UpdateContactDto = z.infer<typeof UpdateContactSchema>;
+export type UpdateContractorDto = z.infer<typeof UpdateContractorSchema>;

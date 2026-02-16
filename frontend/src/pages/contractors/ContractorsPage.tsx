@@ -1,22 +1,24 @@
 import { useEffect, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useParams } from 'react-router-dom';
-import { useContactStore } from '../../stores/contact.store.ts';
+import { Pencil, Trash2, X } from 'lucide-react';
+import { useContractorStore } from '../../stores/contractor.store.ts';
 import { useCompanyStore } from '../../stores/company.store.ts';
-import type { CreateContactDto, UpdateContactDto, BankAccount, Translations } from '../../types/index.ts';
+import { Tooltip } from '../../components/shared/Tooltip.tsx';
+import type { CreateContractorDto, UpdateContractorDto, BankAccount, Translations } from '../../types/index.ts';
 
-export function ContactsPage() {
+export function ContractorsPage() {
   const { t } = useTranslation();
   const { companyId } = useParams<{ companyId: string }>();
   const { activeCompany } = useCompanyStore();
   const {
-    contacts,
+    contractors,
     isLoading,
-    fetchContacts,
-    createContact,
-    updateContact,
-    deleteContact,
-  } = useContactStore();
+    fetchContractors,
+    createContractor,
+    updateContractor,
+    deleteContractor,
+  } = useContractorStore();
 
   const [search, setSearch] = useState('');
   const [showCreate, setShowCreate] = useState(false);
@@ -24,7 +26,7 @@ export function ContactsPage() {
   const [error, setError] = useState('');
 
   // Create form state
-  const [formData, setFormData] = useState<CreateContactDto>({
+  const [formData, setFormData] = useState<CreateContractorDto>({
     name: '',
   });
   const [createBankAccounts, setCreateBankAccounts] = useState<BankAccount[]>([]);
@@ -33,7 +35,7 @@ export function ContactsPage() {
   const [submitting, setSubmitting] = useState(false);
 
   // Edit form state
-  const [editData, setEditData] = useState<UpdateContactDto>({});
+  const [editData, setEditData] = useState<UpdateContractorDto>({});
   const [editBankAccounts, setEditBankAccounts] = useState<BankAccount[]>([]);
   const [editNameTranslations, setEditNameTranslations] = useState<Translations>({});
   const [editAddressTranslations, setEditAddressTranslations] = useState<Translations>({});
@@ -47,14 +49,14 @@ export function ContactsPage() {
 
   const resolvedCompanyId = companyId || activeCompany?.id;
 
-  const loadContacts = useCallback(() => {
+  const loadContractors = useCallback(() => {
     if (!resolvedCompanyId) return;
-    fetchContacts(resolvedCompanyId, search || undefined);
-  }, [resolvedCompanyId, search, fetchContacts]);
+    fetchContractors(resolvedCompanyId, search || undefined);
+  }, [resolvedCompanyId, search, fetchContractors]);
 
   useEffect(() => {
-    loadContacts();
-  }, [loadContacts]);
+    loadContractors();
+  }, [loadContractors]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -68,7 +70,7 @@ export function ContactsPage() {
       );
       const hasNameTranslations = Object.values(createNameTranslations).some((v) => v.trim());
       const hasAddrTranslations = Object.values(createAddressTranslations).some((v) => v.trim());
-      await createContact(resolvedCompanyId, {
+      await createContractor(resolvedCompanyId, {
         ...formData,
         name: formData.name.trim(),
         bankAccounts: validAccounts.length > 0 ? validAccounts : undefined,
@@ -96,7 +98,7 @@ export function ContactsPage() {
       const validAccounts = editBankAccounts.filter(
         (a) => a.name.trim() && a.accountNumber.trim(),
       );
-      await updateContact(resolvedCompanyId, id, {
+      await updateContractor(resolvedCompanyId, id, {
         ...editData,
         bankAccounts: validAccounts.length > 0 ? validAccounts : null,
         nameTranslations: editNameTranslations,
@@ -117,26 +119,26 @@ export function ContactsPage() {
   const handleDelete = async (id: string) => {
     if (!resolvedCompanyId) return;
     try {
-      await deleteContact(resolvedCompanyId, id);
+      await deleteContractor(resolvedCompanyId, id);
     } catch {
       // silently handle
     }
   };
 
-  const startEditing = (contact: (typeof contacts)[0]) => {
-    setEditingId(contact.id);
+  const startEditing = (contractor: (typeof contractors)[0]) => {
+    setEditingId(contractor.id);
     setEditData({
-      name: contact.name,
-      email: contact.email,
-      phone: contact.phone,
-      address: contact.address,
-      taxId: contact.taxId,
-      contactPerson: contact.contactPerson,
-      notes: contact.notes,
+      name: contractor.name,
+      email: contractor.email,
+      phone: contractor.phone,
+      address: contractor.address,
+      taxId: contractor.taxId,
+      contactPerson: contractor.contactPerson,
+      notes: contractor.notes,
     });
-    setEditBankAccounts(contact.bankAccounts || []);
-    setEditNameTranslations(contact.nameTranslations ?? {});
-    setEditAddressTranslations(contact.addressTranslations ?? {});
+    setEditBankAccounts(contractor.bankAccounts || []);
+    setEditNameTranslations(contractor.nameTranslations ?? {});
+    setEditAddressTranslations(contractor.addressTranslations ?? {});
   };
 
   if (!resolvedCompanyId) {
@@ -291,15 +293,17 @@ export function ContactsPage() {
                     placeholder={t('contractors.accountNumber')}
                     className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
                   />
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setCreateBankAccounts(createBankAccounts.filter((_, i) => i !== index))
-                    }
-                    className="px-3 py-2 text-danger hover:bg-danger/10 rounded-lg transition-colors text-sm"
-                  >
-                    {t('common.delete')}
-                  </button>
+                  <Tooltip content={t('common.delete')}>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setCreateBankAccounts(createBankAccounts.filter((_, i) => i !== index))
+                      }
+                      className="p-1.5 rounded-md text-muted-foreground hover:text-danger hover:bg-muted transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </Tooltip>
                 </div>
               ))}
               <button
@@ -394,7 +398,7 @@ export function ContactsPage() {
             </div>
           ))}
         </div>
-      ) : contacts.length === 0 ? (
+      ) : contractors.length === 0 ? (
         <div className="text-center py-12 bg-card border rounded-lg">
           <h3 className="text-lg font-medium text-foreground mb-2">
             {t('contractors.noContractors')}
@@ -426,9 +430,9 @@ export function ContactsPage() {
           </div>
 
           {/* Rows */}
-          {contacts.map((contact) => (
-            <div key={contact.id} className="border-b last:border-b-0">
-              {editingId === contact.id ? (
+          {contractors.map((contractor) => (
+            <div key={contractor.id} className="border-b last:border-b-0">
+              {editingId === contractor.id ? (
                 /* Editing row */
                 <div className="p-4">
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
@@ -555,15 +559,17 @@ export function ContactsPage() {
                           placeholder={t('contractors.accountNumber')}
                           className="flex-1 px-2 py-1.5 border rounded text-sm focus:ring-2 focus:ring-accent outline-none"
                         />
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setEditBankAccounts(editBankAccounts.filter((_, i) => i !== index))
-                          }
-                          className="px-2 py-1 text-xs text-danger hover:bg-danger/10 rounded"
-                        >
-                          {t('common.delete')}
-                        </button>
+                        <Tooltip content={t('common.delete')}>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setEditBankAccounts(editBankAccounts.filter((_, i) => i !== index))
+                            }
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-danger hover:bg-muted transition-colors"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
                       </div>
                     ))}
                     <button
@@ -620,7 +626,7 @@ export function ContactsPage() {
                       {t('common.cancel')}
                     </button>
                     <button
-                      onClick={() => handleUpdate(contact.id)}
+                      onClick={() => handleUpdate(contractor.id)}
                       disabled={submitting}
                       className="px-3 py-1.5 text-sm bg-accent text-white rounded hover:bg-accent-hover disabled:opacity-50"
                     >
@@ -632,33 +638,37 @@ export function ContactsPage() {
                 /* Display row */
                 <div className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted">
                   <div className="col-span-12 md:col-span-3 font-medium text-foreground truncate">
-                    {contact.name}
+                    {contractor.name}
                   </div>
                   <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground truncate">
-                    {contact.email || '\u2014'}
+                    {contractor.email || '\u2014'}
                   </div>
                   <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground truncate">
-                    {contact.phone || '\u2014'}
+                    {contractor.phone || '\u2014'}
                   </div>
                   <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground truncate">
-                    {contact.contactPerson || '\u2014'}
+                    {contractor.contactPerson || '\u2014'}
                   </div>
                   <div className="col-span-12 md:col-span-1 text-sm text-muted-foreground truncate">
-                    {contact.taxId || '\u2014'}
+                    {contractor.taxId || '\u2014'}
                   </div>
-                  <div className="col-span-12 md:col-span-2 flex justify-end gap-2">
-                    <button
-                      onClick={() => startEditing(contact)}
-                      className="px-2 py-1 text-xs text-accent hover:text-accent-hover hover:bg-accent/10 rounded transition-colors"
-                    >
-                      {t('common.edit')}
-                    </button>
-                    <button
-                      onClick={() => handleDelete(contact.id)}
-                      className="px-2 py-1 text-xs text-danger hover:text-danger-hover hover:bg-danger/10 rounded transition-colors"
-                    >
-                      {t('common.delete')}
-                    </button>
+                  <div className="col-span-12 md:col-span-2 flex justify-end gap-1">
+                    <Tooltip content={t('common.edit')}>
+                      <button
+                        onClick={() => startEditing(contractor)}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-muted transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                    </Tooltip>
+                    <Tooltip content={t('common.delete')}>
+                      <button
+                        onClick={() => handleDelete(contractor.id)}
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-danger hover:bg-muted transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </Tooltip>
                   </div>
                 </div>
               )}

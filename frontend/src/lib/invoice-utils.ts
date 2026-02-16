@@ -1,4 +1,4 @@
-import type { InvoiceData, InvoiceLineItem, Contact, Company } from '../types/index.ts';
+import type { InvoiceData, InvoiceLineItem, Contractor, Company } from '../types/index.ts';
 
 /**
  * Create a new empty line item with a unique ID.
@@ -123,14 +123,14 @@ function resolveTranslation(
 }
 
 /**
- * Populate invoice data from a Contact (buyer or seller).
+ * Populate invoice data from a Contractor (buyer or seller).
  * Only fills EMPTY fields — never overwrites user edits.
  * Uses nameTranslations / addressTranslations when available,
  * falling back to the default name / address.
  */
-export function populateFromContact(
+export function populateFromContractor(
   data: InvoiceData,
-  contact: Contact,
+  contractor: Contractor,
   role: 'buyer' | 'seller',
   lang?: string,
 ): InvoiceData {
@@ -138,33 +138,33 @@ export function populateFromContact(
   const docLang = lang || result.language || 'en';
 
   const translatedName = resolveTranslation(
-    contact.nameTranslations as Record<string, string> | undefined,
+    contractor.nameTranslations as Record<string, string> | undefined,
     docLang,
-    contact.name || '',
+    contractor.name || '',
   );
   const translatedAddress = resolveTranslation(
-    contact.addressTranslations as Record<string, string> | undefined,
+    contractor.addressTranslations as Record<string, string> | undefined,
     docLang,
-    contact.address || '',
+    contractor.address || '',
   );
 
   if (role === 'buyer') {
     if (!result.buyerName) result.buyerName = translatedName;
     if (!result.buyerAddress) result.buyerAddress = translatedAddress;
-    if (!result.buyerTaxId) result.buyerTaxId = contact.taxId || '';
-    if (!result.buyerPhone) result.buyerPhone = contact.phone || '';
-    if (!result.buyerEmail) result.buyerEmail = contact.email || '';
+    if (!result.buyerTaxId) result.buyerTaxId = contractor.taxId || '';
+    if (!result.buyerPhone) result.buyerPhone = contractor.phone || '';
+    if (!result.buyerEmail) result.buyerEmail = contractor.email || '';
     if (!result.buyerBankAccounts) {
-      result.buyerBankAccounts = serializeBankAccounts(contact.bankAccounts);
+      result.buyerBankAccounts = serializeBankAccounts(contractor.bankAccounts);
     }
   } else {
     if (!result.companyName) result.companyName = translatedName;
     if (!result.companyAddress) result.companyAddress = translatedAddress;
-    if (!result.companyTaxId) result.companyTaxId = contact.taxId || '';
-    if (!result.companyPhone) result.companyPhone = contact.phone || '';
-    if (!result.companyEmail) result.companyEmail = contact.email || '';
+    if (!result.companyTaxId) result.companyTaxId = contractor.taxId || '';
+    if (!result.companyPhone) result.companyPhone = contractor.phone || '';
+    if (!result.companyEmail) result.companyEmail = contractor.email || '';
     if (!result.companyBankAccounts) {
-      result.companyBankAccounts = serializeBankAccounts(contact.bankAccounts);
+      result.companyBankAccounts = serializeBankAccounts(contractor.bankAccounts);
     }
   }
 

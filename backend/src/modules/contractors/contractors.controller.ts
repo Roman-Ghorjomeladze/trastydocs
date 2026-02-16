@@ -9,30 +9,30 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ContactsService } from './contacts.service.js';
+import { ContractorsService } from './contractors.service.js';
 import { JwtGuard } from '../../common/guards/jwt.guard.js';
 import { CompanyRoleGuard } from '../../common/guards/company-role.guard.js';
 import { Roles } from '../../common/decorators/roles.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import { ZodValidationPipe } from '../../common/pipes/zod-validation.pipe.js';
-import { CreateContactSchema } from './dto/create-contact.dto.js';
-import { UpdateContactSchema } from './dto/update-contact.dto.js';
-import type { CreateContactDto } from './dto/create-contact.dto.js';
-import type { UpdateContactDto } from './dto/update-contact.dto.js';
+import { CreateContractorSchema } from './dto/create-contractor.dto.js';
+import { UpdateContractorSchema } from './dto/update-contractor.dto.js';
+import type { CreateContractorDto } from './dto/create-contractor.dto.js';
+import type { UpdateContractorDto } from './dto/update-contractor.dto.js';
 
-@Controller('companies/:companyId/contacts')
+@Controller('companies/:companyId/contractors')
 @UseGuards(JwtGuard, CompanyRoleGuard)
-export class ContactsController {
-  constructor(private readonly contactsService: ContactsService) {}
+export class ContractorsController {
+  constructor(private readonly contractorsService: ContractorsService) {}
 
   @Post()
   @Roles('OWNER', 'ADMIN', 'MEMBER')
   async create(
     @Param('companyId') companyId: string,
-    @Body(new ZodValidationPipe(CreateContactSchema)) data: CreateContactDto,
+    @Body(new ZodValidationPipe(CreateContractorSchema)) data: CreateContractorDto,
     @CurrentUser() user: { id: string },
   ) {
-    return this.contactsService.create(data, companyId, user.id);
+    return this.contractorsService.create(data, companyId, user.id);
   }
 
   @Get()
@@ -41,7 +41,7 @@ export class ContactsController {
     @Param('companyId') companyId: string,
     @Query('search') search?: string,
   ) {
-    return this.contactsService.findAll(companyId, search);
+    return this.contractorsService.findAll(companyId, search);
   }
 
   @Get(':id')
@@ -49,7 +49,7 @@ export class ContactsController {
   async findOne(
     @Param('id') id: string,
   ) {
-    return this.contactsService.findById(id);
+    return this.contractorsService.findById(id);
   }
 
   @Patch(':id')
@@ -57,10 +57,10 @@ export class ContactsController {
   async update(
     @Param('companyId') companyId: string,
     @Param('id') id: string,
-    @Body(new ZodValidationPipe(UpdateContactSchema)) data: UpdateContactDto,
+    @Body(new ZodValidationPipe(UpdateContractorSchema)) data: UpdateContractorDto,
     @CurrentUser() user: { id: string },
   ) {
-    return this.contactsService.update(id, data, companyId, user.id);
+    return this.contractorsService.update(id, data, companyId, user.id);
   }
 
   @Delete(':id')
@@ -70,6 +70,6 @@ export class ContactsController {
     @Param('id') id: string,
     @CurrentUser() user: { id: string },
   ) {
-    return this.contactsService.remove(id, companyId, user.id);
+    return this.contractorsService.remove(id, companyId, user.id);
   }
 }

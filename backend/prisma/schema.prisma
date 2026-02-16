@@ -141,7 +141,7 @@ model Company {
   memberships        Membership[]
   templates          DocumentTemplate[]
   documents          Document[]
-  contacts           Contact[]
+  contractors        Contractor[]
   stamps             StampAsset[]
   companySignatures  CompanySignature[]
   vehicles           Vehicle[]
@@ -226,8 +226,8 @@ model Document {
   template       DocumentTemplate?  @relation(fields: [templateId], references: [id])
   company        Company            @relation(fields: [companyId], references: [id])
   createdBy      User               @relation(fields: [createdById], references: [id])
-  buyer          Contact?           @relation("DocumentBuyer", fields: [buyerId], references: [id])
-  seller         Contact?           @relation("DocumentSeller", fields: [sellerId], references: [id])
+  buyer          Contractor?           @relation("DocumentBuyer", fields: [buyerId], references: [id])
+  seller         Contractor?           @relation("DocumentSeller", fields: [sellerId], references: [id])
   duplicatedFrom Document?          @relation("DocumentDuplication", fields: [duplicatedFromId], references: [id], onDelete: SetNull)
   duplicates     Document[]         @relation("DocumentDuplication")
   documentSignatures DocumentSignature[]
@@ -258,10 +258,10 @@ model DocumentSequence {
 }
 
 // ─────────────────────────────────────────────
-// CONTRACTORS (formerly Contacts — always buyer-side)
+// CONTRACTORS
 // ─────────────────────────────────────────────
 
-model Contact {
+model Contractor {
   id            String      @id @default(cuid())
   companyId     String
   name          String

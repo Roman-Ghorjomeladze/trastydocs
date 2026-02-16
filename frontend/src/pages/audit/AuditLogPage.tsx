@@ -9,7 +9,7 @@ import { cn } from '../../lib/utils.ts';
 import type { AuditAction, AuditLog } from '../../types/index.ts';
 
 const ENTITY_OPTIONS = [
-  'Contact',
+  'Contractor',
   'Membership',
   'Document',
   'Signature',

@@ -11,7 +11,7 @@ import { ROUTES } from '../../lib/constants.ts';
 import {
   createEmptyInvoiceData,
   calculateTotals,
-  populateFromContact,
+  populateFromContractor,
   isInvoiceData,
 } from '../../lib/invoice-utils.ts';
 import { getInvoiceLabels } from '../../lib/invoice-i18n.ts';
@@ -172,7 +172,7 @@ export function DocumentBuilderPage() {
 
         // Auto-fill from buyer contact (using translated name/address)
         if (loaded.buyer) {
-          data = populateFromContact(data, loaded.buyer, 'buyer', docLang);
+          data = populateFromContractor(data, loaded.buyer, 'buyer', docLang);
         }
 
         // Always populate seller from the active company (using translated name/address)
@@ -397,7 +397,7 @@ export function DocumentBuilderPage() {
   const handleAutoFillBuyer = useCallback(() => {
     if (!doc?.buyer) return;
     setInvoiceData((prev) => {
-      const updated = populateFromContact(
+      const updated = populateFromContractor(
         {
           ...prev,
           buyerName: '',

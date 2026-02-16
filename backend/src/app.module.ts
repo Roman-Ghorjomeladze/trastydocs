@@ -12,7 +12,7 @@ import { UsersModule } from './modules/users/users.module.js';
 import { CompaniesModule } from './modules/companies/companies.module.js';
 import { MembershipsModule } from './modules/memberships/memberships.module.js';
 import { DocumentsModule } from './modules/documents/documents.module.js';
-import { ContactsModule } from './modules/contacts/contacts.module.js';
+import { ContractorsModule } from './modules/contractors/contractors.module.js';
 import { SignaturesModule } from './modules/signatures/signatures.module.js';
 import { StampsModule } from './modules/stamps/stamps.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
@@ -33,7 +33,7 @@ import { HealthController } from './health.controller.js';
     CompaniesModule,
     MembershipsModule,
     DocumentsModule,
-    ContactsModule,
+    ContractorsModule,
     SignaturesModule,
     StampsModule,
     VehiclesModule,

@@ -9,23 +9,23 @@ import type { UpdateDocumentDto } from './dto/update-document.dto.js';
 import type { SendDocumentDto } from './dto/send-document.dto.js';
 import type { UploadPdfDto } from './dto/upload-pdf.dto.js';
 
-/** Contact fields needed for auto-fill in the invoice builder */
-const CONTACT_SELECT = {
+/** Contractor fields needed for auto-fill in the invoice builder */
+const CONTRACTOR_SELECT = {
   id: true, name: true, email: true, phone: true,
   address: true, taxId: true, bankAccounts: true,
 } as const;
 
 /** Lean includes for list views */
 const DOCUMENT_INCLUDES_LEAN = {
-  buyer: { select: CONTACT_SELECT },
-  seller: { select: CONTACT_SELECT },
+  buyer: { select: CONTRACTOR_SELECT },
+  seller: { select: CONTRACTOR_SELECT },
   createdBy: { select: { id: true, name: true, email: true } },
 } as const;
 
 /** Full includes for detail/single-doc views */
 const DOCUMENT_INCLUDES_FULL = {
-  buyer: { select: CONTACT_SELECT },
-  seller: { select: CONTACT_SELECT },
+  buyer: { select: CONTRACTOR_SELECT },
+  seller: { select: CONTRACTOR_SELECT },
   createdBy: { select: { id: true, name: true, email: true } },
 } as const;
 

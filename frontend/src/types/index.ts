@@ -106,8 +106,8 @@ export interface Document {
   metadata?: Record<string, unknown>;
   duplicatedFromId?: string;
   createdBy?: User;
-  buyer?: Contact;
-  seller?: Contact;
+  buyer?: Contractor;
+  seller?: Contractor;
   documentSignatures?: DocumentSignature[];
   createdAt: string;
   updatedAt: string;
@@ -183,7 +183,7 @@ export interface InvoiceData {
   stampImageUrl: string;
 }
 
-export interface Contact {
+export interface Contractor {
   id: string;
   companyId: string;
   name: string;
@@ -352,7 +352,7 @@ export interface UpdateMemberDto {
   status?: MembershipStatus;
 }
 
-export interface CreateContactDto {
+export interface CreateContractorDto {
   name: string;
   email?: string;
   phone?: string;
@@ -365,7 +365,7 @@ export interface CreateContactDto {
   addressTranslations?: Translations;
 }
 
-export interface UpdateContactDto {
+export interface UpdateContractorDto {
   name?: string;
   email?: string | null;
   phone?: string | null;

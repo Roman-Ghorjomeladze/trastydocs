@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Copy, Trash2, Ban, SlidersHorizontal, RotateCcw } from 'lucide-react';
 import { useDocumentStore } from '../../stores/document.store.ts';
-import { useContactStore } from '../../stores/contact.store.ts';
+import { useContractorStore } from '../../stores/contractor.store.ts';
 import { getNextDocumentNumber, checkDocumentNumber } from '../../api/documents.ts';
-import { getContacts } from '../../api/contacts.ts';
+import { getContractors } from '../../api/contractors.ts';
 import { useDebounce } from '../../hooks/use-debounce.ts';
 import { ROUTES, STATUS_COLORS } from '../../lib/constants.ts';
 import { cn } from '../../lib/utils.ts';
@@ -13,7 +13,7 @@ import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { Tooltip } from '../../components/shared/Tooltip.tsx';
 import { MultiSelect } from '../../components/shared/MultiSelect.tsx';
 import type { MultiSelectOption } from '../../components/shared/MultiSelect.tsx';
-import type { DocumentStatus, Contact, DocumentType } from '../../types/index.ts';
+import type { DocumentStatus, Contractor, DocumentType } from '../../types/index.ts';
 
 const ALL_STATUSES: DocumentStatus[] = [
   'DRAFT',
@@ -37,7 +37,7 @@ export function DocumentListPage() {
     duplicateDocument,
     updateDocument,
   } = useDocumentStore();
-  const { contacts, fetchContacts } = useContactStore();
+  const { contractors, fetchContractors } = useContractorStore();
 
   // Filters
   const [showFilters, setShowFilters] = useState(false);
@@ -82,7 +82,7 @@ export function DocumentListPage() {
   const handleContractorSearch = useCallback(
     async (query: string): Promise<MultiSelectOption[]> => {
       if (!companyId) return [];
-      const results = await getContacts(companyId, query);
+      const results = await getContractors(companyId, query);
       return results
         .filter((c) => c.isActive)
         .map((c) => ({
@@ -115,16 +115,16 @@ export function DocumentListPage() {
     fetchDocuments,
   ]);
 
-  // Load contacts when filter panel opens (for contractor chips display)
+  // Load contractors when filter panel opens (for contractor chips display)
   useEffect(() => {
     if (companyId && showFilters) {
-      fetchContacts(companyId);
+      fetchContractors(companyId);
     }
-  }, [companyId, showFilters, fetchContacts]);
+  }, [companyId, showFilters, fetchContractors]);
 
   useEffect(() => {
     if (companyId && showCreateModal) {
-      fetchContacts(companyId);
+      fetchContractors(companyId);
       // Pre-fill with next auto-generated number
       getNextDocumentNumber(companyId)
         .then((num) => {
@@ -135,7 +135,7 @@ export function DocumentListPage() {
           // silently ignore
         });
     }
-  }, [companyId, showCreateModal, fetchContacts]);
+  }, [companyId, showCreateModal, fetchContractors]);
 
   // Debounced document number validation
   useEffect(() => {
@@ -223,7 +223,7 @@ export function DocumentListPage() {
     });
   };
 
-  const buyers = contacts.filter((c: Contact) => c.isActive);
+  const buyers = contractors.filter((c: Contractor) => c.isActive);
 
   return (
     <div>
@@ -314,7 +314,7 @@ export function DocumentListPage() {
                 {t('documents.contractor')}
               </label>
               <MultiSelect
-                options={contacts
+                options={contractors
                   .filter((c) => c.isActive)
                   .map((c) => ({
                     value: c.id,
@@ -528,7 +528,7 @@ export function DocumentListPage() {
                   className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
                 >
                   <option value="">{t('documents.none')}</option>
-                  {buyers.map((c: Contact) => (
+                  {buyers.map((c: Contractor) => (
                     <option key={c.id} value={c.id}>
                       {c.name}
                     </option>

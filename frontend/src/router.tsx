@@ -19,7 +19,7 @@ import { AuthCallbackPage } from './pages/auth/AuthCallbackPage.tsx';
 import { DashboardPage } from './pages/dashboard/DashboardPage.tsx';
 import { CompanyListPage } from './pages/companies/CompanyListPage.tsx';
 import { CompanyDetailPage } from './pages/companies/CompanyDetailPage.tsx';
-import { ContactsPage } from './pages/contacts/ContactsPage.tsx';
+import { ContractorsPage } from './pages/contractors/ContractorsPage.tsx';
 import { AuditLogPage } from './pages/audit/AuditLogPage.tsx';
 import { SignaturesPage } from './pages/signatures/SignaturesPage.tsx';
 import { CompanySignaturesPage } from './pages/signatures/CompanySignaturesPage.tsx';
@@ -125,7 +125,7 @@ export const router = createBrowserRouter([
       },
       {
         path: '/companies/:companyId/contractors',
-        element: <ContactsPage />,
+        element: <ContractorsPage />,
       },
       {
         path: '/companies/:companyId/signatures',

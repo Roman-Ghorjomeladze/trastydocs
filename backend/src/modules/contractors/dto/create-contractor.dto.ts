@@ -7,8 +7,8 @@ const BankAccountSchema = z.object({
 
 const TranslationsSchema = z.record(z.string(), z.string().max(500)).optional();
 
-export const CreateContactSchema = z.object({
-  name: z.string().min(1, 'Contact name is required').max(255),
+export const CreateContractorSchema = z.object({
+  name: z.string().min(1, 'Contractor name is required').max(255),
   email: z.string().email().optional(),
   phone: z.string().max(50).optional(),
   address: z.string().max(500).optional(),
@@ -21,4 +21,4 @@ export const CreateContactSchema = z.object({
   addressTranslations: TranslationsSchema,
 });
 
-export type CreateContactDto = z.infer<typeof CreateContactSchema>;
+export type CreateContractorDto = z.infer<typeof CreateContractorSchema>;

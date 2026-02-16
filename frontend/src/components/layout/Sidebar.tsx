@@ -15,6 +15,7 @@ import {
   ChevronsLeft,
   ChevronDown,
   ChevronUp,
+  X,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCompanyStore } from '../../stores/company.store.ts';
@@ -29,7 +30,12 @@ interface NavItem {
   icon: LucideIcon;
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+}
+
+export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
@@ -46,6 +52,11 @@ export function Sidebar() {
       return () => clearTimeout(fadeInTimer);
     }
   }, [collapsed]);
+
+  // Close mobile sidebar on route change
+  useEffect(() => {
+    onMobileClose?.();
+  }, [location.pathname]);
 
   const mainNav: NavItem[] = [
     { label: t('sidebar.dashboard'), href: ROUTES.DASHBOARD, icon: LayoutDashboard },
@@ -113,11 +124,16 @@ export function Sidebar() {
     textOpacity ? 'opacity-100' : 'opacity-0 pointer-events-none',
   );
 
-  return (
+  const sidebarContent = (
     <aside
       className={cn(
-        'bg-sidebar text-sidebar-foreground min-h-screen flex flex-col border-r border-sidebar-border shadow-[4px_0_12px_rgba(0,0,0,0.15)] transition-[width] duration-300 ease-in-out overflow-hidden',
-        collapsed ? 'w-16' : 'w-64',
+        'bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border shadow-[4px_0_12px_rgba(0,0,0,0.15)] overflow-hidden',
+        // Mobile: always full-width drawer, no collapse
+        'md:min-h-screen md:transition-[width] md:duration-300 md:ease-in-out',
+        // Desktop: collapsible width
+        collapsed ? 'md:w-16' : 'md:w-64',
+        // Mobile: fixed height, full width
+        'h-full w-72 md:w-auto',
       )}
     >
       {/* Header — fixed h-16, icon always at same position */}
@@ -127,7 +143,7 @@ export function Sidebar() {
             setCollapsed(!collapsed);
             if (!collapsed) setSwitcherOpen(false);
           }}
-          className="flex items-center gap-2.5 rounded-md hover:opacity-80"
+          className="hidden md:flex items-center gap-2.5 rounded-md hover:opacity-80"
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
         >
           <AppLogo size={32} className="flex-shrink-0" />
@@ -135,9 +151,28 @@ export function Sidebar() {
             {t('app.name')}
           </span>
         </button>
+
+        {/* Mobile header: logo + close button */}
+        <div className="flex md:hidden items-center justify-between w-full">
+          <div className="flex items-center gap-2.5">
+            <AppLogo size={32} className="flex-shrink-0" />
+            <span className="text-lg font-semibold text-sidebar-foreground">
+              {t('app.name')}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onMobileClose}
+            className="p-1.5 rounded-md text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
+            aria-label="Close menu"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
         <ChevronsLeft
           className={cn(
-            'w-4 h-4 text-muted-foreground cursor-pointer hover:text-sidebar-foreground ml-auto flex-shrink-0',
+            'w-4 h-4 text-muted-foreground cursor-pointer hover:text-sidebar-foreground ml-auto flex-shrink-0 hidden md:block',
             textCls,
           )}
           onClick={() => {
@@ -165,7 +200,9 @@ export function Sidebar() {
               )}
             >
               <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-              <span className={textCls}>{item.label}</span>
+              {/* On mobile always show text, on desktop respect collapse */}
+              <span className={cn('md:hidden')}>{item.label}</span>
+              <span className={cn('hidden md:inline', textCls)}>{item.label}</span>
             </Link>
           );
         })}
@@ -191,7 +228,17 @@ export function Sidebar() {
                     <span className="w-6 h-6 rounded bg-accent text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
                       {getInitials(activeCompany.name)}
                     </span>
-                    <span className={cn('flex items-center gap-1 flex-1 min-w-0', textCls)}>
+                    {/* Mobile: always show */}
+                    <span className="flex md:hidden items-center gap-1 flex-1 min-w-0">
+                      <span className="truncate flex-1 text-left">{activeCompany.name}</span>
+                      {switcherOpen ? (
+                        <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                      ) : (
+                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                      )}
+                    </span>
+                    {/* Desktop: respect collapse */}
+                    <span className={cn('hidden md:flex items-center gap-1 flex-1 min-w-0', textCls)}>
                       <span className="truncate flex-1 text-left">{activeCompany.name}</span>
                       {switcherOpen ? (
                         <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
@@ -203,14 +250,17 @@ export function Sidebar() {
                 ) : (
                   <>
                     <Building2 className="w-[18px] h-[18px] flex-shrink-0 text-muted-foreground" />
-                    <span className={cn('text-muted-foreground', textCls)}>
+                    <span className="md:hidden text-muted-foreground">
+                      {t('sidebar.selectCompany')}
+                    </span>
+                    <span className={cn('hidden md:inline text-muted-foreground', textCls)}>
                       {t('sidebar.selectCompany')}
                     </span>
                   </>
                 )}
               </button>
 
-              {switcherOpen && !collapsed && (
+              {switcherOpen && (
                 <div className="absolute left-0 right-0 mt-1 bg-sidebar-hover border border-sidebar-border rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
                   {companies.map((company) => (
                     <button
@@ -240,9 +290,14 @@ export function Sidebar() {
           <>
             {/* Fixed-height separator — shows company name when expanded, border when collapsed */}
             <div className="pt-2 pb-1 border-b border-sidebar-border">
+              {/* Mobile: always show */}
+              <p className="md:hidden px-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate whitespace-nowrap">
+                {activeCompany?.name}
+              </p>
+              {/* Desktop: respect collapse */}
               <p
                 className={cn(
-                  'px-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate whitespace-nowrap',
+                  'hidden md:block px-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate whitespace-nowrap',
                   textCls,
                 )}
               >
@@ -267,7 +322,8 @@ export function Sidebar() {
                   )}
                 >
                   <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-                  <span className={textCls}>{item.label}</span>
+                  <span className="md:hidden">{item.label}</span>
+                  <span className={cn('hidden md:inline', textCls)}>{item.label}</span>
                 </Link>
               );
             })}
@@ -275,5 +331,29 @@ export function Sidebar() {
         )}
       </nav>
     </aside>
+  );
+
+  return (
+    <>
+      {/* Desktop sidebar — always visible */}
+      <div className="hidden md:block">
+        {sidebarContent}
+      </div>
+
+      {/* Mobile sidebar — overlay drawer */}
+      {mobileOpen && (
+        <div className="md:hidden fixed inset-0 z-50 flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50"
+            onClick={onMobileClose}
+          />
+          {/* Drawer */}
+          <div className="relative z-50 h-full">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 }
