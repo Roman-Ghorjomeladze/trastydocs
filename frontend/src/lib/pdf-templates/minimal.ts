@@ -6,7 +6,6 @@ import {
   MARGIN,
   CONTENT_WIDTH,
   LINE_HEIGHT,
-  SECTION_GAP,
 } from './shared.ts';
 import { formatCurrency } from '../invoice-utils.ts';
 

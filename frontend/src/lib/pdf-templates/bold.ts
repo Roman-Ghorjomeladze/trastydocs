@@ -12,7 +12,6 @@ import { formatCurrency } from '../invoice-utils.ts';
 
 // ── Colors ──
 const RED = rgb(0.863, 0.149, 0.149);       // #DC2626
-const DARK_RED = rgb(0.725, 0.110, 0.110);   // darker shade
 const CHARCOAL = rgb(0.122, 0.161, 0.216);   // #1F2937
 const DARK = rgb(0.13, 0.13, 0.13);
 const GRAY = rgb(0.4, 0.4, 0.4);

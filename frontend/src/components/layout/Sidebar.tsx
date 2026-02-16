@@ -336,7 +336,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   // Keep the drawer in the DOM during exit animation so CSS transitions play out
   const [mobileVisible, setMobileVisible] = useState(false);
   const [mobileAnimating, setMobileAnimating] = useState(false);
-  const animationTimer = useRef<ReturnType<typeof setTimeout>>();
+  const animationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (mobileOpen) {
