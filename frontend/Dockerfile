@@ -9,6 +9,8 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 
 # Stage 2: Build
 FROM node:20-alpine AS build
+ARG VITE_SITE_URL=""
+ENV VITE_SITE_URL=$VITE_SITE_URL
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci

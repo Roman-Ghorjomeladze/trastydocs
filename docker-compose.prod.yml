@@ -80,6 +80,8 @@ services:
             context: ./frontend
             dockerfile: Dockerfile
             target: production
+            args:
+                VITE_SITE_URL: https://${DOMAIN:-localhost}
         container_name: docplatform_frontend
         restart: unless-stopped
         depends_on:
