@@ -510,11 +510,11 @@ export function DocumentBuilderPage() {
   return (
     <div className="flex flex-col h-[calc(100vh-64px)]">
       {/* Toolbar */}
-      <div className="flex items-center justify-between px-4 py-2 bg-card border-b shadow-sm shrink-0">
-        <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between px-3 md:px-4 py-2 bg-card border-b shadow-sm shrink-0 gap-2">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0">
           <button
             onClick={handleBack}
-            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+            className="p-2 text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors shrink-0"
             title={t('documents.back')}
           >
             <svg
@@ -531,19 +531,19 @@ export function DocumentBuilderPage() {
               />
             </svg>
           </button>
-          <div>
-            <h2 className="text-base font-semibold text-foreground">
+          <div className="min-w-0">
+            <h2 className="text-sm md:text-base font-semibold text-foreground truncate">
               {invoiceData.invoiceNumber || doc.name}
             </h2>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground truncate">
               {doc.documentNumber ? `${doc.documentNumber} · ` : ''}
               {isTransport ? labels.transportInvoice : labels.invoice}
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-muted-foreground">
+        <div className="flex items-center gap-2 md:gap-3 shrink-0">
+          <span className="text-xs text-muted-foreground hidden sm:inline">
             {isSaving
               ? t('documents.saving')
               : hasUnsavedChanges
@@ -556,7 +556,7 @@ export function DocumentBuilderPage() {
           <button
             onClick={handleManualSave}
             disabled={isSaving || !hasUnsavedChanges}
-            className="px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-2.5 md:px-3 py-1.5 text-sm border border-border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSaving ? t('documents.saving') : t('common.save')}
           </button>
@@ -565,7 +565,7 @@ export function DocumentBuilderPage() {
           <button
             onClick={handleExportPdf}
             disabled={isExporting}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="inline-flex items-center gap-1.5 px-2.5 md:px-4 py-1.5 bg-accent text-white text-sm font-medium rounded-lg hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <svg
               className="w-4 h-4"
@@ -580,15 +580,17 @@ export function DocumentBuilderPage() {
                 d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
               />
             </svg>
-            {isExporting ? t('documents.exporting') : t('documents.exportPdf')}
+            <span className="hidden sm:inline">
+              {isExporting ? t('documents.exporting') : t('documents.exportPdf')}
+            </span>
           </button>
         </div>
       </div>
 
       {/* Main layout: sidebar + form */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar: section navigation */}
-        <div className="w-48 min-w-[160px] bg-muted border-r border-border py-4 shrink-0">
+        {/* Left sidebar: section navigation (desktop only) */}
+        <div className="hidden md:block w-48 min-w-[160px] bg-muted border-r border-border py-4 shrink-0">
           <nav className="space-y-0.5 px-2">
             {sections.map((section) => (
               <button
@@ -611,13 +613,16 @@ export function DocumentBuilderPage() {
           ref={scrollContainerRef}
           className="flex-1 overflow-y-auto bg-muted"
         >
-          <div className="max-w-2xl mx-auto py-6 px-6 space-y-6">
+          <div className="max-w-2xl mx-auto py-4 px-4 md:py-6 md:px-6 space-y-6">
             <div
               id="header"
               ref={(el) => {
                 sectionRefs.current['header'] = el;
               }}
             >
+              <h3 className="md:hidden text-sm font-semibold text-accent uppercase tracking-wider mb-3">
+                {labels.invoice}
+              </h3>
               <InvoiceHeaderSection
                 data={invoiceData}
                 labels={labels}
@@ -631,6 +636,9 @@ export function DocumentBuilderPage() {
                 sectionRefs.current['company'] = el;
               }}
             >
+              <h3 className="md:hidden text-sm font-semibold text-accent uppercase tracking-wider mb-3 pt-2 border-t border-border">
+                {labels.companySeller}
+              </h3>
               <CompanyInfoSection
                 data={invoiceData}
                 labels={labels}
@@ -647,6 +655,9 @@ export function DocumentBuilderPage() {
                 sectionRefs.current['buyer'] = el;
               }}
             >
+              <h3 className="md:hidden text-sm font-semibold text-accent uppercase tracking-wider mb-3 pt-2 border-t border-border">
+                {labels.buyerClient}
+              </h3>
               <BuyerInfoSection
                 data={invoiceData}
                 labels={labels}
@@ -662,6 +673,9 @@ export function DocumentBuilderPage() {
                   sectionRefs.current['transport'] = el;
                 }}
               >
+                <h3 className="md:hidden text-sm font-semibold text-accent uppercase tracking-wider mb-3 pt-2 border-t border-border">
+                  {labels.transportInfo}
+                </h3>
                 <TransportInfoSection
                   data={invoiceData}
                   labels={labels}
@@ -678,6 +692,9 @@ export function DocumentBuilderPage() {
                 sectionRefs.current['items'] = el;
               }}
             >
+              <h3 className="md:hidden text-sm font-semibold text-accent uppercase tracking-wider mb-3 pt-2 border-t border-border">
+                {labels.lineItems}
+              </h3>
               <LineItemsSection
                 items={invoiceData.items}
                 currency={invoiceData.currency}
@@ -692,6 +709,9 @@ export function DocumentBuilderPage() {
                 sectionRefs.current['totals'] = el;
               }}
             >
+              <h3 className="md:hidden text-sm font-semibold text-accent uppercase tracking-wider mb-3 pt-2 border-t border-border">
+                {labels.totals}
+              </h3>
               <TotalsSection
                 subtotal={invoiceData.subtotal}
                 taxRate={invoiceData.taxRate}
@@ -709,6 +729,9 @@ export function DocumentBuilderPage() {
                 sectionRefs.current['notes'] = el;
               }}
             >
+              <h3 className="md:hidden text-sm font-semibold text-accent uppercase tracking-wider mb-3 pt-2 border-t border-border">
+                {labels.notesAndTerms}
+              </h3>
               <NotesSection
                 notes={invoiceData.notes}
                 paymentTerms={invoiceData.paymentTerms}
@@ -723,6 +746,9 @@ export function DocumentBuilderPage() {
                 sectionRefs.current['signature'] = el;
               }}
             >
+              <h3 className="md:hidden text-sm font-semibold text-accent uppercase tracking-wider mb-3 pt-2 border-t border-border">
+                {labels.signatureAndStamp}
+              </h3>
               <SignatureStampSection
                 data={invoiceData}
                 labels={labels}

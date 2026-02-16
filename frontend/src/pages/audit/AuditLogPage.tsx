@@ -78,15 +78,15 @@ export function AuditLogPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-4 mb-6">
-        <div>
+      <div className="flex flex-wrap items-center gap-3 md:gap-4 mb-6">
+        <div className="flex-1 min-w-[120px] max-w-[180px]">
           <label className="block text-xs font-medium text-muted-foreground mb-1">
             {t('audit.action')}
           </label>
           <select
             value={actionFilter}
             onChange={(e) => handleFilterChange('action', e.target.value)}
-            className="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
           >
             <option value="">{t('audit.allActions')}</option>
             {ACTION_OPTIONS.map((a) => (
@@ -96,14 +96,14 @@ export function AuditLogPage() {
             ))}
           </select>
         </div>
-        <div>
+        <div className="flex-1 min-w-[120px] max-w-[180px]">
           <label className="block text-xs font-medium text-muted-foreground mb-1">
             {t('audit.entity')}
           </label>
           <select
             value={entityFilter}
             onChange={(e) => handleFilterChange('entity', e.target.value)}
-            className="border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+            className="w-full border border-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
           >
             <option value="">{t('audit.allEntities')}</option>
             {ENTITY_OPTIONS.map((e) => (
@@ -164,30 +164,44 @@ export function AuditLogPage() {
                       {log.entityId}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                    <span>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
+                    <span className="truncate">
                       {log.user
                         ? `${log.user.name} (${log.user.email})`
                         : 'System'}
                     </span>
-                    <span className="text-border">|</span>
-                    <span>{formatDate(log.createdAt)}</span>
+                    <span className="text-border hidden md:inline">|</span>
+                    <span className="hidden md:inline">{formatDate(log.createdAt)}</span>
+                    <span className="md:hidden text-muted-foreground block w-full">{formatDate(log.createdAt)}</span>
                   </div>
                 </div>
 
-                {/* Expand Details */}
+                {/* Expand Details — desktop only (inline) */}
                 {log.details && (
                   <button
                     type="button"
                     onClick={() =>
                       setExpandedId(expandedId === log.id ? null : log.id)
                     }
-                    className="text-xs text-accent hover:text-accent-hover whitespace-nowrap"
+                    className="hidden md:inline-flex text-xs text-accent hover:text-accent-hover whitespace-nowrap"
                   >
                     {expandedId === log.id ? 'Hide' : t('audit.details')}
                   </button>
                 )}
               </div>
+
+              {/* Expand Details — mobile only (bottom of card) */}
+              {log.details && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setExpandedId(expandedId === log.id ? null : log.id)
+                  }
+                  className="md:hidden mt-3 w-full py-1.5 text-xs text-accent hover:text-accent-hover border border-border rounded-md transition-colors"
+                >
+                  {expandedId === log.id ? 'Hide' : t('audit.details')}
+                </button>
+              )}
 
               {/* Expanded Details */}
               {expandedId === log.id && log.details && (

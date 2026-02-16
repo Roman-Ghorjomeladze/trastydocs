@@ -179,8 +179,8 @@ export function VehiclesPage() {
 
       {/* Vehicle Table */}
       {!isLoading && filteredVehicles.length > 0 && (
-        <div className="bg-card border border-border rounded-lg overflow-hidden">
-          <table className="w-full">
+        <div className="bg-card border border-border rounded-lg overflow-x-auto">
+          <table className="w-full min-w-[600px]">
             <thead>
               <tr className="border-b border-border bg-muted">
                 <th className="text-left px-4 py-3 text-xs font-medium text-muted-foreground uppercase">

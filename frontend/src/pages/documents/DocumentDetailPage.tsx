@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from 'react-i18next';
+import { MoreVertical, Pencil, PenLine, Send, Copy, Trash2 } from 'lucide-react';
 import { useDocumentStore } from "../../stores/document.store.ts";
 import { ROUTES, STATUS_COLORS } from "../../lib/constants.ts";
 import { cn } from "../../lib/utils.ts";
@@ -37,6 +38,8 @@ export function DocumentDetailPage() {
 	const [pdfError, setPdfError] = useState<string | null>(null);
 	const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 	const [isDeleting, setIsDeleting] = useState(false);
+	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+	const menuRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		if (documentId) fetchDocument(documentId);
@@ -141,8 +144,8 @@ export function DocumentDetailPage() {
 	return (
 		<div>
 			{/* Header */}
-			<div className="flex items-start justify-between mb-6">
-				<div>
+			<div className="flex items-start justify-between mb-6 gap-3">
+				<div className="min-w-0 flex-1">
 					<button
 						type="button"
 						onClick={() => companyId && navigate(ROUTES.DOCUMENTS(companyId))}
@@ -150,21 +153,21 @@ export function DocumentDetailPage() {
 					>
 						&larr; {t('documents.back')}
 					</button>
-					<div className="flex items-center gap-3">
+					<div className="flex items-center gap-3 flex-wrap">
 						{isEditing ? (
 							<input
 								type="text"
 								value={editName}
 								onChange={(e) => setEditName(e.target.value)}
-								className="text-2xl font-bold text-foreground border-b-2 border-accent outline-none bg-transparent"
+								className="text-2xl font-bold text-foreground border-b-2 border-accent outline-none bg-transparent min-w-0"
 								autoFocus
 							/>
 						) : (
-							<h1 className="text-2xl font-bold text-foreground">{doc.name}</h1>
+							<h1 className="text-2xl font-bold text-foreground break-words">{doc.name}</h1>
 						)}
 						<span
 							className={cn(
-								"inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium",
+								"inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium shrink-0",
 								STATUS_COLORS[doc.status] || "bg-gray-100 text-gray-800",
 							)}
 						>
@@ -173,7 +176,9 @@ export function DocumentDetailPage() {
 					</div>
 					{doc.documentNumber && <p className="text-sm text-muted-foreground font-mono mt-1">{doc.documentNumber}</p>}
 				</div>
-				<div className="flex items-center gap-2">
+
+				{/* Desktop actions */}
+				<div className="hidden md:flex items-center gap-2 shrink-0">
 					{isDraft && !isEditing && (
 						<button
 							type="button"
@@ -209,19 +214,7 @@ export function DocumentDetailPage() {
 							}
 							className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover"
 						>
-							<svg
-								className="w-4 h-4"
-								fill="none"
-								stroke="currentColor"
-								viewBox="0 0 24 24"
-							>
-								<path
-									strokeLinecap="round"
-									strokeLinejoin="round"
-									strokeWidth={2}
-									d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-								/>
-							</svg>
+							<PenLine className="w-4 h-4" />
 							{t('documents.openBuilder')}
 						</button>
 					)}
@@ -246,6 +239,107 @@ export function DocumentDetailPage() {
 					>
 						{t('common.delete')}
 					</button>
+				</div>
+
+				{/* Mobile actions menu */}
+				<div className="md:hidden relative shrink-0" ref={menuRef}>
+					{isEditing ? (
+						<div className="flex items-center gap-2">
+							<button
+								type="button"
+								onClick={handleSave}
+								className="px-3 py-1.5 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover"
+							>
+								{t('common.save')}
+							</button>
+							<button
+								type="button"
+								onClick={() => setIsEditing(false)}
+								className="px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
+							>
+								{t('common.cancel')}
+							</button>
+						</div>
+					) : (
+						<>
+							<button
+								type="button"
+								onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+								className="p-2 rounded-lg border border-border text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+								aria-label="Actions"
+							>
+								<MoreVertical className="w-5 h-5" />
+							</button>
+
+							{mobileMenuOpen && (
+								<>
+									<div className="fixed inset-0 z-30" onClick={() => setMobileMenuOpen(false)} />
+									<div className="absolute right-0 top-full mt-1 bg-card border border-border rounded-lg shadow-lg z-40 min-w-[220px] py-1 animate-fade-in">
+										{isDraft && (
+											<button
+												type="button"
+												onClick={() => {
+													setMobileMenuOpen(false);
+													setIsEditing(true);
+												}}
+												className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+											>
+												<Pencil className="w-4 h-4 text-muted-foreground" />
+												{t('common.edit')}
+											</button>
+										)}
+										{isDraft && companyId && (
+											<button
+												type="button"
+												onClick={() => {
+													setMobileMenuOpen(false);
+													navigate(ROUTES.DOCUMENT_BUILDER(companyId, doc.id));
+												}}
+												className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+											>
+												<PenLine className="w-4 h-4 text-muted-foreground" />
+												{t('documents.openBuilder')}
+											</button>
+										)}
+										<button
+											type="button"
+											onClick={() => {
+												setMobileMenuOpen(false);
+												setShowSendModal(true);
+											}}
+											className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+										>
+											<Send className="w-4 h-4 text-muted-foreground" />
+											{t('documents.send')}
+										</button>
+										<button
+											type="button"
+											onClick={() => {
+												setMobileMenuOpen(false);
+												handleDuplicate();
+											}}
+											className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
+										>
+											<Copy className="w-4 h-4 text-muted-foreground" />
+											{t('documents.duplicate')}
+										</button>
+										<div className="border-t border-border my-1" />
+										<button
+											type="button"
+											onClick={() => {
+												setMobileMenuOpen(false);
+												setShowDeleteConfirm(true);
+											}}
+											className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-danger hover:bg-danger/10 transition-colors"
+										>
+											<Trash2 className="w-4 h-4" />
+											{t('common.delete')}
+										</button>
+									</div>
+								</>
+							)}
+						</>
+					)}
 				</div>
 			</div>
 
