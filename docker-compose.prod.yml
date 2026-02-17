@@ -65,6 +65,9 @@ services:
             SMTP_PASSWORD: ${SMTP_PASSWORD:-}
             SMTP_FROM: ${SMTP_FROM:-noreply@docplatform.com}
             FRONTEND_URL: ${FRONTEND_URL}
+            PADDLE_API_KEY: ${PADDLE_API_KEY:-}
+            PADDLE_WEBHOOK_SECRET: ${PADDLE_WEBHOOK_SECRET:-}
+            PADDLE_ENVIRONMENT: ${PADDLE_ENVIRONMENT:-sandbox}
         depends_on:
             postgres:
                 condition: service_healthy
