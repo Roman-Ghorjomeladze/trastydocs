@@ -5,6 +5,7 @@ import type { InvoiceData } from '../../types/index.ts';
 import type { InvoiceLabels } from '../invoice-i18n.ts';
 import { getInvoiceLabels } from '../invoice-i18n.ts';
 import type { InvoiceLanguage } from '../invoice-i18n.ts';
+import apiClient from '../../api/client.ts';
 
 // ── Default layout constants (templates may use their own) ──
 export const PAGE_WIDTH = 595.28; // A4 in points
@@ -13,6 +14,14 @@ export const MARGIN = 50;
 export const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 export const LINE_HEIGHT = 14;
 export const SECTION_GAP = 20;
+
+/** Truncate company name to MAX_CHARS (adds "..." if cropped). Used by all templates. */
+const MAX_COMPANY_NAME_CHARS = 80;
+export function clampCompanyName(raw: string | undefined): string {
+  const name = raw || 'Company';
+  if (name.length <= MAX_COMPANY_NAME_CHARS) return name;
+  return name.slice(0, MAX_COMPANY_NAME_CHARS - 3).trimEnd() + '...';
+}
 
 // ── Georgian Unicode ranges ──
 const GEORGIAN_REGEX = /[\u10A0-\u10FF\u1C90-\u1CBF\u2D00-\u2D2F]/;
@@ -113,8 +122,31 @@ async function embedImageInDoc(
 ): Promise<Awaited<ReturnType<typeof pdfDoc.embedPng>> | null> {
   if (!imageUrl) return null;
   try {
-    const response = await fetch(imageUrl);
-    const arrayBuffer = await response.arrayBuffer();
+    let arrayBuffer: ArrayBuffer;
+
+    if (imageUrl.startsWith('s3://')) {
+      // S3 URL → resolve to presigned URL via backend, then fetch directly
+      const res = await apiClient.get('/files/resolve', { params: { url: imageUrl } });
+      const presignedUrl: string = res.data.url;
+      const response = await fetch(presignedUrl);
+      arrayBuffer = await response.arrayBuffer();
+    } else if (imageUrl.startsWith('/api/') || imageUrl.startsWith('api/') || imageUrl.startsWith('/uploads/') || imageUrl.startsWith('uploads/')) {
+      // Local file — fetch via authenticated proxy
+      let apiPath = imageUrl;
+      if (apiPath.startsWith('/api/')) apiPath = apiPath.slice(4);
+      if (apiPath.startsWith('/uploads/')) apiPath = '/files' + apiPath.slice(8);
+      if (apiPath.startsWith('uploads/')) apiPath = '/files/' + apiPath.slice(8);
+      if (!apiPath.startsWith('/')) apiPath = '/' + apiPath;
+      const response = await apiClient.get(apiPath, { responseType: 'arraybuffer' });
+      arrayBuffer = response.data;
+    } else if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:') || imageUrl.startsWith('http')) {
+      const response = await fetch(imageUrl);
+      arrayBuffer = await response.arrayBuffer();
+    } else {
+      const response = await fetch(imageUrl);
+      arrayBuffer = await response.arrayBuffer();
+    }
+
     const bytes = new Uint8Array(arrayBuffer);
 
     if (bytes[0] === 0x89 && bytes[1] === 0x50) {

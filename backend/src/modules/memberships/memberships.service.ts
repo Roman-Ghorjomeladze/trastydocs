@@ -4,8 +4,10 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { MailService } from '../../integrations/mail/mail.service.js';
 import type { AddMemberDto } from './dto/add-member.dto.js';
 import type { UpdateMemberDto } from './dto/update-member.dto.js';
 
@@ -14,36 +16,16 @@ export class MembershipsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly mail: MailService,
+    private readonly config: ConfigService,
   ) {}
 
   /**
    * Add a member to a company by email.
-   * Enforces: only OWNER can add as ADMIN, no duplicate memberships.
+   * If the user exists, creates an ACTIVE membership.
+   * If not, creates a PendingInvitation and sends an email invite.
    */
   async addMember(companyId: string, dto: AddMemberDto, inviterId: string) {
-    // Find the user to add
-    const userToAdd = await this.prisma.user.findUnique({
-      where: { email: dto.email },
-    });
-
-    if (!userToAdd) {
-      throw new NotFoundException(`User with email "${dto.email}" not found`);
-    }
-
-    // Check for duplicate membership
-    const existing = await this.prisma.membership.findUnique({
-      where: {
-        userId_companyId: {
-          userId: userToAdd.id,
-          companyId,
-        },
-      },
-    });
-
-    if (existing) {
-      throw new BadRequestException('User is already a member of this company');
-    }
-
     // Only OWNER can add as ADMIN
     if (dto.role === 'ADMIN') {
       const inviterMembership = await this.prisma.membership.findFirst({
@@ -55,30 +37,116 @@ export class MembershipsService {
       }
     }
 
-    const membership = await this.prisma.membership.create({
+    const userToAdd = await this.prisma.user.findUnique({
+      where: { email: dto.email },
+    });
+
+    if (userToAdd) {
+      // ── User exists → add directly ──
+      const existing = await this.prisma.membership.findUnique({
+        where: {
+          userId_companyId: {
+            userId: userToAdd.id,
+            companyId,
+          },
+        },
+      });
+
+      if (existing) {
+        throw new BadRequestException(
+          'User is already a member of this company',
+        );
+      }
+
+      const membership = await this.prisma.membership.create({
+        data: {
+          userId: userToAdd.id,
+          companyId,
+          role: dto.role,
+          status: 'ACTIVE',
+        },
+        include: {
+          user: {
+            select: { id: true, email: true, name: true, avatarUrl: true },
+          },
+        },
+      });
+
+      await this.audit.log({
+        action: 'CREATE',
+        entity: 'Membership',
+        entityId: membership.id,
+        userId: inviterId,
+        companyId,
+        details: { email: dto.email, role: dto.role },
+      });
+
+      return { type: 'added' as const, membership };
+    }
+
+    // ── User doesn't exist → create invitation ──
+    const existingInvite = await this.prisma.pendingInvitation.findUnique({
+      where: { email_companyId: { email: dto.email, companyId } },
+    });
+
+    if (existingInvite) {
+      throw new BadRequestException(
+        'An invitation has already been sent to this email',
+      );
+    }
+
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+    });
+    const inviter = await this.prisma.user.findUnique({
+      where: { id: inviterId },
+    });
+
+    const invitation = await this.prisma.pendingInvitation.create({
       data: {
-        userId: userToAdd.id,
+        email: dto.email,
         companyId,
         role: dto.role,
-        status: 'ACTIVE',
-      },
-      include: {
-        user: {
-          select: { id: true, email: true, name: true, avatarUrl: true },
-        },
+        invitedBy: inviterId,
+        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
       },
     });
 
+    // Send invitation email
+    const frontendUrl =
+      this.config.get<string>('FRONTEND_URL') || 'http://localhost:5173';
+    const inviteUrl = `${frontendUrl}/register?invite=${invitation.token}`;
+
+    try {
+      await this.mail.sendInvite(
+        dto.email,
+        inviter?.name || 'A team member',
+        company?.name || 'a company',
+        inviteUrl,
+      );
+    } catch (err) {
+      console.error('Failed to send invitation email:', err);
+    }
+
     await this.audit.log({
       action: 'CREATE',
-      entity: 'Membership',
-      entityId: membership.id,
+      entity: 'PendingInvitation',
+      entityId: invitation.id,
       userId: inviterId,
       companyId,
       details: { email: dto.email, role: dto.role },
     });
 
-    return membership;
+    return {
+      type: 'invited' as const,
+      invitation: {
+        id: invitation.id,
+        email: invitation.email,
+        role: invitation.role,
+        expiresAt: invitation.expiresAt,
+        createdAt: invitation.createdAt,
+      },
+    };
   }
 
   /**
@@ -94,6 +162,95 @@ export class MembershipsService {
       },
       orderBy: [{ role: 'asc' }, { joinedAt: 'asc' }],
     });
+  }
+
+  /**
+   * List pending invitations for a company.
+   */
+  async findInvitationsByCompany(companyId: string) {
+    return this.prisma.pendingInvitation.findMany({
+      where: {
+        companyId,
+        expiresAt: { gt: new Date() },
+      },
+      include: {
+        inviter: {
+          select: { id: true, email: true, name: true },
+        },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  /**
+   * Cancel a pending invitation.
+   */
+  async cancelInvitation(
+    invitationId: string,
+    actingUserId: string,
+    companyId: string,
+  ) {
+    const invitation = await this.prisma.pendingInvitation.findUnique({
+      where: { id: invitationId },
+    });
+
+    if (!invitation || invitation.companyId !== companyId) {
+      throw new NotFoundException('Invitation not found');
+    }
+
+    await this.prisma.pendingInvitation.delete({
+      where: { id: invitationId },
+    });
+
+    await this.audit.log({
+      action: 'DELETE',
+      entity: 'PendingInvitation',
+      entityId: invitationId,
+      userId: actingUserId,
+      companyId,
+      details: { email: invitation.email },
+    });
+
+    return { message: 'Invitation cancelled successfully' };
+  }
+
+  /**
+   * Accept all pending invitations for a given email (called on registration).
+   */
+  async acceptPendingInvitations(userId: string, email: string) {
+    const invitations = await this.prisma.pendingInvitation.findMany({
+      where: {
+        email,
+        expiresAt: { gt: new Date() },
+      },
+    });
+
+    for (const invite of invitations) {
+      // Check if membership already exists (shouldn't, but be safe)
+      const existing = await this.prisma.membership.findUnique({
+        where: {
+          userId_companyId: { userId, companyId: invite.companyId },
+        },
+      });
+
+      if (!existing) {
+        await this.prisma.membership.create({
+          data: {
+            userId,
+            companyId: invite.companyId,
+            role: invite.role,
+            status: 'ACTIVE',
+          },
+        });
+      }
+    }
+
+    // Delete all invitations for this email (including expired ones)
+    await this.prisma.pendingInvitation.deleteMany({
+      where: { email },
+    });
+
+    return invitations.length;
   }
 
   /**

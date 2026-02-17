@@ -7,10 +7,14 @@ import { AuthService } from './auth.service.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
 import { GoogleStrategy } from './strategies/google.strategy.js';
 import { LocalStrategy } from './strategies/local.strategy.js';
+import { AdminModule } from '../admin/admin.module.js';
+import { MembershipsModule } from '../memberships/memberships.module.js';
 
 @Module({
   imports: [
     PassportModule,
+    AdminModule,
+    MembershipsModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],

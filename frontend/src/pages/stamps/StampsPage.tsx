@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useStampStore } from '../../stores/stamp.store.ts';
+import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
+import { AuthImage } from '../../components/shared/AuthImage.tsx';
 import { cn } from '../../lib/utils.ts';
 import { removeWhiteBackground } from '../../lib/image-utils.ts';
 import type { StampAsset } from '../../types/index.ts';
@@ -14,6 +16,7 @@ export function StampsPage() {
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -67,6 +70,7 @@ export function StampsPage() {
   const handleDelete = async (id: string) => {
     if (!companyId) return;
     await deleteStamp(companyId, id);
+    setDeleteTarget(null);
   };
 
   return (
@@ -133,7 +137,7 @@ export function StampsPage() {
                 </span>
               )}
               <div className="bg-muted rounded-lg p-3 mb-3 flex items-center justify-center min-h-[100px]">
-                <img
+                <AuthImage
                   src={stamp.imageUrl}
                   alt={stamp.name}
                   className="max-h-[80px] max-w-full object-contain"
@@ -183,7 +187,7 @@ export function StampsPage() {
                 )}
                 <button
                   type="button"
-                  onClick={() => handleDelete(stamp.id)}
+                  onClick={() => setDeleteTarget(stamp.id)}
                   className="text-danger hover:text-danger-hover ml-auto"
                 >
                   {t('stamps.delete')}
@@ -193,6 +197,15 @@ export function StampsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title={t('stamps.deleteStamp')}
+        message={t('stamps.confirmDelete')}
+        variant="danger"
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

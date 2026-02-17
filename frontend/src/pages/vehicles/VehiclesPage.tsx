@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useVehicleStore } from '../../stores/vehicle.store.ts';
+import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { SearchSelect } from '../../components/shared/SearchSelect.tsx';
 import { cn } from '../../lib/utils.ts';
 import type { Vehicle, VehicleType } from '../../types/index.ts';
@@ -22,6 +23,7 @@ export function VehiclesPage() {
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
   const [filterType, setFilterType] = useState<VehicleType | ''>('');
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Form state
   const [formModel, setFormModel] = useState('');
@@ -108,6 +110,7 @@ export function VehiclesPage() {
   const handleDelete = async (id: string) => {
     if (!companyId) return;
     await deleteVehicle(companyId, id);
+    setDeleteTarget(null);
   };
 
   return (
@@ -254,7 +257,7 @@ export function VehiclesPage() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => handleDelete(vehicle.id)}
+                        onClick={() => setDeleteTarget(vehicle.id)}
                         className="text-xs text-danger hover:text-danger-hover"
                       >
                         {t('common.delete')}
@@ -267,6 +270,15 @@ export function VehiclesPage() {
           </table>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title={t('vehicles.deleteVehicle')}
+        message={t('vehicles.confirmDelete')}
+        variant="danger"
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Modal */}
       {showModal && (

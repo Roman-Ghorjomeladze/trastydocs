@@ -18,6 +18,8 @@ import type {
   MembershipRole,
   Translations,
   UpdateCompanyDto,
+  AddMemberResult,
+  PendingInvitation,
 } from '../../types/index.ts';
 
 type Tab = 'overview' | 'members' | 'settings';
@@ -28,8 +30,18 @@ export function CompanyDetailPage() {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { updateCompany, deleteCompany, setActiveCompany } = useCompanyStore();
-  const { members, isLoading: membersLoading, fetchMembers, addMember, updateMember, removeMember, clearMembers } =
-    useMembershipStore();
+  const {
+    members,
+    invitations,
+    isLoading: membersLoading,
+    fetchMembers,
+    fetchInvitations,
+    addMember,
+    updateMember,
+    removeMember,
+    cancelInvitation,
+    clearMembers,
+  } = useMembershipStore();
 
   const [company, setCompany] = useState<Company | null>(null);
   const [loading, setLoading] = useState(true);
@@ -61,11 +73,12 @@ export function CompanyDetailPage() {
 
     load();
     fetchMembers(companyId);
+    fetchInvitations(companyId);
 
     return () => {
       clearMembers();
     };
-  }, [companyId, fetchMembers, clearMembers, setActiveCompany]);
+  }, [companyId, fetchMembers, fetchInvitations, clearMembers, setActiveCompany]);
 
   if (loading) {
     return (
@@ -163,6 +176,7 @@ export function CompanyDetailPage() {
         <MembersTab
           companyId={companyId}
           members={members}
+          invitations={invitations}
           isLoading={membersLoading}
           canManage={canManage}
           isOwner={isOwner}
@@ -170,6 +184,7 @@ export function CompanyDetailPage() {
           onAddMember={addMember}
           onUpdateMember={updateMember}
           onRemoveMember={removeMember}
+          onCancelInvitation={cancelInvitation}
         />
       )}
       {activeTab === 'settings' && canManage && companyId && (
@@ -232,6 +247,7 @@ function OverviewTab({
 function MembersTab({
   companyId,
   members,
+  invitations,
   isLoading,
   canManage,
   isOwner,
@@ -239,16 +255,19 @@ function MembersTab({
   onAddMember,
   onUpdateMember,
   onRemoveMember,
+  onCancelInvitation,
 }: {
   companyId: string;
   members: Membership[];
+  invitations: PendingInvitation[];
   isLoading: boolean;
   canManage: boolean;
   isOwner: boolean;
   currentUserId: string;
-  onAddMember: (companyId: string, data: { email: string; role?: 'ADMIN' | 'MEMBER' | 'VIEWER' }) => Promise<Membership>;
+  onAddMember: (companyId: string, data: { email: string; role?: 'ADMIN' | 'MEMBER' | 'VIEWER' }) => Promise<AddMemberResult>;
   onUpdateMember: (companyId: string, memberId: string, data: { role?: MembershipRole }) => Promise<Membership>;
   onRemoveMember: (companyId: string, memberId: string) => Promise<void>;
+  onCancelInvitation: (companyId: string, invitationId: string) => Promise<void>;
 }) {
   const { t } = useTranslation();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -256,6 +275,7 @@ function MembersTab({
   const [role, setRole] = useState<'ADMIN' | 'MEMBER' | 'VIEWER'>('MEMBER');
   const [adding, setAdding] = useState(false);
   const [addError, setAddError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [errorBanner, setErrorBanner] = useState('');
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -271,17 +291,30 @@ function MembersTab({
     }
   }, [errorBanner]);
 
+  useEffect(() => {
+    if (successMessage) {
+      const timer = setTimeout(() => setSuccessMessage(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [successMessage]);
+
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
 
     setAdding(true);
     setAddError('');
+    setSuccessMessage('');
     try {
-      await onAddMember(companyId, { email: email.trim(), role });
+      const result = await onAddMember(companyId, { email: email.trim(), role });
       setEmail('');
       setRole('MEMBER');
       setShowAddForm(false);
+      if (result.type === 'invited') {
+        setSuccessMessage(t('companies.invitationSent', { email: email.trim() }));
+      } else {
+        setSuccessMessage(t('companies.memberAdded'));
+      }
     } catch (err: unknown) {
       const message =
         err instanceof Error ? err.message : 'Failed to add member';
@@ -335,6 +368,12 @@ function MembersTab({
       {errorBanner && (
         <div className="mb-4 p-3 bg-danger/10 border border-danger/30 text-danger rounded-lg text-sm">
           {errorBanner}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="mb-4 p-3 bg-success/10 border border-success/30 text-success rounded-lg text-sm">
+          {successMessage}
         </div>
       )}
 
@@ -504,6 +543,92 @@ function MembersTab({
         )}
       </div>
 
+      {/* Pending Invitations */}
+      {canManage && invitations.length > 0 && (
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-muted-foreground uppercase mb-3">
+            {t('companies.pendingInvitations')} ({invitations.length})
+          </h3>
+          <div className="bg-card border rounded-lg overflow-hidden">
+            <table className="min-w-full divide-y divide-border">
+              <thead className="bg-muted">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('companies.email')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('companies.role')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('companies.invitedBy')}
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('companies.expires')}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-muted-foreground uppercase">
+                    {t('companies.actions')}
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {invitations.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-muted">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-foreground">{inv.email}</span>
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                          {t('companies.pending')}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={cn(
+                          'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                          ROLE_COLORS[inv.role] || 'bg-gray-100 text-gray-800',
+                        )}
+                      >
+                        {t(`roles.${inv.role}`)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                      {inv.inviter?.name || inv.inviter?.email || '—'}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                      {formatDate(inv.expiresAt)}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => {
+                          setConfirmModal({
+                            isOpen: true,
+                            title: t('companies.cancelInvitation'),
+                            message: t('companies.confirmCancelInvitation', { email: inv.email }),
+                            onConfirm: async () => {
+                              setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+                              try {
+                                await onCancelInvitation(companyId, inv.id);
+                              } catch (err: unknown) {
+                                setErrorBanner(
+                                  err instanceof Error ? err.message : 'Failed to cancel invitation',
+                                );
+                              }
+                            },
+                          });
+                        }}
+                        className="text-sm text-danger hover:text-danger-hover"
+                      >
+                        {t('companies.cancel')}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       <ConfirmModal
         isOpen={confirmModal.isOpen}
         title={confirmModal.title}
@@ -647,14 +772,22 @@ function SettingsTab({
     setShowAddBank(false);
   };
 
-  const handleRemoveBankAccount = async (id: string) => {
-    const filtered = bankAccounts.filter((ba) => ba.id !== id);
-    // If removed account was default and there are remaining accounts, set first as default
-    const hadDefault = bankAccounts.find((ba) => ba.id === id)?.isDefault;
-    if (hadDefault && filtered.length > 0) {
-      filtered[0].isDefault = true;
-    }
-    await saveBankAccounts(filtered);
+  const handleRemoveBankAccount = (id: string) => {
+    setConfirmModal({
+      isOpen: true,
+      title: t('companies.removeBankTitle'),
+      message: t('companies.confirmRemoveBank'),
+      onConfirm: async () => {
+        setConfirmModal((prev) => ({ ...prev, isOpen: false }));
+        const filtered = bankAccounts.filter((ba) => ba.id !== id);
+        // If removed account was default and there are remaining accounts, set first as default
+        const hadDefault = bankAccounts.find((ba) => ba.id === id)?.isDefault;
+        if (hadDefault && filtered.length > 0) {
+          filtered[0].isDefault = true;
+        }
+        await saveBankAccounts(filtered);
+      },
+    });
   };
 
   const handleSetDefaultBank = async (id: string) => {
@@ -779,7 +912,7 @@ function SettingsTab({
       <div className="bg-card border rounded-lg p-6">
         <h2 className="text-lg font-semibold mb-1">{t('companies.nameTranslations')}</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Provide the company name and address in different languages for multilingual invoices.
+          {t('companies.translationsHelp')}
         </p>
 
         <div className="space-y-4">

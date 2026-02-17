@@ -250,7 +250,7 @@ export function DocumentBuilderPage() {
     return () => observer.disconnect();
   }, [isLoading, sections]);
 
-  // Auto-save handler
+  // Auto-save handler — saves inputData AND regenerates PDF silently
   const saveToServer = useCallback(
     async (data: InvoiceData) => {
       if (!documentId) return;
@@ -261,13 +261,26 @@ export function DocumentBuilderPage() {
         });
         setHasUnsavedChanges(false);
         setLastSaved(new Date());
+
+        // Silently regenerate and upload PDF so preview stays in sync
+        try {
+          const pdfBytes = await exportInvoicePdf(data);
+          const base64 = btoa(
+            Array.from(pdfBytes)
+              .map((b) => String.fromCharCode(b))
+              .join(''),
+          );
+          await uploadPdf(documentId, base64);
+        } catch (pdfErr) {
+          console.error('[Auto-save] PDF regeneration failed:', pdfErr);
+        }
       } catch {
         // silently handle auto-save failure
       } finally {
         setIsSaving(false);
       }
     },
-    [documentId, updateDocument],
+    [documentId, updateDocument, uploadPdf],
   );
 
   // Field change handler with auto-save
@@ -432,6 +445,19 @@ export function DocumentBuilderPage() {
   const handleExportPdf = async () => {
     setIsExporting(true);
     try {
+      // Flush any pending auto-save so the server has the latest data
+      if (autoSaveTimerRef.current) {
+        clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = null;
+      }
+
+      // Save latest data to server first (ensures template, language etc. are persisted)
+      if (documentId) {
+        await updateDocument(documentId, {
+          inputData: invoiceData as unknown as Record<string, unknown>,
+        });
+      }
+
       const pdfBytes = await exportInvoicePdf(invoiceData);
       const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
@@ -444,7 +470,7 @@ export function DocumentBuilderPage() {
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
 
-      // Also upload to server
+      // Upload generated PDF to server
       if (documentId) {
         const base64 = btoa(
           Array.from(pdfBytes)
@@ -453,6 +479,9 @@ export function DocumentBuilderPage() {
         );
         await uploadPdf(documentId, base64);
       }
+
+      setHasUnsavedChanges(false);
+      setLastSaved(new Date());
     } catch (err) {
       console.error('PDF export failed:', err);
     } finally {

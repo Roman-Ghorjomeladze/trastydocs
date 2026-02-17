@@ -9,10 +9,19 @@ export interface Toast {
 
 export type Theme = 'light' | 'dark' | 'system';
 
+interface UpgradeModalState {
+  isOpen: boolean;
+  resource?: string;
+  currentUsage?: number;
+  limit?: number;
+  planName?: string;
+}
+
 interface UiState {
   sidebarOpen: boolean;
   toasts: Toast[];
   theme: Theme;
+  upgradeModal: UpgradeModalState;
 }
 
 interface UiActions {
@@ -21,6 +30,8 @@ interface UiActions {
   addToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
   setTheme: (theme: Theme) => void;
+  showUpgradeModal: (data?: Omit<UpgradeModalState, 'isOpen'>) => void;
+  hideUpgradeModal: () => void;
 }
 
 let toastCounter = 0;
@@ -59,6 +70,7 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
   sidebarOpen: true,
   toasts: [],
   theme: initialTheme,
+  upgradeModal: { isOpen: false },
 
   // ── Actions ──
   toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
@@ -91,6 +103,12 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
     set((state) => ({
       toasts: state.toasts.filter((t) => t.id !== id),
     })),
+
+  showUpgradeModal: (data) =>
+    set({ upgradeModal: { isOpen: true, ...data } }),
+
+  hideUpgradeModal: () =>
+    set({ upgradeModal: { isOpen: false } }),
 }));
 
 // Listen for system theme changes when in 'system' mode

@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import slugify from 'slugify';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
+import { LimitsService } from '../admin/limits.service.js';
 import type { CreateCompanyDto } from './dto/create-company.dto.js';
 import type { UpdateCompanyDto } from './dto/update-company.dto.js';
 
@@ -9,6 +10,7 @@ import type { UpdateCompanyDto } from './dto/update-company.dto.js';
 export class CompaniesService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly limitsService: LimitsService,
   ) {}
 
   /**
@@ -16,6 +18,8 @@ export class CompaniesService {
    * Uses a transaction to ensure atomicity.
    */
   async create(dto: CreateCompanyDto, userId: string) {
+    await this.limitsService.checkLimit(userId, 'companies');
+
     const slug = await this.generateUniqueSlug(dto.name);
 
     const company = await this.prisma.$transaction(

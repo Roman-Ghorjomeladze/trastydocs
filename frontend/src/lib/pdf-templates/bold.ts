@@ -7,6 +7,7 @@ import {
   CONTENT_WIDTH,
   LINE_HEIGHT,
   SECTION_GAP,
+  clampCompanyName,
 } from './shared.ts';
 import { formatCurrency } from '../invoice-utils.ts';
 
@@ -42,11 +43,12 @@ export const renderBold: TemplateRenderFn = async (ctx) => {
     color: RED,
   });
 
-  // Company name in white (inside red block)
-  drawText(page, data.companyName || 'Company', MARGIN, PAGE_HEIGHT - 35, {
-    size: 22,
+  // Company name in white (inside red block, 40 char limit)
+  drawText(page, clampCompanyName(data.companyName), MARGIN, PAGE_HEIGHT - 35, {
+    size: 16,
     bold: true,
     color: WHITE,
+    maxWidth: CONTENT_WIDTH,
   });
 
   // Invoice title below company name

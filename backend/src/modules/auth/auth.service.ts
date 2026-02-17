@@ -9,6 +9,8 @@ import * as bcrypt from 'bcryptjs';
 import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../database/prisma.service.js';
 import { RedisService } from '../../integrations/redis/redis.service.js';
+import { LimitsService } from '../admin/limits.service.js';
+import { MembershipsService } from '../memberships/memberships.service.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
 import type { ChangePasswordDto } from './dto/change-password.dto.js';
@@ -36,6 +38,8 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly redisService: RedisService,
+    private readonly limitsService: LimitsService,
+    private readonly membershipsService: MembershipsService,
   ) {
     this.accessTokenExpSec =
       this.configService.get<number>('JWT_ACCESS_EXPIRES_SEC') || 900; // 15 min
@@ -62,6 +66,22 @@ export class AuthService {
         name: dto.name,
       },
     });
+
+    // Auto-assign free plan to new user
+    await this.assignFreePlan(user.id);
+
+    // Grant welcome credits (temporary promotion)
+    await this.grantWelcomeCredits(user.id);
+
+    // Auto-accept any pending company invitations for this email
+    try {
+      await this.membershipsService.acceptPendingInvitations(
+        user.id,
+        user.email,
+      );
+    } catch {
+      // Non-critical: user can still use the platform
+    }
 
     const tokens = await this.generateTokenPair(user.id, user.email);
 
@@ -138,9 +158,7 @@ export class AuthService {
       data: {
         token: refreshJti,
         userId,
-        expiresAt: new Date(
-          Date.now() + this.refreshTokenExpSec * 1000,
-        ),
+        expiresAt: new Date(Date.now() + this.refreshTokenExpSec * 1000),
       },
     });
 
@@ -247,6 +265,22 @@ export class AuthService {
           googleId: profile.email,
         },
       });
+
+      // Auto-assign free plan to new user
+      await this.assignFreePlan(user.id);
+
+      // Grant welcome credits (temporary promotion)
+      await this.grantWelcomeCredits(user.id);
+
+      // Auto-accept any pending company invitations for this email
+      try {
+        await this.membershipsService.acceptPendingInvitations(
+          user.id,
+          user.email,
+        );
+      } catch {
+        // Non-critical
+      }
     } else if (!user.googleId) {
       // Link Google account to existing user
       user = await this.prisma.user.update({
@@ -285,7 +319,29 @@ export class AuthService {
       throw new UnauthorizedException('User not found');
     }
 
-    return user;
+    // Check admin status
+    const adminUser = await this.prisma.adminUser.findUnique({
+      where: { userId },
+    });
+
+    // Get subscription and limits info
+    const limitsAndUsage = await this.limitsService.getLimitsAndUsage(userId);
+
+    return {
+      ...user,
+      isAdmin: !!adminUser,
+      subscription: limitsAndUsage.plan
+        ? {
+            planName: limitsAndUsage.plan.displayName,
+            planId: limitsAndUsage.plan.id,
+            paddlePriceId: limitsAndUsage.plan.paddlePriceId ?? null,
+            limits: limitsAndUsage.limits,
+            status: 'ACTIVE',
+          }
+        : null,
+      usage: limitsAndUsage.usage,
+      creditBalance: limitsAndUsage.creditBalance,
+    };
   }
 
   async changePassword(userId: string, dto: ChangePasswordDto) {
@@ -297,7 +353,10 @@ export class AuthService {
       throw new UnauthorizedException('User not found or no password set');
     }
 
-    const isValid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+    const isValid = await bcrypt.compare(
+      dto.currentPassword,
+      user.passwordHash,
+    );
     if (!isValid) {
       throw new UnauthorizedException('Current password is incorrect');
     }
@@ -309,6 +368,41 @@ export class AuthService {
     });
 
     return { message: 'Password changed successfully' };
+  }
+
+  private async grantWelcomeCredits(userId: string) {
+    try {
+      await this.prisma.creditTransaction.create({
+        data: {
+          userId,
+          grantedById: userId,
+          amount: 1000,
+          reason: 'Welcome bonus – temporary promotion',
+        },
+      });
+    } catch {
+      // Non-critical: user can still use the platform without credits
+    }
+  }
+
+  private async assignFreePlan(userId: string) {
+    try {
+      const freePlan = await this.prisma.subscriptionPlan.findUnique({
+        where: { name: 'free' },
+      });
+
+      if (freePlan) {
+        await this.prisma.userSubscription.create({
+          data: {
+            userId,
+            planId: freePlan.id,
+            status: 'ACTIVE',
+          },
+        });
+      }
+    } catch {
+      // Non-critical: user can still use the platform with default limits
+    }
   }
 
   private sanitizeUser(user: any) {

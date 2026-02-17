@@ -13,7 +13,11 @@
     "vehicles": "Araclar",
     "auditLog": "Denetim Kaydi",
     "selectCompany": "Sirket secin...",
-    "companySignatures": "Sirket Imzalari"
+    "companySignatures": "Sirket Imzalari",
+    "adminPanel": "Yonetim Paneli",
+    "expandSidebar": "Kenar cubugunu genislet",
+    "collapseSidebar": "Kenar cubugunu daralt",
+    "closeMenu": "Menuyu kapat"
   },
   "auth": {
     "signIn": "Giris Yap",
@@ -97,6 +101,8 @@
     "updatedAt": "Guncellenme Tarihi",
     "pdfPreview": "PDF Onizleme",
     "noPdf": "Henuz PDF olusturulmadi",
+    "noInvoiceData": "Fatura verisi bulunamadi. Veri eklemek icin olustrucuyu acin.",
+    "pdfGenerationFailed": "PDF olusturma basarisiz oldu. Lutfen tekrar deneyin.",
     "downloadPdf": "PDF Indir",
     "updateStatus": "Durumu Guncelle",
     "deleteDocument": "Belgeyi Sil",
@@ -129,6 +135,7 @@
     "noCompanies": "Henuz sirket yok",
     "createFirst": "Baslamak icin ilk sirketinizi olusturun",
     "creating": "Olusturuluyor...",
+    "createCompany": "Sirket Olustur",
     "settings": "Ayarlar",
     "companySettings": "Sirket Ayarlari",
     "email": "E-posta",
@@ -165,6 +172,15 @@
     "confirmRemoveMember": "{{name}} bu sirketten kaldirilsin mi?",
     "leaveCompany": "Sirketten Ayril",
     "removeMember": "Uyeyi Kaldir",
+    "memberAdded": "Uye basariyla eklendi",
+    "invitationSent": "Davet {{email}} adresine gonderildi",
+    "pendingInvitations": "Bekleyen Davetler",
+    "invitedBy": "Davet Eden",
+    "expires": "Son Tarih",
+    "pending": "Bekliyor",
+    "cancel": "Iptal",
+    "cancelInvitation": "Daveti Iptal Et",
+    "confirmCancelInvitation": "{{email}} icin daveti iptal et?",
     "bankAccounts": "Banka Hesaplari",
     "bankName": "Banka Adi",
     "accountNumber": "Hesap Numarasi",
@@ -176,7 +192,10 @@
     "nameTranslations": "Sirket Adi Cevirileri",
     "addressTranslations": "Adres Cevirileri",
     "nameInLang": "{{lang}} dilinde ad",
-    "addressInLang": "{{lang}} dilinde adres"
+    "addressInLang": "{{lang}} dilinde adres",
+    "translationsHelp": "Cok dilli faturalar icin sirket adini ve adresini farkli dillerde belirtin.",
+    "confirmRemoveBank": "Bu banka hesabini kaldirmak istediginizden emin misiniz?",
+    "removeBankTitle": "Banka Hesabini Kaldir"
   },
   "contractors": {
     "title": "Yukleniciler",
@@ -204,7 +223,9 @@
     "searchPlaceholder": "Yuklenici ara...",
     "tryDifferentSearch": "Farkli bir arama terimi deneyin",
     "selectCompany": "Yuklenicileri gormek icin bir sirket secin",
-    "translations": "Ad ve Adres Cevirileri"
+    "translations": "Ad ve Adres Cevirileri",
+    "confirmDelete": "Bu yukleniciyi silmek istediginizden emin misiniz? Bu islem geri alinamaz.",
+    "deleteContractor": "Yukleniciyi Sil"
   },
   "vehicles": {
     "title": "Araclar",
@@ -234,7 +255,9 @@
     "saving": "Kaydediliyor...",
     "defaultTrailer": "Varsayilan Romork",
     "selectDefaultTrailer": "Varsayilan romork secin",
-    "noDefaultTrailer": "Yok"
+    "noDefaultTrailer": "Yok",
+    "confirmDelete": "Bu araci silmek istediginizden emin misiniz? Bu islem geri alinamaz.",
+    "deleteVehicle": "Araci Sil"
   },
   "stamps": {
     "title": "Sirket Kaseleri",
@@ -247,7 +270,9 @@
     "noStamps": "Henuz kase yok",
     "createFirst": "Baslamak icin ilk kasenizi yukleyin",
     "saving": "Kaydediliyor...",
-    "delete": "Sil"
+    "delete": "Sil",
+    "confirmDelete": "Bu kaseyi silmek istediginizden emin misiniz? Bu islem geri alinamaz.",
+    "deleteStamp": "Kaseyi Sil"
   },
   "signatures": {
     "title": "Imzalarim",
@@ -262,7 +287,13 @@
     "saving": "Kaydediliyor...",
     "clear": "Temizle",
     "noSignatures": "Henuz imza yok",
-    "createFirst": "Baslamak icin ilk imzanizi cizin veya yukleyin"
+    "createFirst": "Baslamak icin ilk imzanizi cizin veya yukleyin",
+    "setAsDefault": "Varsayilan yap",
+    "delete": "Sil",
+    "confirmDelete": "Bu imzayi silmek istediginizden emin misiniz? Bu islem geri alinamaz.",
+    "deleteSignature": "Imzayi Sil",
+    "defaultLabel": "Varsayilan",
+    "defaultName": "Imzam"
   },
   "audit": {
     "title": "Denetim Kaydi",
@@ -307,7 +338,24 @@
     "passwordMismatch": "Sifreler eslesmiyor",
     "memberSince": "Uyelik tarihi",
     "logOut": "Cikis Yap",
-    "logOutDescription": "Bu cihazdaki hesabinizdan cikis yapin."
+    "logOutDescription": "Bu cihazdaki hesabinizdan cikis yapin.",
+    "subscriptionPlan": "Abonelik Plani",
+    "currentPlanLabel": "Mevcut plan:",
+    "unlimited": "Sinirsiz",
+    "popular": "Populer",
+    "perMonth": "/ay",
+    "planCompanies": "Sirketler",
+    "planContractors": "Yukleniciler",
+    "planDocuments": "Belgeler",
+    "currentPlanButton": "Mevcut Plan",
+    "freePlan": "Ucretsiz",
+    "comingSoon": "Yakinda",
+    "upgradeButton": "Yukselt",
+    "cancelSubscription": "Aboneligi iptal et",
+    "cancelling": "Iptal ediliyor...",
+    "cancelConfirm": "Aboneliginizi iptal etmek istediginizden emin misiniz? Ucretsiz plana dusuruleceksiniz.",
+    "passwordMinLength": "Sifre en az 8 karakter olmalidir",
+    "passwordChangeFailed": "Sifre degistirilemedi. Lutfen mevcut sifrenizi kontrol edin."
   },
   "status": {
     "DRAFT": "Taslak",
@@ -378,7 +426,93 @@
     "featureTemplatesDesc": "5 farkli fatura stilinden birini secin — Klasik, Modern, Minimal, Kalin ve Kompakt — marka kimliginize uygun.",
     "ctaTitle": "Baslamaya Hazir misiniz?",
     "ctaSubtitle": "Ucretsiz hesabinizi olusturun ve belgelerinizi bugun yonetmeye baslayin.",
-    "createAccount": "Ucretsiz Hesap Olustur"
+    "createAccount": "Ucretsiz Hesap Olustur",
+    "viewPricing": "Fiyatlandirma"
+  },
+  "pricing": {
+    "badge": "Basit ve seffaf fiyatlandirma",
+    "title": "Isletmeniz icin dogru plani secin",
+    "subtitle": "Ucretsiz baslayin ve buyudukce olceklendirin. Tum planlar fatura olusturma, PDF aktarimi ve cok dilli destek gibi temel ozellikleri icerir.",
+    "mostPopular": "En Populer",
+    "perMonth": "/ay",
+    "companies": "Sirketler",
+    "contractors": "Yukleniciler",
+    "documents": "Belgeler",
+    "signaturesPerCompany": "Sirket basina imza",
+    "stampsPerCompany": "Sirket basina kase",
+    "currentPlan": "Mevcut Plan",
+    "upgrade": "Yukselt",
+    "downgrade": "Dusur",
+    "getStarted": "Baslayin",
+    "getStartedFree": "Ucretsiz Baslayin",
+    "unlimited": "Sinirsiz",
+    "free": "Ucretsiz",
+    "descFree": "Ucretsiz baslayin",
+    "descStarter": "Kucuk isletmeler icin",
+    "descProfessional": "Buyuyen ekipler icin",
+    "descEnterprise": "Buyuk kuruluslar icin",
+    "allPlansInclude": "Tum planlar icerir",
+    "featureInvoices": "Fatura ve nakliye faturasi olusturma",
+    "featurePdf": "Ozel sablonlarla PDF aktarimi",
+    "featureSignatures": "Dijital imzalar ve kaseler",
+    "featureMultilang": "Cok dilli destek (EN, RU, KA, TR)",
+    "featureCompanies": "Sirket ve yuklenici yonetimi",
+    "featureVehicles": "Arac filosu yonetimi",
+    "featureAudit": "Denetim kaydi takibi",
+    "featureDesign": "Karanlik mod ve duyarli tasarim",
+    "customPlanTitle": "Ozel bir plana mi ihtiyaciniz var?",
+    "customPlanSubtitle": "Ozel limitler, oncelikli destek ve ozel altyapi ile kurumsal fiyatlandirma icin bizimle iletisime gecin.",
+    "startFreeTrial": "Ucretsiz Denemeye Baslayin"
+  },
+  "upgrade": {
+    "limitReached": "Plan Limitine Ulasildi",
+    "title": "Planinizi Yukseltin",
+    "usageMessage": "{{plan}} planinizda {{current}}/{{limit}} {{resource}} kullandiniz. Daha fazlasi icin yukseltin.",
+    "popular": "Populer",
+    "companies": "Sirketler",
+    "contractors": "Yukleniciler",
+    "documents": "Belgeler",
+    "signaturesPerCo": "Imza/Sirket",
+    "stampsPerCo": "Kase/Sirket",
+    "currentPlan": "Mevcut Plan",
+    "free": "Ucretsiz",
+    "comingSoon": "Yakinda",
+    "upgrade": "Yukselt",
+    "footer": "Ozel kurumsal planlar veya hacim indirimleri icin bizimle iletisime gecin.",
+    "unlimited": "Sinirsiz"
+  },
+  "checkout": {
+    "successTitle": "Odeme Basarili!",
+    "successMessage": "Aboneliginiz aktif edildi. Artik yeni planinizin tum ozelliklerine erisebilirsiniz.",
+    "goToDashboard": "Kontrol Paneline Git",
+    "cancelTitle": "Odeme Iptal Edildi",
+    "cancelMessage": "Odemeniz tamamlanmadi. Herhangi bir ucret alinmadi. Profilinizden istediginiz zaman tekrar deneyebilirsiniz.",
+    "backToProfile": "Profile Don"
+  },
+  "admin": {
+    "dashboard": "Yonetim Paneli",
+    "totalUsers": "Toplam Kullanici",
+    "totalCompanies": "Toplam Sirket",
+    "totalDocuments": "Toplam Belge",
+    "totalContractors": "Toplam Yuklenici",
+    "subscriptionsBreakdown": "Abonelik Dagilimi",
+    "users": "Kullanicilar",
+    "total": "toplam",
+    "searchUsers": "Ad veya e-posta ile kullanici ara...",
+    "user": "Kullanici",
+    "plan": "Plan",
+    "status": "Durum",
+    "adminLabel": "Yonetici",
+    "joined": "Katilim Tarihi",
+    "active": "Aktif",
+    "inactive": "Pasif",
+    "noUsersFound": "Kullanici bulunamadi",
+    "previous": "Onceki",
+    "next": "Sonraki",
+    "pageOf": "Sayfa {{page}} / {{total}}"
+  },
+  "nav": {
+    "pricing": "Fiyatlandirma"
   },
   "common": {
     "save": "Kaydet",
@@ -405,5 +539,102 @@
     "previous": "Önceki",
     "page": "Sayfa",
     "of": "/"
+  },
+  "footer": {
+    "rights": "Tüm hakları saklıdır.",
+    "terms": "Şartlar ve Koşullar",
+    "pricing": "Fiyatlandırma"
+  },
+  "terms": {
+    "title": "Şartlar ve Koşullar",
+    "lastUpdated": "Son güncelleme",
+    "backToHome": "Ana sayfaya dön",
+    "acceptance": {
+      "title": "Şartların Kabulü",
+      "p1": "{{appName}}'a (\"Hizmet\") erişerek veya kullanarak, bu Şartlar ve Koşulları kabul etmiş olursunuz. Tüm şartları kabul etmiyorsanız, Hizmeti kullanamazsınız.",
+      "p2": "{{appName}}, bu Şartları herhangi bir zamanda güncelleme veya değiştirme hakkını saklı tutar. Değişikliklerden sonra Hizmeti kullanmaya devam etmeniz, revize edilmiş Şartları kabul ettiğiniz anlamına gelir."
+    },
+    "service": {
+      "title": "Hizmet Tanımı",
+      "p1": "{{appName}}, aşağıdaki hizmetleri sunan bulut tabanlı bir belge yönetim platformudur:",
+      "feature1": "Özelleştirilebilir şablonlarla fatura ve nakliye faturası oluşturma",
+      "feature2": "PDF belge oluşturma ve dışa aktarma",
+      "feature3": "Dijital imza ve mühür yönetimi",
+      "feature4": "Çoklu şirket ve yüklenici yönetimi",
+      "feature5": "Çok dilli belge desteği (İngilizce, Gürcüce, Rusça, Türkçe)",
+      "feature6": "Güvenli bulut dosya depolama ve belge paylaşımı"
+    },
+    "account": {
+      "title": "Hesap Kaydı",
+      "p1": "Hizmeti kullanmak için bir hesap oluşturmanız gerekir. Kayıt olarak şunları kabul edersiniz:",
+      "req1": "Doğru ve eksiksiz kayıt bilgileri sağlamak",
+      "req2": "Hesap kimlik bilgilerinizin güvenliğini sağlamak",
+      "req3": "Hesabınız altındaki tüm etkinliklerden sorumluluğu kabul etmek",
+      "req4": "Hesabınıza yetkisiz erişim durumunda bizi derhal bilgilendirmek"
+    },
+    "payments": {
+      "title": "Abonelik ve Ödemeler",
+      "p1": "{{appName}} hem ücretsiz hem de ücretli abonelik planları sunar. Ücretli bir plana abone olarak aşağıdakileri kabul edersiniz:",
+      "item1": "Abonelik ücretleri aylık olarak peşin faturalandırılır ve İade Politikamızda açıklanan durumlar dışında iade edilmez",
+      "item2": "Ödemeler, üçüncü taraf ödeme işlemcimiz (Paddle) aracılığıyla güvenli bir şekilde işlenir. Kredi kartı bilgilerinizi saklamayız",
+      "item3": "Fiyatlar ABD doları cinsindendir ve konumunuza bağlı olarak vergilere tabi olabilir",
+      "item4": "Abonelikler, yenileme tarihinden önce iptal edilmedikçe her fatura döneminin sonunda otomatik olarak yenilenir",
+      "item5": "Mevcut abonelere 30 gün önceden bildirimde bulunarak abonelik fiyatlarını değiştirme hakkını saklı tutarız"
+    },
+    "freePlan": {
+      "title": "Ücretsiz Plan",
+      "p1": "{{appName}} sınırlı kullanımlı ücretsiz bir plan sunar. Ücretsiz plan, sınırlı sayıda şirket, yüklenici ve belge gibi özelliklere kısıtlı erişim içerir.",
+      "p2": "Ücretsiz plan sınırlamalarını herhangi bir zamanda değiştirme hakkımızı saklı tutarız. Ücretsiz plan kullanıcılarına, izin verilen sınırların ötesinde Hizmeti kullanmaya devam etmek için yükseltme istenebilir."
+    },
+    "userData": {
+      "title": "Kullanıcı Verileri ve İçerik",
+      "p1": "Faturalar, imzalar, mühürler ve şirket verileri dahil olmak üzere Hizmete yüklediğiniz, oluşturduğunuz veya sakladığınız içerik üzerindeki tüm mülkiyet haklarınızı korursunuz.",
+      "p2": "{{appName}}'a, içeriğinizi yalnızca Hizmeti size sunmak amacıyla işlemek, depolamak ve görüntülemek için sınırlı, münhasır olmayan bir lisans verirsiniz.",
+      "p3": "Verilerinizi korumak için endüstri standardı güvenlik önlemleri uyguluyoruz. Ancak, kritik iş belgelerinin yerel yedeklemelerini sürdürmekten siz sorumlusunuz."
+    },
+    "acceptableUse": {
+      "title": "Kabul Edilebilir Kullanım",
+      "p1": "Hizmeti aşağıdaki amaçlarla kullanmamayı kabul edersiniz:",
+      "item1": "Sahte, yanıltıcı veya yasadışı belgeler veya faturalar oluşturmak",
+      "item2": "Geçerli yasaları, düzenlemeleri veya üçüncü taraf haklarını ihlal etmek",
+      "item3": "Kötü amaçlı yazılım, virüs veya zararlı kod yüklemek",
+      "item4": "Diğer hesaplara veya sistemlere yetkisiz erişim sağlamaya çalışmak",
+      "item5": "Kara para aklama, vergi kaçırma veya diğer mali suçlar için kullanmak"
+    },
+    "ip": {
+      "title": "Fikri Mülkiyet",
+      "p1": "Tasarımı, özellikleri, kodu, şablonları ve markası dahil olmak üzere Hizmet, {{appName}}'ın fikri mülkiyetidir ve telif hakkı ve fikri mülkiyet yasaları ile korunmaktadır.",
+      "p2": "Aboneliğiniz, Hizmeti amaçlanan kullanımı için sınırlı, geri alınabilir, devredilemez bir lisans verir. Hizmetin herhangi bir bölümünü kopyalayamaz, değiştiremez, dağıtamaz veya tersine mühendislik yapamarsınız."
+    },
+    "liability": {
+      "title": "Sorumluluk Sınırlaması",
+      "p1": "{{appName}} açık veya zımni herhangi bir garanti olmaksızın \"olduğu gibi\" sunulmaktadır. Hizmetin kesintisiz, hatasız veya tamamen güvenli olacağını garanti etmiyoruz.",
+      "p2": "Yasaların izin verdiği azami ölçüde, {{appName}} Hizmeti kullanımınızdan kaynaklanan dolaylı, arızi, özel, sonuç olarak ortaya çıkan veya cezai zararlardan sorumlu olmayacaktır."
+    },
+    "termination": {
+      "title": "Fesih",
+      "p1": "Her iki taraf da sözleşmeyi herhangi bir zamanda feshedebilir. {{appName}}, aşağıdaki durumlarda hesabınızı askıya alma veya feshetme hakkını saklı tutar:",
+      "item1": "Bu Şartlar ve Koşulları ihlal etmeniz",
+      "item2": "Ödemenizin başarısız olması ve bildirimden sonra çözümsüz kalması",
+      "item3": "Hesabınızın sahte veya yasadışı faaliyetler için kullanılması"
+    },
+    "refunds": {
+      "title": "İade Politikası",
+      "p1": "Ücretli abonelikler, bu süre zarfında Hizmeti yoğun bir şekilde kullanmadıysanız, ilk satın alma tarihinden itibaren 7 gün içinde iade için uygun olabilir. İade talepleri destek ekibimizle iletişime geçilerek gönderilebilir.",
+      "p2": "Yenilemeler, yükseltmeler ve düşürmeler genellikle iade edilemez. Aboneliğin iptal edilmesi, mevcut fatura döneminin sonuna kadar erişimi koruyacaktır."
+    },
+    "privacy": {
+      "title": "Gizlilik ve Veri Koruma",
+      "p1": "{{appName}} kullanımınız ayrıca Gizlilik Politikamız tarafından yönetilir. Kişisel verileri yalnızca Hizmeti sağlamak, yasal yükümlülüklere uymak ve kullanıcı deneyimini iyileştirmek için gerekli olduğu ölçüde toplar ve işleriz. Kişisel bilgilerinizi üçüncü taraflara satmıyoruz."
+    },
+    "modifications": {
+      "title": "Hizmette Değişiklikler",
+      "p1": "{{appName}}, makul bir bildirimle herhangi bir zamanda Hizmetin herhangi bir bölümünü değiştirme, askıya alma veya durdurma hakkını saklı tutar. Önemli değişiklikler hakkında aktif aboneleri e-posta veya uygulama içi bildirim yoluyla bilgilendireceğiz."
+    },
+    "contact": {
+      "title": "İletişim Bilgileri",
+      "p1": "Bu Şartlar ve Koşullar hakkında sorularınız varsa, lütfen bizimle iletişime geçin:",
+      "email": "E-posta"
+    }
   }
 }

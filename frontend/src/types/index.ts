@@ -40,6 +40,54 @@ export type AuditAction =
   | 'LOGIN'
   | 'LOGOUT';
 
+// ── Subscription & Plan Types ──
+
+export interface PlanLimits {
+  maxCompanies: number;
+  maxContractors: number;
+  maxDocuments: number;
+  maxSignaturesPerCompany: number;
+  maxStampsPerCompany: number;
+}
+
+export interface UserSubscription {
+  planName: string;
+  planId: string;
+  paddlePriceId?: string | null;
+  limits: PlanLimits;
+  status: string;
+}
+
+export interface UsageCounts {
+  companies: number;
+  contractors: number;
+  documents: number;
+}
+
+export interface SubscriptionPlan {
+  id: string;
+  name: string;
+  displayName: string;
+  price: number;
+  paddlePriceId?: string | null;
+  limits: PlanLimits;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreditTransaction {
+  id: string;
+  userId: string;
+  grantedById: string;
+  amount: number;
+  reason?: string;
+  createdAt: string;
+}
+
+export type SubscriptionStatus = 'ACTIVE' | 'CANCELLED' | 'EXPIRED';
+
 // ── Core Models ──
 
 export interface User {
@@ -48,8 +96,26 @@ export interface User {
   name: string;
   avatarUrl?: string;
   isActive: boolean;
+  isAdmin?: boolean;
+  subscription?: UserSubscription | null;
+  usage?: UsageCounts;
+  creditBalance?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface AdminUserDetail extends User {
+  _count?: {
+    memberships: number;
+  };
+}
+
+export interface AdminStats {
+  totalUsers: number;
+  totalCompanies: number;
+  totalDocuments: number;
+  totalContractors: number;
+  activeSubscriptions: Record<string, number>;
 }
 
 export interface Company {
@@ -88,6 +154,22 @@ export interface Membership {
   updatedAt: string;
   user?: Pick<User, 'id' | 'email' | 'name' | 'avatarUrl'>;
   company?: Company;
+}
+
+export interface PendingInvitation {
+  id: string;
+  email: string;
+  companyId: string;
+  role: MembershipRole;
+  expiresAt: string;
+  createdAt: string;
+  inviter?: Pick<User, 'id' | 'email' | 'name'>;
+}
+
+export interface AddMemberResult {
+  type: 'added' | 'invited';
+  membership?: Membership;
+  invitation?: PendingInvitation;
 }
 
 export interface Document {

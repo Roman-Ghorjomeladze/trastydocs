@@ -25,6 +25,8 @@ import type { ChangePasswordDto } from './dto/change-password.dto.js';
 
 const REFRESH_TOKEN_COOKIE = 'refresh_token';
 const REFRESH_TOKEN_MAX_AGE = 7 * 24 * 60 * 60 * 1000; // 7 days
+const ACCESS_TOKEN_COOKIE = 'access_token';
+const ACCESS_TOKEN_MAX_AGE = 15 * 60 * 1000; // 15 minutes (matches JWT expiry)
 
 @Controller('auth')
 export class AuthController {
@@ -42,6 +44,7 @@ export class AuthController {
     const result = await this.authService.register(dto);
 
     this.setRefreshTokenCookie(res, result.refreshToken);
+    this.setAccessTokenCookie(res, result.accessToken);
 
     return {
       user: result.user,
@@ -59,6 +62,7 @@ export class AuthController {
     const result = await this.authService.login(dto);
 
     this.setRefreshTokenCookie(res, result.refreshToken);
+    this.setAccessTokenCookie(res, result.accessToken);
 
     return {
       user: result.user,
@@ -79,6 +83,7 @@ export class AuthController {
     await this.authService.logout(user.id, user.jti, refreshToken);
 
     this.clearRefreshTokenCookie(res);
+    this.clearAccessTokenCookie(res);
 
     return { message: 'Logged out successfully' };
   }
@@ -98,6 +103,7 @@ export class AuthController {
     const result = await this.authService.googleLogin(req.user);
 
     this.setRefreshTokenCookie(res, result.refreshToken);
+    this.setAccessTokenCookie(res, result.accessToken);
 
     // Redirect to frontend with access token as query param
     const frontendUrl =
@@ -123,6 +129,7 @@ export class AuthController {
     const result = await this.authService.refreshToken(refreshToken);
 
     this.setRefreshTokenCookie(res, result.refreshToken);
+    this.setAccessTokenCookie(res, result.accessToken);
 
     return {
       accessToken: result.accessToken,
@@ -165,6 +172,26 @@ export class AuthController {
     res.clearCookie(REFRESH_TOKEN_COOKIE, {
       httpOnly: true,
       path: '/api/auth',
+    });
+  }
+
+  private setAccessTokenCookie(res: Response, token: string) {
+    const isProduction =
+      this.configService.get<string>('NODE_ENV') === 'production';
+
+    res.cookie(ACCESS_TOKEN_COOKIE, token, {
+      httpOnly: true,
+      secure: isProduction,
+      sameSite: isProduction ? 'strict' : 'lax',
+      path: '/api/files',
+      maxAge: ACCESS_TOKEN_MAX_AGE,
+    });
+  }
+
+  private clearAccessTokenCookie(res: Response) {
+    res.clearCookie(ACCESS_TOKEN_COOKIE, {
+      httpOnly: true,
+      path: '/api/files',
     });
   }
 }

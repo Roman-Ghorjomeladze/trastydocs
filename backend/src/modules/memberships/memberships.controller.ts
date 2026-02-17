@@ -40,6 +40,22 @@ export class MembershipsController {
     return this.membershipsService.findByCompany(companyId);
   }
 
+  @Get('invitations')
+  @Roles('OWNER', 'ADMIN')
+  async findInvitations(@Param('companyId') companyId: string) {
+    return this.membershipsService.findInvitationsByCompany(companyId);
+  }
+
+  @Delete('invitations/:id')
+  @Roles('OWNER', 'ADMIN')
+  async cancelInvitation(
+    @Param('companyId') companyId: string,
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.membershipsService.cancelInvitation(id, user.id, companyId);
+  }
+
   @Patch(':id')
   @Roles('OWNER', 'ADMIN')
   async update(

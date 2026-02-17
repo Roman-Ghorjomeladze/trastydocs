@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useCompanySignatureStore } from '../../stores/company-signature.store.ts';
+import { AuthImage } from '../../components/shared/AuthImage.tsx';
 import { cn } from '../../lib/utils.ts';
 import { colorizeSignatureBlue } from '../../lib/image-utils.ts';
 import type { CompanySignature } from '../../types/index.ts';
@@ -281,7 +282,7 @@ export function CompanySignaturesPage() {
                 </span>
               )}
               <div className="bg-muted rounded-lg p-3 mb-3 flex items-center justify-center min-h-[100px]">
-                <img
+                <AuthImage
                   src={sig.imageUrl}
                   alt={sig.name}
                   className="max-h-[80px] max-w-full object-contain"

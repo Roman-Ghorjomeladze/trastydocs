@@ -1,7 +1,9 @@
 import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { LimitsService } from '../admin/limits.service.js';
 import type { StorageProvider } from '../../integrations/storage/storage.interface.js';
+import { getStoragePrefix } from '../../integrations/storage/storage.module.js';
 import type { CreateCompanySignatureDto } from './dto/create-company-signature.dto.js';
 import type { UpdateCompanySignatureDto } from './dto/update-company-signature.dto.js';
 
@@ -10,14 +12,18 @@ export class CompanySignaturesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly limitsService: LimitsService,
     @Inject('STORAGE_PROVIDER')
     private readonly storage: StorageProvider,
   ) {}
 
   async create(companyId: string, userId: string, dto: CreateCompanySignatureDto) {
+    await this.limitsService.checkLimit(userId, 'signatures', companyId);
+
     const buffer = Buffer.from(dto.imageBase64, 'base64');
-    const path = `company-signatures/${companyId}/${Date.now()}.png`;
-    const imageUrl = await this.storage.upload(buffer, path, 'image/png');
+    const prefix = getStoragePrefix();
+    const storagePath = `${prefix}/users/${userId}/company-signatures/${Date.now()}.png`;
+    const imageUrl = await this.storage.upload(buffer, storagePath, 'image/png');
 
     if (dto.isDefault) {
       await this.prisma.companySignature.updateMany({

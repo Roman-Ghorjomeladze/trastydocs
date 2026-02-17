@@ -1,6 +1,6 @@
 import { rgb } from 'pdf-lib';
 import type { TemplateRenderFn } from './shared.ts';
-import { PAGE_WIDTH, PAGE_HEIGHT } from './shared.ts';
+import { PAGE_WIDTH, PAGE_HEIGHT, clampCompanyName } from './shared.ts';
 import { formatCurrency } from '../invoice-utils.ts';
 
 // ── Compact layout constants ──
@@ -31,12 +31,6 @@ export const renderCompact: TemplateRenderFn = async (ctx) => {
   };
 
   // ── Header: Company + Invoice title on same line ──
-  drawText(page, data.companyName || 'Company', M, y, {
-    size: 12,
-    bold: true,
-    color: SLATE,
-  });
-
   const invoiceTitle = isTransport
     ? labels.transportInvoice.toUpperCase()
     : labels.invoice.toUpperCase();
@@ -47,7 +41,48 @@ export const renderCompact: TemplateRenderFn = async (ctx) => {
     color: SLATE,
   });
 
-  y -= 14;
+  // Company name (40 char limit, two lines if needed)
+  const companyName = clampCompanyName(data.companyName);
+  const companyNameMaxWidth = PAGE_WIDTH - M - titleWidth - M - 10;
+
+  if (textWidth(companyName, 10, true) <= companyNameMaxWidth) {
+    drawText(page, companyName, M, y, {
+      size: 10,
+      bold: true,
+      color: SLATE,
+    });
+    y -= 14;
+  } else {
+    const words = companyName.split(/\s+/);
+    let line1 = '';
+    let line2 = '';
+    for (const word of words) {
+      const candidate = line1 ? `${line1} ${word}` : word;
+      if (textWidth(candidate, 10, true) <= companyNameMaxWidth) {
+        line1 = candidate;
+      } else {
+        line2 = line2 ? `${line2} ${word}` : word;
+      }
+    }
+    drawText(page, line1 || companyName, M, y, {
+      size: 10,
+      bold: true,
+      color: SLATE,
+      maxWidth: companyNameMaxWidth,
+    });
+    y -= 13;
+    if (line2) {
+      drawText(page, line2, M, y, {
+        size: 10,
+        bold: true,
+        color: SLATE,
+        maxWidth: companyNameMaxWidth,
+      });
+      y -= 13;
+    } else {
+      y -= 1;
+    }
+  }
 
   // Thin divider
   page.drawLine({

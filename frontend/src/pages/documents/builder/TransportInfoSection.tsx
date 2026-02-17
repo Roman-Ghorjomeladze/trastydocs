@@ -80,7 +80,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
           <textarea
             value={data.serviceDescription}
             onChange={(e) => onChange('serviceDescription', e.target.value)}
-            placeholder="Transportation of goods from..."
+            placeholder={labels.placeholderServiceDescription}
             rows={2}
             className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none resize-none"
           />
@@ -92,7 +92,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
             type="text"
             value={data.transportRoute}
             onChange={(e) => onChange('transportRoute', e.target.value)}
-            placeholder="City A — City B"
+            placeholder={labels.placeholderTransportRoute}
             className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
           />
         </div>
@@ -108,7 +108,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
                 options={truckOptions}
                 value={selectedTruckId}
                 onChange={handleVehicleSelect}
-                placeholder="Select truck..."
+                placeholder={labels.placeholderSelectTruck}
               />
             </div>
             {selectedTruckId && (
@@ -142,7 +142,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
                 type="text"
                 value={data.vehicleModel}
                 onChange={(e) => onChange('vehicleModel', e.target.value)}
-                placeholder="Mercedes Actros 1845"
+                placeholder={labels.placeholderVehicleModel}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
               />
             </div>
@@ -152,7 +152,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
                 type="text"
                 value={data.vehiclePlate}
                 onChange={(e) => onChange('vehiclePlate', e.target.value)}
-                placeholder="ABC-123"
+                placeholder={labels.placeholderVehiclePlate}
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-accent focus:border-accent outline-none"
               />
             </div>
@@ -170,7 +170,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
                 options={trailerOptions}
                 value={selectedTrailerId}
                 onChange={handleTrailerSelect}
-                placeholder="Select trailer..."
+                placeholder={labels.placeholderSelectTrailer}
               />
             </div>
             {selectedTrailerId && (
@@ -192,7 +192,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
               type="text"
               value={data.trailerPlate}
               onChange={(e) => onChange('trailerPlate', e.target.value)}
-              placeholder="XYZ-789"
+              placeholder={labels.placeholderTrailerPlate}
               className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>
@@ -205,7 +205,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
               type="text"
               value={data.directorName}
               onChange={(e) => onChange('directorName', e.target.value)}
-              placeholder="John Smith"
+              placeholder={labels.placeholderDirectorName}
               className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>
@@ -216,7 +216,7 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
               type="text"
               value={data.amountInWords}
               onChange={(e) => onChange('amountInWords', e.target.value)}
-              placeholder="One thousand two hundred..."
+              placeholder={labels.placeholderAmountInWords}
               className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>

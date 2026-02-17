@@ -2,8 +2,10 @@ import { ConflictException, Inject, Injectable, NotFoundException } from '@nestj
 import type { DocumentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { LimitsService } from '../admin/limits.service.js';
 import { MailService } from '../../integrations/mail/mail.service.js';
 import type { StorageProvider } from '../../integrations/storage/storage.interface.js';
+import { getStoragePrefix } from '../../integrations/storage/storage.module.js';
 import type { CreateDocumentDto } from './dto/create-document.dto.js';
 import type { UpdateDocumentDto } from './dto/update-document.dto.js';
 import type { SendDocumentDto } from './dto/send-document.dto.js';
@@ -34,6 +36,7 @@ export class DocumentsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly limitsService: LimitsService,
     private readonly mail: MailService,
     @Inject('STORAGE_PROVIDER')
     private readonly storage: StorageProvider,
@@ -43,6 +46,8 @@ export class DocumentsService {
    * Create a new document with auto-generated document number.
    */
   async create(dto: CreateDocumentDto, userId: string, companyId: string) {
+    await this.limitsService.checkLimit(userId, 'documents');
+
     const year = new Date().getFullYear();
 
     const doc = await this.prisma.$transaction(
@@ -234,9 +239,8 @@ export class DocumentsService {
 
     // Also delete the PDF from storage if it exists
     if (doc.pdfUrl) {
-      const path = `documents/${doc.companyId}/${id}.pdf`;
       try {
-        await this.storage.delete(path);
+        await this.storage.delete(doc.pdfUrl);
       } catch {
         // Ignore storage deletion errors — the DB record is already gone
       }
@@ -291,16 +295,25 @@ export class DocumentsService {
    * Duplicate a document with a new document number.
    */
   async duplicate(id: string, userId: string, companyId: string) {
+    await this.limitsService.checkLimit(userId, 'documents');
+
     const original = await this.findById(id);
     const year = new Date().getFullYear();
 
     const dup = await this.prisma.$transaction(
       async (tx: Prisma.TransactionClient) => {
-        const documentNumber = await this.nextDocumentNumber(tx, companyId, year);
+        const documentNumber = original.documentNumber
+          ? await this.incrementDocumentNumber(
+              tx,
+              companyId,
+              original.documentNumber,
+              year,
+            )
+          : await this.nextDocumentNumber(tx, companyId, year);
 
         return tx.document.create({
           data: {
-            name: `${original.name} (Copy)`,
+            name: original.name,
             documentNumber,
             companyId,
             createdById: userId,
@@ -335,8 +348,10 @@ export class DocumentsService {
     const doc = await this.findById(id);
 
     const buffer = Buffer.from(dto.pdfBase64, 'base64');
-    const path = `documents/${doc.companyId}/${id}.pdf`;
-    const pdfUrl = await this.storage.upload(buffer, path, 'application/pdf');
+    const year = new Date().getFullYear();
+    const prefix = getStoragePrefix();
+    const storagePath = `${prefix}/users/${userId}/documents/${year}/${id}.pdf`;
+    const pdfUrl = await this.storage.upload(buffer, storagePath, 'application/pdf');
 
     const updated = await this.prisma.document.update({
       where: { id },
@@ -490,6 +505,44 @@ export class DocumentsService {
       select: { id: true },
     });
     return { available: !existing };
+  }
+
+  /**
+   * Increment the original document number for duplication.
+   * Parses the trailing numeric part, increments it, preserves zero-padding and prefix.
+   * Falls back to nextDocumentNumber if the original has no numeric suffix.
+   */
+  private async incrementDocumentNumber(
+    tx: Prisma.TransactionClient,
+    companyId: string,
+    originalNumber: string,
+    year: number,
+  ): Promise<string> {
+    // Match trailing digits (e.g. "DOC-2026-00001" → prefix="DOC-2026-", digits="00001")
+    const match = originalNumber.match(/^(.*?)(\d+)$/);
+    if (!match) {
+      return this.nextDocumentNumber(tx, companyId, year);
+    }
+
+    const [, prefix, digits] = match;
+    const padLength = digits.length;
+    let nextNum = parseInt(digits, 10) + 1;
+
+    // Keep incrementing until we find an available number
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const candidate = `${prefix}${String(nextNum).padStart(padLength, '0')}`;
+      const existing = await tx.document.findFirst({
+        where: { companyId, documentNumber: candidate },
+        select: { id: true },
+      });
+      if (!existing) {
+        return candidate;
+      }
+      nextNum++;
+    }
+
+    // Exhausted attempts, fall back to auto-generated number
+    return this.nextDocumentNumber(tx, companyId, year);
   }
 
   /**

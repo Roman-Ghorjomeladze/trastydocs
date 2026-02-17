@@ -6,9 +6,12 @@ import { useAuthStore } from './stores/auth.store.ts';
 import { DashboardLayout } from './components/layout/DashboardLayout.tsx';
 import { AuthLayout } from './components/layout/AuthLayout.tsx';
 import { PublicLayout } from './components/layout/PublicLayout.tsx';
+import { AdminLayout } from './components/layout/AdminLayout.tsx';
 
 // Public pages
 import { LandingPage } from './pages/LandingPage.tsx';
+import { PricingPage } from './pages/PricingPage.tsx';
+import { TermsPage } from './pages/TermsPage.tsx';
 
 // Auth pages
 import { LoginPage } from './pages/auth/LoginPage.tsx';
@@ -30,10 +33,37 @@ import { DocumentDetailPage } from './pages/documents/DocumentDetailPage.tsx';
 import { DocumentBuilderPage } from './pages/documents/DocumentBuilderPage.tsx';
 import { ProfilePage } from './pages/profile/ProfilePage.tsx';
 
+// Admin pages
+import { AdminDashboardPage } from './pages/admin/AdminDashboardPage.tsx';
+import { AdminUsersPage } from './pages/admin/AdminUsersPage.tsx';
+import { AdminUserDetailPage } from './pages/admin/AdminUserDetailPage.tsx';
+import { AdminPlansPage } from './pages/admin/AdminPlansPage.tsx';
+import { AdminCompaniesPage } from './pages/admin/AdminCompaniesPage.tsx';
+import { AdminDocumentsPage } from './pages/admin/AdminDocumentsPage.tsx';
+
+// Checkout pages
+import { CheckoutSuccessPage } from './pages/checkout/CheckoutSuccessPage.tsx';
+import { CheckoutCancelPage } from './pages/checkout/CheckoutCancelPage.tsx';
+
+// ── Loading Screen ──
+
+function LoadingScreen() {
+  return (
+    <div className="flex items-center justify-center h-screen bg-background">
+      <div className="w-8 h-8 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+    </div>
+  );
+}
+
 // ── Auth Guard ──
 
 function AuthGuard({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
+
+  if (!isInitialized) {
+    return <LoadingScreen />;
+  }
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
@@ -46,6 +76,11 @@ function AuthGuard({ children }: { children: ReactNode }) {
 
 function GuestGuard({ children }: { children: ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
+  const isInitialized = useAuthStore((s) => s.isInitialized);
+
+  if (!isInitialized) {
+    return <LoadingScreen />;
+  }
 
   if (isAuthenticated) {
     return <Navigate to="/dashboard" replace />;
@@ -64,6 +99,14 @@ export const router = createBrowserRouter([
       {
         path: '/',
         element: <LandingPage />,
+      },
+      {
+        path: '/pricing',
+        element: <PricingPage />,
+      },
+      {
+        path: '/terms',
+        element: <TermsPage />,
       },
       {
         element: (
@@ -89,6 +132,24 @@ export const router = createBrowserRouter([
   {
     path: '/auth/callback',
     element: <AuthCallbackPage />,
+  },
+
+  // Checkout result pages (authenticated, no layout)
+  {
+    path: '/checkout/success',
+    element: (
+      <AuthGuard>
+        <CheckoutSuccessPage />
+      </AuthGuard>
+    ),
+  },
+  {
+    path: '/checkout/cancel',
+    element: (
+      <AuthGuard>
+        <CheckoutCancelPage />
+      </AuthGuard>
+    ),
   },
 
   // Protected routes
@@ -150,6 +211,41 @@ export const router = createBrowserRouter([
       {
         path: '/profile',
         element: <ProfilePage />,
+      },
+    ],
+  },
+
+  // Admin routes
+  {
+    element: (
+      <AuthGuard>
+        <AdminLayout />
+      </AuthGuard>
+    ),
+    children: [
+      {
+        path: '/admin',
+        element: <AdminDashboardPage />,
+      },
+      {
+        path: '/admin/users',
+        element: <AdminUsersPage />,
+      },
+      {
+        path: '/admin/users/:userId',
+        element: <AdminUserDetailPage />,
+      },
+      {
+        path: '/admin/plans',
+        element: <AdminPlansPage />,
+      },
+      {
+        path: '/admin/companies',
+        element: <AdminCompaniesPage />,
+      },
+      {
+        path: '/admin/documents',
+        element: <AdminDocumentsPage />,
       },
     ],
   },

@@ -7,6 +7,7 @@ import {
   CONTENT_WIDTH,
   LINE_HEIGHT,
   SECTION_GAP,
+  clampCompanyName,
 } from './shared.ts';
 import { formatCurrency } from '../invoice-utils.ts';
 
@@ -30,27 +31,90 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
     }
   };
 
-  // ── Company Name (top left, large) ──
-  drawText(page, data.companyName || 'Company', MARGIN, y, {
-    size: 18,
-    bold: true,
-    color: DARK,
-  });
-
-  // ── INVOICE title (top right, blue) ──
+  // ── INVOICE title (centered, blue) ──
   const invoiceTitle = isTransport
     ? labels.transportInvoice.toUpperCase()
     : labels.invoice.toUpperCase();
-  const titleWidth = textWidth(invoiceTitle, 24, true);
-  drawText(page, invoiceTitle, PAGE_WIDTH - MARGIN - titleWidth, y, {
-    size: 24,
+  const titleSize = 24;
+  const titleWidth = textWidth(invoiceTitle, titleSize, true);
+  const titleX = MARGIN + (CONTENT_WIDTH - titleWidth) / 2;
+  drawText(page, invoiceTitle, titleX, y, {
+    size: titleSize,
     bold: true,
     color: BLUE,
   });
+  y -= 36;
 
-  y -= 30;
+  // ── Second line: Company info (left) | Invoice details (right) ──
+  // Both start at the same vertical level
 
-  // ── Company details (left) ──
+  const companyName = clampCompanyName(data.companyName);
+  const companyNameSize = 14;
+  const companyNameMaxWidth = CONTENT_WIDTH / 2 - 10;
+  const rightX = PAGE_WIDTH - MARGIN - 150;
+
+  // Draw company name (left) and invoice number (right) on the same line
+  const nameAndNumberY = y;
+
+  // Invoice details (right, starting at same Y as company name)
+  let detailY = nameAndNumberY;
+  if (data.invoiceNumber) {
+    drawText(page, `${labels.invoiceNumber}: ${data.invoiceNumber}`, rightX, detailY, { size: 9, bold: true, color: GRAY });
+    detailY -= LINE_HEIGHT;
+  }
+  const detailsLines = [
+    data.invoiceDate ? `${labels.invoiceDate}: ${data.invoiceDate}` : '',
+    data.dueDate ? `${labels.dueDate}: ${data.dueDate}` : '',
+  ].filter(Boolean);
+  for (const line of detailsLines) {
+    drawText(page, line, rightX, detailY, { size: 9, color: GRAY });
+    detailY -= LINE_HEIGHT;
+  }
+
+  // Company Name (left, two lines max, char limit from shared)
+  if (textWidth(companyName, companyNameSize, true) <= companyNameMaxWidth) {
+    drawText(page, companyName, MARGIN, nameAndNumberY, {
+      size: companyNameSize,
+      bold: true,
+      color: DARK,
+    });
+    y = nameAndNumberY - 20;
+  } else {
+    // Word-wrap into two lines within the available width
+    const words = companyName.split(/\s+/);
+    let line1 = '';
+    let line2 = '';
+    for (const word of words) {
+      const candidate = line1 ? `${line1} ${word}` : word;
+      if (textWidth(candidate, companyNameSize, true) <= companyNameMaxWidth) {
+        line1 = candidate;
+      } else {
+        line2 = line2 ? `${line2} ${word}` : word;
+      }
+    }
+
+    drawText(page, line1 || companyName, MARGIN, nameAndNumberY, {
+      size: companyNameSize,
+      bold: true,
+      color: DARK,
+      maxWidth: companyNameMaxWidth,
+    });
+    y = nameAndNumberY - 18;
+
+    if (line2) {
+      drawText(page, line2, MARGIN, y, {
+        size: companyNameSize,
+        bold: true,
+        color: DARK,
+        maxWidth: companyNameMaxWidth,
+      });
+      y -= 18;
+    } else {
+      y -= 4;
+    }
+  }
+
+  // Company details (left, below company name)
   const companyDetails = [
     data.companyAddress,
     data.companyPhone ? `${labels.phone}: ${data.companyPhone}` : '',
@@ -64,22 +128,6 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
     size: 9,
     color: GRAY,
   });
-
-  // ── Invoice details (right) ──
-  const rightX = PAGE_WIDTH - MARGIN - 150;
-  let detailY = y;
-  if (data.invoiceNumber) {
-    drawText(page, `${labels.invoiceNumber}: ${data.invoiceNumber}`, rightX, detailY, { size: 9, bold: true, color: GRAY });
-    detailY -= LINE_HEIGHT;
-  }
-  const detailsLines = [
-    data.invoiceDate ? `${labels.invoiceDate}: ${data.invoiceDate}` : '',
-    data.dueDate ? `${labels.dueDate}: ${data.dueDate}` : '',
-  ].filter(Boolean);
-  for (const line of detailsLines) {
-    drawText(page, line, rightX, detailY, { size: 9, color: GRAY });
-    detailY -= LINE_HEIGHT;
-  }
 
   y = Math.min(companyEndY, detailY) - 10;
 
@@ -231,74 +279,87 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
 
   y -= SECTION_GAP + 4;
 
-  // ── Totals Section (right-aligned) ──
+  // ── Totals + Left Info Section (two-column layout) ──
+  // Left column: amount in words + bank accounts
+  // Right column: subtotal, tax, total
   ensureSpace(60);
+
   const totalsX = PAGE_WIDTH - MARGIN - 180;
   const valuesX = PAGE_WIDTH - MARGIN - 10;
+  const leftInfoMaxWidth = totalsX - MARGIN - 20; // left column max width
+  const sectionStartY = y;
+
+  // ── Right column: Totals ──
+  let totalsY = sectionStartY;
 
   const drawTotalRow = (
     label: string,
     value: string,
+    atY: number,
     opts: { bold?: boolean; size?: number } = {},
-  ) => {
+  ): number => {
     const { bold = false, size = 10 } = opts;
-    drawText(page, label, totalsX, y, { size, color: GRAY });
+    drawText(page, label, totalsX, atY, { size, color: GRAY });
     const valWidth = textWidth(value, size, bold);
-    drawText(page, value, valuesX - valWidth, y, { size, bold, color: DARK });
-    y -= LINE_HEIGHT + 2;
+    drawText(page, value, valuesX - valWidth, atY, { size, bold, color: DARK });
+    return atY - (LINE_HEIGHT + 2);
   };
 
-  drawTotalRow(`${labels.subtotal}:`, formatCurrency(data.subtotal, data.currency));
+  totalsY = drawTotalRow(`${labels.subtotal}:`, formatCurrency(data.subtotal, data.currency), totalsY);
   if (data.taxRate > 0) {
-    drawTotalRow(
+    totalsY = drawTotalRow(
       `${labels.tax} (${data.taxRate}%):`,
       formatCurrency(data.taxAmount, data.currency),
+      totalsY,
     );
   }
 
   page.drawLine({
-    start: { x: totalsX, y: y + 2 },
-    end: { x: valuesX, y: y + 2 },
+    start: { x: totalsX, y: totalsY + 2 },
+    end: { x: valuesX, y: totalsY + 2 },
     thickness: 1,
     color: DARK,
   });
-  y -= 14;
+  totalsY -= 14;
 
-  drawTotalRow(`${labels.total}:`, formatCurrency(data.total, data.currency), {
+  totalsY = drawTotalRow(`${labels.total}:`, formatCurrency(data.total, data.currency), totalsY, {
     bold: true,
     size: 13,
   });
 
-  y -= SECTION_GAP;
+  // ── Left column: Amount in words + Bank accounts ──
+  let leftY = sectionStartY;
 
-  // ── Amount in Words (transport) ──
   if (isTransport && data.amountInWords) {
-    ensureSpace(30);
-    drawText(page, `${labels.amountInWords}:`, MARGIN, y, {
+    drawText(page, `${labels.amountInWords}:`, MARGIN, leftY, {
       size: 10,
       bold: true,
       color: GRAY,
     });
-    y -= LINE_HEIGHT + 2;
-    drawText(page, data.amountInWords, MARGIN, y, { size: 10, color: DARK });
-    y -= SECTION_GAP + 4;
+    leftY -= LINE_HEIGHT + 2;
+    drawText(page, data.amountInWords, MARGIN, leftY, {
+      size: 10,
+      color: DARK,
+      maxWidth: leftInfoMaxWidth,
+    });
+    leftY -= SECTION_GAP;
   }
 
-  // ── Bank Accounts ──
   if (data.companyBankAccounts) {
-    ensureSpace(40);
-    drawText(page, `${labels.paymentDetails}:`, MARGIN, y, {
+    drawText(page, `${labels.paymentDetails}:`, MARGIN, leftY, {
       size: 10,
       bold: true,
       color: GRAY,
     });
-    y -= LINE_HEIGHT + 2;
-    y = drawMultiline(page, data.companyBankAccounts, MARGIN, y, {
+    leftY -= LINE_HEIGHT + 2;
+    leftY = drawMultiline(page, data.companyBankAccounts, MARGIN, leftY, {
       size: 9,
       color: DARK,
     });
-    y -= SECTION_GAP + 4;
   }
+
+  // Continue from whichever column ended lower
+  y = Math.min(totalsY, leftY) - SECTION_GAP;
 
   // ── Payment Terms ──
   if (data.paymentTerms) {
@@ -336,18 +397,18 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
     const stampImage = hasStamp ? await ctx.embedImage(data.stampImageUrl) : null;
     const sigImage = hasSignature ? await ctx.embedImage(data.signatureImageUrl) : null;
 
-    const stampDims = stampImage ? stampImage.scaleToFit(150, 150) : null;
+    const stampDims = stampImage ? stampImage.scaleToFit(120, 120) : null;
     const sigDims = sigImage ? sigImage.scaleToFit(140, 70) : null;
 
     const imageBlockHeight = Math.max(
       stampDims?.height ?? 0,
       sigDims?.height ?? 0,
-      80,
+      60,
     );
 
     // Calculate actual space needed: images + gap + line + name + label
-    // Use tight check (no extra 30pt buffer) since this is the last section on the page
-    const neededSpace = imageBlockHeight + 8 + LINE_HEIGHT * 3;
+    // Use tight check (no extra buffer) since this is the last section on the page
+    const neededSpace = imageBlockHeight + 8 + LINE_HEIGHT * 2;
     if (y - neededSpace < MARGIN) {
       page = ctx.addPage();
       y = PAGE_HEIGHT - MARGIN;

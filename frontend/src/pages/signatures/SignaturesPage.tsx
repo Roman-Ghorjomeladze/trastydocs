@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSignatureStore } from '../../stores/signature.store.ts';
+import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
+import { AuthImage } from '../../components/shared/AuthImage.tsx';
 import { cn } from '../../lib/utils.ts';
 import { colorizeSignatureBlue } from '../../lib/image-utils.ts';
 import type { SignatureAsset } from '../../types/index.ts';
@@ -10,11 +12,12 @@ export function SignaturesPage() {
   const { signatures, isLoading, fetchSignatures, createSignature, updateSignature, deleteSignature } =
     useSignatureStore();
   const [showDrawing, setShowDrawing] = useState(false);
-  const [sigName, setSigName] = useState('My Signature');
+  const [sigName, setSigName] = useState(t('signatures.defaultName', 'My Signature'));
   const [isDefault, setIsDefault] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDrawingRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -86,7 +89,7 @@ export function SignaturesPage() {
       const blueBase64 = await colorizeSignatureBlue(rawBase64);
       await createSignature({ name: sigName, imageBase64: blueBase64, isDefault });
       setShowDrawing(false);
-      setSigName('My Signature');
+      setSigName(t('signatures.defaultName', 'My Signature'));
       setIsDefault(false);
     } finally {
       setIsSaving(false);
@@ -129,6 +132,7 @@ export function SignaturesPage() {
 
   const handleDelete = async (id: string) => {
     await deleteSignature(id);
+    setDeleteTarget(null);
   };
 
   return (
@@ -205,7 +209,7 @@ export function SignaturesPage() {
                 onChange={(e) => setIsDefault(e.target.checked)}
                 className="rounded border-border"
               />
-              Set as default
+              {t('signatures.setAsDefault')}
             </label>
           </div>
           <div className="flex items-center gap-2">
@@ -215,21 +219,21 @@ export function SignaturesPage() {
               disabled={isSaving}
               className="px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors"
             >
-              {isSaving ? 'Saving...' : 'Save Signature'}
+              {isSaving ? t('signatures.saving') : t('signatures.save')}
             </button>
             <button
               type="button"
               onClick={clearCanvas}
               className="px-4 py-2 text-sm border border-border rounded-lg hover:bg-muted transition-colors"
             >
-              Clear
+              {t('signatures.clear')}
             </button>
             <button
               type="button"
               onClick={() => setShowDrawing(false)}
               className="px-4 py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
-              Cancel
+              {t('common.cancel')}
             </button>
           </div>
         </div>
@@ -245,9 +249,9 @@ export function SignaturesPage() {
       {/* Empty State */}
       {!isLoading && signatures.length === 0 && !showDrawing && (
         <div className="text-center py-12 bg-muted rounded-lg">
-          <p className="text-muted-foreground">No signatures yet</p>
+          <p className="text-muted-foreground">{t('signatures.noSignatures')}</p>
           <p className="text-sm text-muted-foreground mt-1">
-            Draw or upload your first signature to get started
+            {t('signatures.createFirst')}
           </p>
         </div>
       )}
@@ -267,11 +271,11 @@ export function SignaturesPage() {
             >
               {sig.isDefault && (
                 <span className="absolute top-2 right-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-accent/15 text-accent">
-                  Default
+                  {t('signatures.defaultLabel')}
                 </span>
               )}
               <div className="bg-muted rounded-lg p-3 mb-3 flex items-center justify-center min-h-[100px]">
-                <img
+                <AuthImage
                   src={sig.imageUrl}
                   alt={sig.name}
                   className="max-h-[80px] max-w-full object-contain"
@@ -295,7 +299,7 @@ export function SignaturesPage() {
                     onClick={() => handleRename(sig.id)}
                     className="text-xs text-accent hover:text-accent-hover"
                   >
-                    Save
+                    {t('common.save')}
                   </button>
                 </div>
               ) : (
@@ -316,21 +320,30 @@ export function SignaturesPage() {
                     onClick={() => handleSetDefault(sig)}
                     className="text-accent hover:text-accent-hover"
                   >
-                    Set Default
+                    {t('signatures.setAsDefault')}
                   </button>
                 )}
                 <button
                   type="button"
-                  onClick={() => handleDelete(sig.id)}
+                  onClick={() => setDeleteTarget(sig.id)}
                   className="text-danger hover:text-danger-hover ml-auto"
                 >
-                  Delete
+                  {t('signatures.delete')}
                 </button>
               </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title={t('signatures.deleteSignature')}
+        message={t('signatures.confirmDelete')}
+        variant="danger"
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

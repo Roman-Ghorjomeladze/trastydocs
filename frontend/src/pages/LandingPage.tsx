@@ -99,10 +99,10 @@ export function LandingPage() {
               {t('landing.getStarted')}
             </Link>
             <Link
-              to={ROUTES.LOGIN}
+              to={ROUTES.PRICING}
               className="px-6 py-3 text-sm font-medium border border-border text-foreground rounded-lg hover:bg-muted transition-colors"
             >
-              {t('auth.signIn')}
+              {t('landing.viewPricing', 'View Pricing')}
             </Link>
           </div>
         </div>

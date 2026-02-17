@@ -3,6 +3,7 @@ import { Outlet } from 'react-router-dom';
 import { Sidebar } from './Sidebar.tsx';
 import { Header } from './Header.tsx';
 import { useCompanyStore } from '../../stores/company.store.ts';
+import { UpgradePlanModal } from '../shared/UpgradePlanModal.tsx';
 
 export function DashboardLayout() {
   const fetchCompanies = useCompanyStore((s) => s.fetchCompanies);
@@ -24,6 +25,7 @@ export function DashboardLayout() {
           <Outlet />
         </main>
       </div>
+      <UpgradePlanModal />
     </div>
   );
 }

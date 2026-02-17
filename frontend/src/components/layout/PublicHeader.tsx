@@ -25,6 +25,13 @@ export function PublicHeader() {
 
         {/* Desktop right side */}
         <div className="hidden md:flex items-center gap-3">
+          <Link
+            to={ROUTES.PRICING}
+            className="px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg transition-colors"
+          >
+            {t('nav.pricing')}
+          </Link>
+
           <ThemeLangControls />
 
           {isAuthenticated ? (
@@ -83,6 +90,14 @@ export function PublicHeader() {
               <div className="flex items-center justify-center">
                 <ThemeLangControls />
               </div>
+
+              <Link
+                to={ROUTES.PRICING}
+                onClick={() => setMobileOpen(false)}
+                className="block w-full text-center px-4 py-2.5 text-sm text-foreground hover:bg-muted rounded-lg transition-colors"
+              >
+                {t('nav.pricing')}
+              </Link>
 
               <div className="border-t border-border pt-4 space-y-2">
                 {isAuthenticated ? (

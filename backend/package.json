@@ -20,6 +20,7 @@
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@aws-sdk/s3-request-presigner": "^3.991.0",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/common": "^11.0.1",
     "@nestjs/config": "^4.0.3",
@@ -29,6 +30,7 @@
     "@nestjs/platform-express": "^11.1.13",
     "@nestjs/schedule": "^6.1.1",
     "@nestjs/throttler": "^6.5.0",
+    "@paddle/paddle-node-sdk": "^3.6.0",
     "@prisma/client": "^6.19.2",
     "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
@@ -99,5 +101,8 @@
     ],
     "coverageDirectory": "../coverage",
     "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "npx ts-node prisma/seed.ts"
   }
 }

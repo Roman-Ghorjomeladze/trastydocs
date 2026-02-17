@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
+import { LimitsService } from '../admin/limits.service.js';
 import type { CreateContractorDto } from './dto/create-contractor.dto.js';
 import type { UpdateContractorDto } from './dto/update-contractor.dto.js';
 
@@ -10,12 +11,17 @@ export class ContractorsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly limitsService: LimitsService,
   ) {}
 
   /**
    * Create a new contractor for a company.
    */
   async create(dto: CreateContractorDto, companyId: string, userId?: string) {
+    if (userId) {
+      await this.limitsService.checkLimit(userId, 'contractors');
+    }
+
     const contractor = await this.prisma.contractor.create({
       data: {
         companyId,

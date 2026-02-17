@@ -1,21 +1,36 @@
 import { create } from 'zustand';
-import type { Membership, AddMemberDto, UpdateMemberDto } from '../types/index.ts';
+import type {
+  Membership,
+  AddMemberDto,
+  UpdateMemberDto,
+  AddMemberResult,
+  PendingInvitation,
+} from '../types/index.ts';
 import * as membershipsApi from '../api/memberships.ts';
 
 interface MembershipState {
   members: Membership[];
+  invitations: PendingInvitation[];
   isLoading: boolean;
 }
 
 interface MembershipActions {
   fetchMembers: (companyId: string) => Promise<void>;
-  addMember: (companyId: string, data: AddMemberDto) => Promise<Membership>;
+  addMember: (
+    companyId: string,
+    data: AddMemberDto,
+  ) => Promise<AddMemberResult>;
   updateMember: (
     companyId: string,
     memberId: string,
     data: UpdateMemberDto,
   ) => Promise<Membership>;
   removeMember: (companyId: string, memberId: string) => Promise<void>;
+  fetchInvitations: (companyId: string) => Promise<void>;
+  cancelInvitation: (
+    companyId: string,
+    invitationId: string,
+  ) => Promise<void>;
   clearMembers: () => void;
 }
 
@@ -23,6 +38,7 @@ export const useMembershipStore = create<MembershipState & MembershipActions>(
   (set) => ({
     // ── State ──
     members: [],
+    invitations: [],
     isLoading: false,
 
     // ── Actions ──
@@ -37,13 +53,25 @@ export const useMembershipStore = create<MembershipState & MembershipActions>(
     },
 
     addMember: async (companyId, data) => {
-      const member = await membershipsApi.addMember(companyId, data);
-      set((state) => ({ members: [...state.members, member] }));
-      return member;
+      const result = await membershipsApi.addMember(companyId, data);
+      if (result.type === 'added' && result.membership) {
+        set((state) => ({
+          members: [...state.members, result.membership!],
+        }));
+      } else if (result.type === 'invited' && result.invitation) {
+        set((state) => ({
+          invitations: [result.invitation!, ...state.invitations],
+        }));
+      }
+      return result;
     },
 
     updateMember: async (companyId, memberId, data) => {
-      const updated = await membershipsApi.updateMember(companyId, memberId, data);
+      const updated = await membershipsApi.updateMember(
+        companyId,
+        memberId,
+        data,
+      );
       set((state) => ({
         members: state.members.map((m) => (m.id === memberId ? updated : m)),
       }));
@@ -57,8 +85,25 @@ export const useMembershipStore = create<MembershipState & MembershipActions>(
       }));
     },
 
+    fetchInvitations: async (companyId) => {
+      try {
+        const invitations =
+          await membershipsApi.getInvitations(companyId);
+        set({ invitations });
+      } catch {
+        // Non-critical
+      }
+    },
+
+    cancelInvitation: async (companyId, invitationId) => {
+      await membershipsApi.cancelInvitation(companyId, invitationId);
+      set((state) => ({
+        invitations: state.invitations.filter((i) => i.id !== invitationId),
+      }));
+    },
+
     clearMembers: () => {
-      set({ members: [], isLoading: false });
+      set({ members: [], invitations: [], isLoading: false });
     },
   }),
 );

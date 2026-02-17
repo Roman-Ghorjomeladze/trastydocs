@@ -2,6 +2,7 @@ import { Inject, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import type { StorageProvider } from '../../integrations/storage/storage.interface.js';
+import { getStoragePrefix } from '../../integrations/storage/storage.module.js';
 import type { CreateSignatureDto } from './dto/create-signature.dto.js';
 import type { UpdateSignatureDto } from './dto/update-signature.dto.js';
 
@@ -20,8 +21,9 @@ export class SignaturesService {
   async create(userId: string, dto: CreateSignatureDto) {
     // Decode base64 and upload
     const buffer = Buffer.from(dto.imageBase64, 'base64');
-    const path = `signatures/${userId}/${Date.now()}.png`;
-    const imageUrl = await this.storage.upload(buffer, path, 'image/png');
+    const prefix = getStoragePrefix();
+    const storagePath = `${prefix}/users/${userId}/signatures/${Date.now()}.png`;
+    const imageUrl = await this.storage.upload(buffer, storagePath, 'image/png');
 
     // If setting as default, unset other defaults
     if (dto.isDefault) {

@@ -62,6 +62,12 @@ enum TokenType {
   REFRESH
 }
 
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+}
+
 // ─────────────────────────────────────────────
 // USER & AUTH
 // ─────────────────────────────────────────────
@@ -72,10 +78,11 @@ model User {
   passwordHash  String?
   name          String
   avatarUrl     String?
-  isActive      Boolean   @default(true)
-  googleId      String?   @unique
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  isActive              Boolean   @default(true)
+  googleId              String?   @unique
+  paddleCustomerId       String?  @unique
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   memberships                Membership[]
   templates                  DocumentTemplate[]
@@ -85,6 +92,12 @@ model User {
   uploadedCompanySignatures  CompanySignature[]
   refreshTokens              RefreshToken[]
   auditLogs                  AuditLog[]
+
+  adminUser          AdminUser?
+  subscription       UserSubscription?
+  creditTransactions CreditTransaction[] @relation("UserCredits")
+  grantedCredits     CreditTransaction[] @relation("GrantedCredits")
+  sentInvitations    PendingInvitation[]
 
   @@map("users")
 }
@@ -147,6 +160,7 @@ model Company {
   vehicles           Vehicle[]
   documentSequences  DocumentSequence[]
   auditLogs          AuditLog[]
+  pendingInvitations PendingInvitation[]
 
   @@map("companies")
 }
@@ -167,6 +181,24 @@ model Membership {
   @@index([userId])
   @@index([companyId])
   @@map("memberships")
+}
+
+model PendingInvitation {
+  id        String         @id @default(cuid())
+  email     String
+  companyId String
+  role      MembershipRole @default(MEMBER)
+  invitedBy String
+  token     String         @unique @default(cuid())
+  expiresAt DateTime
+  createdAt DateTime       @default(now())
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  inviter User    @relation(fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  @@unique([email, companyId])
+  @@index([email])
+  @@map("pending_invitations")
 }
 
 // ─────────────────────────────────────────────
@@ -411,4 +443,83 @@ model AuditLog {
   @@index([entity, entityId])
   @@index([createdAt])
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────
+// ADMIN & SUBSCRIPTIONS
+// ─────────────────────────────────────────────
+
+model AdminUser {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("admin_users")
+}
+
+model SubscriptionPlan {
+  id                     String  @id @default(cuid())
+  name                   String  @unique
+  displayName            String
+  price                  Float   @default(0)
+  paddlePriceId          String? @unique
+  limits                 Json
+  isActive               Boolean @default(true)
+  sortOrder              Int     @default(0)
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  subscriptions UserSubscription[]
+
+  @@map("subscription_plans")
+}
+
+model UserSubscription {
+  id                        String             @id @default(cuid())
+  userId                    String             @unique
+  planId                    String
+  status                    SubscriptionStatus @default(ACTIVE)
+  paddleSubscriptionId       String?           @unique
+  paddleTransactionId        String?
+  startedAt                 DateTime           @default(now())
+  expiresAt                 DateTime?
+  renewsAt                  DateTime?
+  customerPortalUrl         String?
+  createdAt                 DateTime           @default(now())
+  updatedAt                 DateTime           @updatedAt
+
+  user User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan SubscriptionPlan @relation(fields: [planId], references: [id])
+
+  @@index([userId])
+  @@index([planId])
+  @@map("user_subscriptions")
+}
+
+model WebhookEvent {
+  id        String   @id @default(cuid())
+  eventId   String   @unique
+  eventName String
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([eventId])
+  @@map("webhook_events")
+}
+
+model CreditTransaction {
+  id          String   @id @default(cuid())
+  userId      String
+  grantedById String
+  amount      Float
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  user      User @relation("UserCredits", fields: [userId], references: [id], onDelete: Cascade)
+  grantedBy User @relation("GrantedCredits", fields: [grantedById], references: [id])
+
+  @@index([userId])
+  @@map("credit_transactions")
 }

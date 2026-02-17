@@ -7,6 +7,7 @@ import {
   CONTENT_WIDTH,
   LINE_HEIGHT,
   SECTION_GAP,
+  clampCompanyName,
 } from './shared.ts';
 import { formatCurrency } from '../invoice-utils.ts';
 
@@ -40,11 +41,12 @@ export const renderModern: TemplateRenderFn = async (ctx) => {
     color: NAVY,
   });
 
-  // Company name in the accent bar
-  drawText(page, data.companyName || 'Company', MARGIN, PAGE_HEIGHT - 22, {
-    size: 14,
+  // Company name in the accent bar (40 char limit)
+  drawText(page, clampCompanyName(data.companyName), MARGIN, PAGE_HEIGHT - 22, {
+    size: 11,
     bold: true,
     color: WHITE,
+    maxWidth: CONTENT_WIDTH,
   });
 
   y = PAGE_HEIGHT - MARGIN - 20;

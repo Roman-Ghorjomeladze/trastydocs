@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Check, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth.store.ts';
 import { useUiStore } from '../../stores/ui.store.ts';
 import type { Theme } from '../../stores/ui.store.ts';
 import { useAuth } from '../../hooks/use-auth.ts';
+import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { changePassword, updateProfile } from '../../api/auth.ts';
+import { getPlans } from '../../api/plans.ts';
+import { getCheckoutParams, cancelSubscription } from '../../api/payments.ts';
+import { openPaddleCheckout } from '../../lib/paddle.ts';
 import { getInitials, formatDate } from '../../lib/utils.ts';
 import { cn } from '../../lib/utils.ts';
+import type { SubscriptionPlan } from '../../types/index.ts';
 
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: '🇬🇧' },
@@ -20,6 +26,201 @@ const THEMES: { value: Theme; labelKey: string }[] = [
   { value: 'dark', labelKey: 'profile.dark' },
   { value: 'system', labelKey: 'profile.system' },
 ];
+
+function SubscriptionSection() {
+  const { t } = useTranslation();
+  const user = useAuthStore((s) => s.user);
+  const fetchUser = useAuthStore((s) => s.fetchUser);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
+  const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const [error, setError] = useState('');
+
+  const formatLimit = (value: number): string => {
+    return value === -1 ? t('profile.unlimited') : String(value);
+  };
+
+  useEffect(() => {
+    getPlans()
+      .then((p) => setPlans(p.sort((a, b) => a.sortOrder - b.sortOrder)))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const currentPlanId = user?.subscription?.planId;
+  const currentPlanName = user?.subscription?.planName;
+
+  const handleSelectPlan = async (plan: SubscriptionPlan) => {
+    if (plan.id === currentPlanId) return;
+    if (plan.price === 0) return; // Can't "buy" free plan
+
+    setError('');
+    setCheckoutLoading(plan.id);
+    try {
+      const params = await getCheckoutParams(plan.id);
+      openPaddleCheckout({
+        priceId: params.paddlePriceId,
+        email: params.customerEmail,
+        userId: params.customData.user_id,
+      });
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to start checkout');
+    } finally {
+      setCheckoutLoading(null);
+    }
+  };
+
+  const handleCancel = async () => {
+    setShowCancelConfirm(false);
+    setError('');
+    setCancelLoading(true);
+    try {
+      await cancelSubscription();
+      await fetchUser();
+    } catch (err: any) {
+      setError(err?.response?.data?.message || 'Failed to cancel subscription');
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
+  const hasPaidSubscription = plans.find((p) => p.id === currentPlanId)?.price !== undefined &&
+    plans.find((p) => p.id === currentPlanId)?.price! > 0;
+
+  return (
+    <div className="bg-card border border-border rounded-lg p-6 mb-6">
+      <h2 className="text-lg font-semibold text-foreground mb-1">
+        {t('profile.subscriptionPlan')}
+      </h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        {t('profile.currentPlanLabel')} <span className="font-semibold text-foreground">{currentPlanName || t('profile.freePlan')}</span>
+      </p>
+
+      {error && (
+        <p className="text-sm text-danger mb-4">{error}</p>
+      )}
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {plans.map((plan) => {
+            const isCurrent = plan.id === currentPlanId;
+            const isPopular = plan.name === 'professional';
+            const isFree = plan.price === 0;
+            const hasPriceId = !!plan.paddlePriceId;
+
+            return (
+              <div
+                key={plan.id}
+                className={cn(
+                  'relative rounded-xl border p-4 transition-all',
+                  isCurrent
+                    ? 'border-accent bg-accent/5'
+                    : isPopular
+                      ? 'border-accent/50 shadow-sm'
+                      : 'border-border',
+                )}
+              >
+                {isPopular && !isCurrent && (
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-accent text-white text-[10px] font-semibold rounded-full">
+                    {t('profile.popular')}
+                  </div>
+                )}
+
+                <div className="flex items-baseline justify-between mb-2">
+                  <h3 className="text-sm font-semibold text-foreground">{plan.displayName}</h3>
+                  <div>
+                    <span className="text-lg font-bold text-foreground">${plan.price}</span>
+                    <span className="text-xs text-muted-foreground">{t('profile.perMonth')}</span>
+                  </div>
+                </div>
+
+                <ul className="space-y-1 mb-3">
+                  {[
+                    { label: t('profile.planCompanies'), value: formatLimit(plan.limits.maxCompanies) },
+                    { label: t('profile.planContractors'), value: formatLimit(plan.limits.maxContractors) },
+                    { label: t('profile.planDocuments'), value: formatLimit(plan.limits.maxDocuments) },
+                  ].map((item) => (
+                    <li key={item.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
+                      <span><span className="font-medium text-foreground">{item.value}</span> {item.label}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                {isCurrent ? (
+                  <button
+                    disabled
+                    className="w-full py-1.5 px-3 text-xs font-medium rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
+                  >
+                    {t('profile.currentPlanButton')}
+                  </button>
+                ) : isFree ? (
+                  <button
+                    disabled
+                    className="w-full py-1.5 px-3 text-xs font-medium rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
+                  >
+                    {t('profile.freePlan')}
+                  </button>
+                ) : !hasPriceId ? (
+                  <button
+                    disabled
+                    className="w-full py-1.5 px-3 text-xs font-medium rounded-lg bg-muted text-muted-foreground cursor-not-allowed"
+                  >
+                    {t('profile.comingSoon')}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleSelectPlan(plan)}
+                    disabled={!!checkoutLoading}
+                    className={cn(
+                      'w-full py-1.5 px-3 text-xs font-medium rounded-lg transition-colors flex items-center justify-center gap-1.5',
+                      isPopular
+                        ? 'bg-accent text-white hover:bg-accent-hover disabled:opacity-50'
+                        : 'bg-muted text-foreground hover:bg-border disabled:opacity-50',
+                    )}
+                  >
+                    {checkoutLoading === plan.id ? (
+                      <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <>{t('profile.upgradeButton')} <ArrowRight className="w-3 h-3" /></>
+                    )}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {hasPaidSubscription && (
+        <div className="mt-4 pt-4 border-t border-border">
+          <button
+            onClick={() => setShowCancelConfirm(true)}
+            disabled={cancelLoading}
+            className="text-xs text-muted-foreground hover:text-danger transition-colors disabled:opacity-50"
+          >
+            {cancelLoading ? t('profile.cancelling') : t('profile.cancelSubscription')}
+          </button>
+        </div>
+      )}
+
+      <ConfirmModal
+        isOpen={showCancelConfirm}
+        title={t('profile.cancelSubscription')}
+        message={t('profile.cancelConfirm')}
+        variant="danger"
+        onConfirm={handleCancel}
+        onCancel={() => setShowCancelConfirm(false)}
+      />
+    </div>
+  );
+}
 
 function splitName(fullName: string): { firstName: string; lastName: string } {
   const parts = fullName.trim().split(/\s+/);
@@ -88,7 +289,7 @@ export function ProfilePage() {
     }
 
     if (newPassword.length < 8) {
-      setPasswordError('Password must be at least 8 characters');
+      setPasswordError(t('profile.passwordMinLength'));
       return;
     }
 
@@ -100,7 +301,7 @@ export function ProfilePage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch {
-      setPasswordError('Failed to change password. Please check your current password.');
+      setPasswordError(t('profile.passwordChangeFailed'));
     } finally {
       setIsChangingPassword(false);
     }
@@ -187,6 +388,9 @@ export function ProfilePage() {
           </button>
         )}
       </div>
+
+      {/* Subscription Plan */}
+      <SubscriptionSection />
 
       {/* Change Password */}
       <div className="bg-card border border-border rounded-lg p-6 mb-6">

@@ -17,6 +17,10 @@ import { SignaturesModule } from './modules/signatures/signatures.module.js';
 import { StampsModule } from './modules/stamps/stamps.module.js';
 import { AuditModule } from './modules/audit/audit.module.js';
 import { VehiclesModule } from './modules/vehicles/vehicles.module.js';
+import { AdminModule } from './modules/admin/admin.module.js';
+import { PaddleModule } from './integrations/paddle/paddle.module.js';
+import { PaymentsModule } from './modules/payments/payments.module.js';
+import { FilesModule } from './modules/files/files.module.js';
 import { HealthController } from './health.controller.js';
 
 @Module({
@@ -38,6 +42,10 @@ import { HealthController } from './health.controller.js';
     StampsModule,
     VehiclesModule,
     AuditModule,
+    AdminModule,
+    PaddleModule,
+    PaymentsModule,
+    FilesModule,
   ],
   controllers: [HealthController],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],

@@ -16,9 +16,11 @@ import {
   ChevronDown,
   ChevronUp,
   X,
+  Shield,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useCompanyStore } from '../../stores/company.store.ts';
+import { useAuthStore } from '../../stores/auth.store.ts';
 import { cn, getInitials } from '../../lib/utils.ts';
 import { ROUTES } from '../../lib/constants.ts';
 import { AppLogo } from '../shared/AppLogo.tsx';
@@ -40,6 +42,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { companies, activeCompany, setActiveCompany } = useCompanyStore();
+  const user = useAuthStore((s) => s.user);
   const [switcherOpen, setSwitcherOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [textOpacity, setTextOpacity] = useState(true);
@@ -143,7 +146,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             if (!collapsed) setSwitcherOpen(false);
           }}
           className="hidden md:flex items-center gap-2.5 rounded-md hover:opacity-80"
-          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={collapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
         >
           <AppLogo size={32} className="flex-shrink-0" />
           <span className={cn('text-lg font-semibold text-sidebar-foreground', textCls)}>
@@ -163,7 +166,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
             type="button"
             onClick={onMobileClose}
             className="p-1.5 rounded-md text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
-            aria-label="Close menu"
+            aria-label={t('sidebar.closeMenu')}
           >
             <X className="w-5 h-5" />
           </button>
@@ -329,6 +332,26 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           </>
         )}
       </nav>
+
+      {/* Admin link — only visible for admins */}
+      {user?.isAdmin && (
+        <div className="p-3 border-t border-sidebar-border">
+          <Link
+            to={ROUTES.ADMIN}
+            title={collapsed ? t('sidebar.adminPanel') : undefined}
+            className={cn(
+              'flex items-center gap-3 rounded-md text-sm h-9 px-2.5 whitespace-nowrap',
+              location.pathname.startsWith('/admin')
+                ? 'bg-sidebar-hover text-white'
+                : 'text-sidebar-foreground hover:bg-sidebar-hover hover:text-white',
+            )}
+          >
+            <Shield className="w-[18px] h-[18px] flex-shrink-0" />
+            <span className="md:hidden">{t('sidebar.adminPanel')}</span>
+            <span className={cn('hidden md:inline', textCls)}>{t('sidebar.adminPanel')}</span>
+          </Link>
+        </div>
+      )}
     </aside>
   );
 

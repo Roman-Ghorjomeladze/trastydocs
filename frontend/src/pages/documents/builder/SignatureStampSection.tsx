@@ -1,5 +1,6 @@
 import type { InvoiceData, SignatureAsset, StampAsset } from '../../../types/index.ts';
 import type { InvoiceLabels } from '../../../lib/invoice-i18n.ts';
+import { AuthImage } from '../../../components/shared/AuthImage.tsx';
 
 interface Props {
   data: Pick<InvoiceData, 'signatureId' | 'stampId' | 'signerName' | 'signatureImageUrl' | 'stampImageUrl'>;
@@ -62,7 +63,7 @@ export function SignatureStampSection({ data, labels, signatures, stamps, onChan
             </select>
             {data.signatureImageUrl && (
               <div className="mt-2 p-3 bg-muted rounded-lg flex items-center justify-center min-h-[60px]">
-                <img
+                <AuthImage
                   src={data.signatureImageUrl}
                   alt="Signature"
                   className="max-h-[50px] max-w-full object-contain"
@@ -88,7 +89,7 @@ export function SignatureStampSection({ data, labels, signatures, stamps, onChan
             </select>
             {data.stampImageUrl && (
               <div className="mt-2 p-3 bg-muted rounded-lg flex items-center justify-center min-h-[60px]">
-                <img
+                <AuthImage
                   src={data.stampImageUrl}
                   alt="Stamp"
                   className="max-h-[50px] max-w-full object-contain"
@@ -104,14 +105,14 @@ export function SignatureStampSection({ data, labels, signatures, stamps, onChan
             <label className="block text-xs font-medium text-muted-foreground mb-1">Preview</label>
             <div className="p-4 bg-muted rounded-lg flex items-center justify-center min-h-[100px] relative">
               {data.stampImageUrl && (
-                <img
+                <AuthImage
                   src={data.stampImageUrl}
                   alt="Stamp"
                   className="max-h-[80px] max-w-full object-contain opacity-70 absolute"
                 />
               )}
               {data.signatureImageUrl && (
-                <img
+                <AuthImage
                   src={data.signatureImageUrl}
                   alt="Signature"
                   className="max-h-[60px] max-w-full object-contain relative z-10"

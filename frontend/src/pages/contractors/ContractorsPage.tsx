@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import { Pencil, Trash2, X } from 'lucide-react';
 import { useContractorStore } from '../../stores/contractor.store.ts';
 import { useCompanyStore } from '../../stores/company.store.ts';
+import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { Tooltip } from '../../components/shared/Tooltip.tsx';
 import type { CreateContractorDto, UpdateContractorDto, BankAccount, Translations } from '../../types/index.ts';
 
@@ -33,6 +34,7 @@ export function ContractorsPage() {
   const [createNameTranslations, setCreateNameTranslations] = useState<Translations>({});
   const [createAddressTranslations, setCreateAddressTranslations] = useState<Translations>({});
   const [submitting, setSubmitting] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   // Edit form state
   const [editData, setEditData] = useState<UpdateContractorDto>({});
@@ -123,6 +125,7 @@ export function ContractorsPage() {
     } catch {
       // silently handle
     }
+    setDeleteTarget(null);
   };
 
   const startEditing = (contractor: (typeof contractors)[0]) => {
@@ -663,7 +666,7 @@ export function ContractorsPage() {
                     </Tooltip>
                     <Tooltip content={t('common.delete')}>
                       <button
-                        onClick={() => handleDelete(contractor.id)}
+                        onClick={() => setDeleteTarget(contractor.id)}
                         className="p-1.5 rounded-md text-muted-foreground hover:text-danger hover:bg-muted transition-colors"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -676,6 +679,15 @@ export function ContractorsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        title={t('contractors.deleteContractor')}
+        message={t('contractors.confirmDelete')}
+        variant="danger"
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

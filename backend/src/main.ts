@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
@@ -10,16 +9,19 @@ import { TimeoutInterceptor } from './common/interceptors/timeout.interceptor.js
 import { ResponseInterceptor } from './common/interceptors/response.interceptor.js';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    rawBody: true,
+  });
 
-  app.use(helmet());
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false, // Allow <object>/<embed> for PDF preview
+      contentSecurityPolicy: false, // Avoid blocking inline PDF rendering
+    }),
+  );
   app.disable('x-powered-by');
 
   app.setGlobalPrefix('api');
-
-  // Serve uploaded files at /uploads (outside the /api prefix)
-  const uploadDir = process.env.UPLOAD_DIR || './uploads';
-  app.useStaticAssets(join(process.cwd(), uploadDir), { prefix: '/uploads' });
 
   // Increase JSON body limit to 5MB (default is 100KB)
   // Needed for base64-encoded PDF uploads, signatures, stamps, etc.

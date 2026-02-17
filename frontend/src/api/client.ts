@@ -11,6 +11,12 @@ interface RetryableRequestConfig extends InternalAxiosRequestConfig {
 let getAccessToken: (() => string | null) | null = null;
 let onTokenRefreshed: ((token: string) => void) | null = null;
 let onAuthCleared: (() => void) | null = null;
+let onPlanLimitReached: ((data: {
+  resource: string;
+  currentUsage: number;
+  limit: number;
+  planName: string;
+}) => void) | null = null;
 
 export function registerAuthCallbacks(callbacks: {
   getAccessToken: () => string | null;
@@ -20,6 +26,17 @@ export function registerAuthCallbacks(callbacks: {
   getAccessToken = callbacks.getAccessToken;
   onTokenRefreshed = callbacks.onTokenRefreshed;
   onAuthCleared = callbacks.onAuthCleared;
+}
+
+export function registerUpgradeCallback(
+  callback: (data: {
+    resource: string;
+    currentUsage: number;
+    limit: number;
+    planName: string;
+  }) => void,
+) {
+  onPlanLimitReached = callback;
 }
 
 // ── Axios Instance ──
@@ -65,6 +82,22 @@ apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config as RetryableRequestConfig;
+
+    // Handle PLAN_LIMIT_REACHED (403 with code)
+    // Response shape: { success: false, error: { code, resource, currentUsage, limit, planName, ... } }
+    const errPayload = error.response?.data?.error ?? error.response?.data;
+    if (
+      error.response?.status === 403 &&
+      errPayload?.code === 'PLAN_LIMIT_REACHED'
+    ) {
+      onPlanLimitReached?.({
+        resource: errPayload.resource,
+        currentUsage: errPayload.currentUsage,
+        limit: errPayload.limit,
+        planName: errPayload.planName,
+      });
+      return Promise.reject(error);
+    }
 
     if (error.response?.status !== 401 || originalRequest?._retry) {
       return Promise.reject(error);

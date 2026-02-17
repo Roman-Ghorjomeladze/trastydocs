@@ -7,7 +7,9 @@ import { ROUTES, STATUS_COLORS } from "../../lib/constants.ts";
 import { cn } from "../../lib/utils.ts";
 import { isInvoiceData } from "../../lib/invoice-utils.ts";
 import { exportInvoicePdf } from "../../lib/pdf-export.ts";
+import { getDocument } from "../../api/documents.ts";
 import { ConfirmModal } from "../../components/shared/ConfirmModal.tsx";
+import { AuthImage, useAuthUrl } from "../../components/shared/AuthImage.tsx";
 import type { DocumentStatus, InvoiceData } from "../../types/index.ts";
 
 export function DocumentDetailPage() {
@@ -40,6 +42,9 @@ export function DocumentDetailPage() {
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+	// Pass updatedAt as version key so the blob is refetched after PDF regeneration
+	// (the pdfUrl path stays the same when the file is overwritten)
+	const pdfBlobUrl = useAuthUrl(doc?.pdfUrl, doc?.updatedAt);
 
 	useEffect(() => {
 		if (documentId) fetchDocument(documentId);
@@ -107,12 +112,21 @@ export function DocumentDetailPage() {
 		setIsGenerating(true);
 		setPdfError(null);
 		try {
-			if (!isInvoiceData(doc.inputData)) {
-				setPdfError("No invoice data found. Open the builder to add data first.");
+			// Fetch fresh document data directly (bypasses store's isLoading flicker)
+			let inputData = doc.inputData;
+			try {
+				const freshDoc = await getDocument(doc.id);
+				inputData = freshDoc.inputData;
+			} catch {
+				// fallback to current doc.inputData
+			}
+
+			if (!isInvoiceData(inputData)) {
+				setPdfError(t('documents.noInvoiceData'));
 				return;
 			}
 
-			const invoiceData = doc.inputData as unknown as InvoiceData;
+			const invoiceData = inputData as unknown as InvoiceData;
 			const pdfBytes = await exportInvoicePdf(invoiceData);
 
 			// Upload to server so the embedded viewer refreshes
@@ -122,10 +136,11 @@ export function DocumentDetailPage() {
 					.join(""),
 			);
 			await uploadPdf(doc.id, base64);
+			// Re-fetch to update the preview and timestamps
 			await fetchDocument(doc.id);
 		} catch (err) {
 			console.error("PDF generation failed:", err);
-			setPdfError(err instanceof Error ? err.message : "PDF generation failed. Check console for details.");
+			setPdfError(err instanceof Error ? err.message : t('documents.pdfGenerationFailed'));
 		} finally {
 			setIsGenerating(false);
 		}
@@ -351,26 +366,32 @@ export function DocumentDetailPage() {
 						<h3 className="text-lg font-semibold text-foreground mb-4">{t('documents.pdfPreview')}</h3>
 						{doc.pdfUrl ? (
 							<div>
-								<object
-									data={`${doc.pdfUrl}#toolbar=1`}
-									type="application/pdf"
-									className="w-full h-[500px] border rounded-lg"
-								>
-									<div className="flex flex-col items-center justify-center h-full bg-muted rounded-lg">
-										<p className="text-muted-foreground mb-3">PDF preview not available in this browser</p>
-										<a
-											href={doc.pdfUrl}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover"
-										>
-											{t('documents.downloadPdf')}
-										</a>
+								{pdfBlobUrl ? (
+									<object
+										data={`${pdfBlobUrl}#toolbar=1`}
+										type="application/pdf"
+										className="w-full h-[500px] border rounded-lg"
+									>
+										<div className="flex flex-col items-center justify-center h-full bg-muted rounded-lg">
+											<p className="text-muted-foreground mb-3">PDF preview not available in this browser</p>
+											<a
+												href={pdfBlobUrl}
+												target="_blank"
+												rel="noopener noreferrer"
+												className="px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover"
+											>
+												{t('documents.downloadPdf')}
+											</a>
+										</div>
+									</object>
+								) : (
+									<div className="flex items-center justify-center h-[500px] bg-muted rounded-lg">
+										<div className="w-6 h-6 border-2 border-accent border-t-transparent rounded-full animate-spin" />
 									</div>
-								</object>
+								)}
 								<div className="mt-3 flex items-center gap-2">
 									<a
-										href={doc.pdfUrl}
+										href={pdfBlobUrl || '#'}
 										target="_blank"
 										rel="noopener noreferrer"
 										className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted"
@@ -437,7 +458,7 @@ export function DocumentDetailPage() {
 							<div className="grid grid-cols-2 gap-3">
 								{doc.documentSignatures.map((ds) => (
 									<div key={ds.id} className="flex items-center gap-3 p-3 border rounded-lg">
-										<img
+										<AuthImage
 											src={ds.signature?.imageUrl || ds.stamp?.imageUrl}
 											alt={ds.signature?.name || ds.stamp?.name}
 											className="w-12 h-12 object-contain"

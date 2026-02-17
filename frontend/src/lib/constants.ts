@@ -3,6 +3,8 @@
 export const ROUTES = {
   LOGIN: '/login',
   REGISTER: '/register',
+  PRICING: '/pricing',
+  TERMS: '/terms',
   DASHBOARD: '/dashboard',
   PROFILE: '/profile',
   SIGNATURES: '/signatures',
@@ -19,6 +21,14 @@ export const ROUTES = {
   STAMPS: (companyId: string) => `/companies/${companyId}/stamps`,
   VEHICLES: (companyId: string) => `/companies/${companyId}/vehicles`,
   AUDIT_LOGS: (companyId: string) => `/companies/${companyId}/audit`,
+
+  // Admin routes
+  ADMIN: '/admin',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_USER_DETAIL: (userId: string) => `/admin/users/${userId}`,
+  ADMIN_PLANS: '/admin/plans',
+  ADMIN_COMPANIES: '/admin/companies',
+  ADMIN_DOCUMENTS: '/admin/documents',
 } as const;
 
 // ── Role Labels ──

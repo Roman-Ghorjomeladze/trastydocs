@@ -6,6 +6,7 @@ import {
   MARGIN,
   CONTENT_WIDTH,
   LINE_HEIGHT,
+  clampCompanyName,
 } from './shared.ts';
 import { formatCurrency } from '../invoice-utils.ts';
 
@@ -30,13 +31,6 @@ export const renderMinimal: TemplateRenderFn = async (ctx) => {
     }
   };
 
-  // ── Company name (top left, understated) ──
-  drawText(page, data.companyName || 'Company', MARGIN, y, {
-    size: 14,
-    bold: false,
-    color: BLACK,
-  });
-
   // ── Invoice title (top right, regular weight) ──
   const invoiceTitle = isTransport ? labels.transportInvoice : labels.invoice;
   const titleWidth = textWidth(invoiceTitle, 12, false);
@@ -46,7 +40,49 @@ export const renderMinimal: TemplateRenderFn = async (ctx) => {
     color: DARK,
   });
 
-  y -= 20;
+  // ── Company name (top left, understated — two lines max, 40 char limit) ──
+  const companyName = clampCompanyName(data.companyName);
+  const companyNameSize = 11;
+  const companyNameMaxWidth = PAGE_WIDTH - MARGIN - titleWidth - MARGIN - 12;
+
+  if (textWidth(companyName, companyNameSize, false) <= companyNameMaxWidth) {
+    drawText(page, companyName, MARGIN, y, {
+      size: companyNameSize,
+      bold: false,
+      color: BLACK,
+    });
+    y -= 20;
+  } else {
+    const words = companyName.split(/\s+/);
+    let line1 = '';
+    let line2 = '';
+    for (const word of words) {
+      const candidate = line1 ? `${line1} ${word}` : word;
+      if (textWidth(candidate, companyNameSize, false) <= companyNameMaxWidth) {
+        line1 = candidate;
+      } else {
+        line2 = line2 ? `${line2} ${word}` : word;
+      }
+    }
+    drawText(page, line1 || companyName, MARGIN, y, {
+      size: companyNameSize,
+      bold: false,
+      color: BLACK,
+      maxWidth: companyNameMaxWidth,
+    });
+    y -= 16;
+    if (line2) {
+      drawText(page, line2, MARGIN, y, {
+        size: companyNameSize,
+        bold: false,
+        color: BLACK,
+        maxWidth: companyNameMaxWidth,
+      });
+      y -= 16;
+    } else {
+      y -= 4;
+    }
+  }
 
   // ── Thin divider ──
   page.drawLine({

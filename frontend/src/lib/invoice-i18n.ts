@@ -66,6 +66,17 @@ export interface InvoiceLabels {
   stamp: string;
   signerName: string;
 
+  // Placeholders (transport section)
+  placeholderServiceDescription: string;
+  placeholderTransportRoute: string;
+  placeholderSelectTruck: string;
+  placeholderVehicleModel: string;
+  placeholderVehiclePlate: string;
+  placeholderSelectTrailer: string;
+  placeholderTrailerPlate: string;
+  placeholderDirectorName: string;
+  placeholderAmountInWords: string;
+
   // Template
   template: string;
   templateClassic: string;
@@ -136,6 +147,16 @@ const en: InvoiceLabels = {
   stamp: 'Stamp',
   signerName: 'Signer Name',
 
+  placeholderServiceDescription: 'Transportation of goods from...',
+  placeholderTransportRoute: 'City A — City B',
+  placeholderSelectTruck: 'Select truck...',
+  placeholderVehicleModel: 'Mercedes Actros 1845',
+  placeholderVehiclePlate: 'ABC-123',
+  placeholderSelectTrailer: 'Select trailer...',
+  placeholderTrailerPlate: 'XYZ-789',
+  placeholderDirectorName: 'John Smith',
+  placeholderAmountInWords: 'One thousand two hundred...',
+
   template: 'Template',
   templateClassic: 'Classic',
   templateModern: 'Modern',
@@ -202,6 +223,16 @@ const ru: InvoiceLabels = {
   signature: 'Подпись',
   stamp: 'Печать',
   signerName: 'Имя подписанта',
+
+  placeholderServiceDescription: 'Перевозка грузов из...',
+  placeholderTransportRoute: 'Город А — Город Б',
+  placeholderSelectTruck: 'Выберите грузовик...',
+  placeholderVehicleModel: 'Mercedes Actros 1845',
+  placeholderVehiclePlate: 'А123БВ777',
+  placeholderSelectTrailer: 'Выберите прицеп...',
+  placeholderTrailerPlate: 'АВ1234 77',
+  placeholderDirectorName: 'Иванов Иван',
+  placeholderAmountInWords: 'Одна тысяча двести...',
 
   template: 'Шаблон',
   templateClassic: 'Классический',
@@ -270,6 +301,16 @@ const ka: InvoiceLabels = {
   stamp: 'ბეჭედი',
   signerName: 'ხელმომწერის სახელი',
 
+  placeholderServiceDescription: 'ტვირთის გადაზიდვა...',
+  placeholderTransportRoute: 'ქალაქი A — ქალაქი B',
+  placeholderSelectTruck: 'აირჩიეთ სატვირთო...',
+  placeholderVehicleModel: 'Mercedes Actros 1845',
+  placeholderVehiclePlate: 'ABC-123',
+  placeholderSelectTrailer: 'აირჩიეთ მისაბმელი...',
+  placeholderTrailerPlate: 'XYZ-789',
+  placeholderDirectorName: 'სახელი გვარი',
+  placeholderAmountInWords: 'ერთი ათას ორასი...',
+
   template: 'შაბლონი',
   templateClassic: 'კლასიკური',
   templateModern: 'თანამედროვე',
@@ -336,6 +377,16 @@ const tr: InvoiceLabels = {
   signature: 'İmza',
   stamp: 'Mühür',
   signerName: 'İmza Sahibi',
+
+  placeholderServiceDescription: 'Mal taşımacılığı...',
+  placeholderTransportRoute: 'Şehir A — Şehir B',
+  placeholderSelectTruck: 'Kamyon seçin...',
+  placeholderVehicleModel: 'Mercedes Actros 1845',
+  placeholderVehiclePlate: '34 ABC 123',
+  placeholderSelectTrailer: 'Römork seçin...',
+  placeholderTrailerPlate: '34 XYZ 789',
+  placeholderDirectorName: 'Ad Soyad',
+  placeholderAmountInWords: 'Bin iki yüz...',
 
   template: 'Şablon',
   templateClassic: 'Klasik',

@@ -3,6 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import type { StorageProvider } from './storage.interface.js';
 
+const FILE_URL_PREFIX = '/api/files/';
+
 @Injectable()
 export class LocalStorageProvider implements StorageProvider {
   private readonly uploadDir: string;
@@ -20,11 +22,12 @@ export class LocalStorageProvider implements StorageProvider {
     }
 
     fs.writeFileSync(fullPath, file);
-    return `/uploads/${filePath}`;
+    return `${FILE_URL_PREFIX}${filePath}`;
   }
 
   async delete(fileUrl: string): Promise<void> {
-    const filePath = fileUrl.replace('/uploads/', '');
+    // Support both old /uploads/ and new /api/files/ prefixes for backwards compat
+    const filePath = fileUrl.replace(FILE_URL_PREFIX, '').replace('/uploads/', '');
     const fullPath = path.join(this.uploadDir, filePath);
 
     if (fs.existsSync(fullPath)) {
@@ -33,6 +36,24 @@ export class LocalStorageProvider implements StorageProvider {
   }
 
   getUrl(key: string): string {
-    return `/uploads/${key}`;
+    return `${FILE_URL_PREFIX}${key}`;
+  }
+
+  resolveFilePath(fileUrl: string): string | null {
+    // Support both old /uploads/ and new /api/files/ prefixes
+    const filePath = fileUrl.replace(FILE_URL_PREFIX, '').replace('/uploads/', '');
+    const fullPath = path.resolve(this.uploadDir, filePath);
+
+    // Prevent directory traversal attacks
+    const resolvedUploadDir = path.resolve(this.uploadDir);
+    if (!fullPath.startsWith(resolvedUploadDir)) {
+      return null;
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      return null;
+    }
+
+    return fullPath;
   }
 }

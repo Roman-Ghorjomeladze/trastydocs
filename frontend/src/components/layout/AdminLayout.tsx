@@ -1,0 +1,22 @@
+import { Outlet, Navigate } from 'react-router-dom';
+import { AdminSidebar } from './AdminSidebar.tsx';
+import { useAuthStore } from '../../stores/auth.store.ts';
+
+export function AdminLayout() {
+  const user = useAuthStore((s) => s.user);
+
+  if (!user?.isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  return (
+    <div className="flex h-screen overflow-hidden bg-background">
+      <AdminSidebar />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <main className="flex-1 overflow-y-auto p-6">
+          <Outlet />
+        </main>
+      </div>
+    </div>
+  );
+}
