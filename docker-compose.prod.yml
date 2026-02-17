@@ -82,6 +82,8 @@ services:
             target: production
             args:
                 VITE_SITE_URL: https://${DOMAIN:-localhost}
+                VITE_PADDLE_CLIENT_TOKEN: ${VITE_PADDLE_CLIENT_TOKEN:-}
+                VITE_PADDLE_ENVIRONMENT: ${VITE_PADDLE_ENVIRONMENT:-sandbox}
         container_name: docplatform_frontend
         restart: unless-stopped
         depends_on:

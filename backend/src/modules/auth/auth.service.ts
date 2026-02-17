@@ -11,9 +11,9 @@ import { PrismaService } from '../../database/prisma.service.js';
 import { RedisService } from '../../integrations/redis/redis.service.js';
 import { LimitsService } from '../admin/limits.service.js';
 import { MembershipsService } from '../memberships/memberships.service.js';
+import type { ChangePasswordDto } from './dto/change-password.dto.js';
 import type { RegisterDto } from './dto/register.dto.js';
 import type { LoginDto } from './dto/login.dto.js';
-import type { ChangePasswordDto } from './dto/change-password.dto.js';
 
 interface TokenPair {
   accessToken: string;
