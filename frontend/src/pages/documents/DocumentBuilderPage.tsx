@@ -287,13 +287,13 @@ export function DocumentBuilderPage() {
 
   // Field change handler with auto-save
   const handleFieldChange = useCallback(
-    (field: string, value: string) => {
+    (field: string, value: string | number) => {
       setInvoiceData((prev) => {
         let next = { ...prev, [field]: value };
 
         // When language changes, re-populate translated name/address for seller & buyer
         if (field === 'language') {
-          const newLang = value;
+          const newLang = value as string;
 
           // Re-populate seller (company) name & address from translations
           if (activeCompany) {

@@ -27,6 +27,10 @@ export function createEmptyInvoiceData(): InvoiceData {
     dueDate: '',
     currency: 'USD',
 
+    baseCurrency: 'GEL',
+    baseCurrencyAmount: 0,
+    exchangeRate: 0,
+
     companyName: '',
     companyAddress: '',
     companyTaxId: '',
