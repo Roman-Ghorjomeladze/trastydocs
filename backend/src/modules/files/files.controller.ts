@@ -78,10 +78,14 @@ export class FilesController {
   @Get('*path')
   async serveFile(@Req() req: Request, @Res() res: Response): Promise<void> {
     const rawPath = req.params['path'] ?? req.params[0] ?? '';
-    const filePath = Array.isArray(rawPath) ? rawPath.join('/') : String(rawPath);
-    // Fallback: parse from URL if params extraction fails (strips /files/ prefix and query string)
+    // Express 5 returns wildcard params as an array with a leading empty string: ["", "prod", ...]
+    // Filter out empty segments and join to get a clean path without leading slashes.
+    const filePath = Array.isArray(rawPath)
+      ? rawPath.filter(Boolean).join('/')
+      : String(rawPath);
+    // Fallback: parse from URL if params extraction fails (strips leading slash and query string)
     const fromUrl = req.url.replace(/^\//, '').split('?')[0];
-    const finalPath = filePath || fromUrl;
+    const finalPath = (filePath || fromUrl).replace(/^\/+/, '');
 
     this.logger.log(`[serveFile] rawPath=${JSON.stringify(rawPath)} filePath="${filePath}" fromUrl="${fromUrl}" finalPath="${finalPath}"`);
 
