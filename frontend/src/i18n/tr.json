@@ -461,8 +461,9 @@
     "featureAudit": "Denetim kaydi takibi",
     "featureDesign": "Karanlik mod ve duyarli tasarim",
     "customPlanTitle": "Ozel bir plana mi ihtiyaciniz var?",
-    "customPlanSubtitle": "Ozel limitler, oncelikli destek ve ozel altyapi ile kurumsal fiyatlandirma icin bizimle iletisime gecin.",
-    "startFreeTrial": "Ucretsiz Denemeye Baslayin"
+    "customPlanSubtitle": "Özel limitler, öncelikli destek ve özel altyapı ile kurumsal fiyatlandırma için support@trastydocs.com adresinden bizimle iletişime geçin. Kurumsal planlar aylık $49'dan başlar ve kuruluşunuzun ihtiyaçlarına göre özelleştirilir.",
+    "startFreeTrial": "Ücretsiz Denemeye Başlayın",
+    "contactUs": "Bize Ulaşın"
   },
   "upgrade": {
     "limitReached": "Plan Limitine Ulasildi",
@@ -575,7 +576,7 @@
     "payments": {
       "title": "Abonelik ve Ödemeler",
       "p1": "{{appName}} hem ücretsiz hem de ücretli abonelik planları sunar. Ücretli bir plana abone olarak aşağıdakileri kabul edersiniz:",
-      "item1": "Abonelik ücretleri aylık olarak peşin faturalandırılır ve İade Politikamızda açıklanan durumlar dışında iade edilmez",
+      "item1": "Abonelik ücretleri aylık olarak peşin faturalandırılır. Tüm satın almalar, İade Politikamızda açıklandığı gibi 14 günlük para iade garantisi içerir",
       "item2": "Ödemeler, üçüncü taraf ödeme işlemcimiz (Paddle) aracılığıyla güvenli bir şekilde işlenir. Kredi kartı bilgilerinizi saklamayız",
       "item3": "Fiyatlar ABD doları cinsindendir ve konumunuza bağlı olarak vergilere tabi olabilir",
       "item4": "Abonelikler, yenileme tarihinden önce iptal edilmedikçe her fatura döneminin sonunda otomatik olarak yenilenir",
@@ -620,8 +621,8 @@
     },
     "refunds": {
       "title": "İade Politikası",
-      "p1": "Ücretli abonelikler, bu süre zarfında Hizmeti yoğun bir şekilde kullanmadıysanız, ilk satın alma tarihinden itibaren 7 gün içinde iade için uygun olabilir. İade talepleri destek ekibimizle iletişime geçilerek gönderilebilir.",
-      "p2": "Yenilemeler, yükseltmeler ve düşürmeler genellikle iade edilemez. Aboneliğin iptal edilmesi, mevcut fatura döneminin sonuna kadar erişimi koruyacaktır."
+      "p1": "Tüm ücretli abonelikler 14 günlük para iade garantisi ile gelir. Herhangi bir nedenle Hizmetten memnun değilseniz, satın alma tarihinden itibaren 14 gün içinde destek ekibimizle iletişime geçerek tam iade talep edebilirsiniz. Soru sorulmaz.",
+      "p2": "İadeler, ödeme işlemcimiz Paddle aracılığıyla işlenir ve orijinal ödeme yöntemine iade edilir. İade yapıldıktan sonra hesabınız Ücretsiz plana düşürülecektir. İade talep etmeden aboneliği iptal etmek, mevcut fatura döneminin sonuna kadar erişimi koruyacaktır."
     },
     "privacy": {
       "title": "Gizlilik ve Veri Koruma",

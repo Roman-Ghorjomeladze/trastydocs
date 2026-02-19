@@ -70,16 +70,6 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const companyNav: NavItem[] = activeCompany
     ? [
         {
-          label: t('sidebar.members'),
-          href: ROUTES.COMPANY_DETAIL(activeCompany.id),
-          icon: Users,
-        },
-        {
-          label: t('sidebar.companySignatures'),
-          href: ROUTES.COMPANY_SIGNATURES(activeCompany.id),
-          icon: PenLine,
-        },
-        {
           label: t('sidebar.documents'),
           href: ROUTES.DOCUMENTS(activeCompany.id),
           icon: FileText,
@@ -89,12 +79,22 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           href: ROUTES.CONTRACTORS(activeCompany.id),
           icon: Contact,
         },
-        { label: t('sidebar.stamps'), href: ROUTES.STAMPS(activeCompany.id), icon: Stamp },
+        {
+          label: t('sidebar.members'),
+          href: ROUTES.COMPANY_DETAIL(activeCompany.id),
+          icon: Users,
+        },
         {
           label: t('sidebar.vehicles'),
           href: ROUTES.VEHICLES(activeCompany.id),
           icon: Truck,
         },
+        {
+          label: t('sidebar.companySignatures'),
+          href: ROUTES.COMPANY_SIGNATURES(activeCompany.id),
+          icon: PenLine,
+        },
+        { label: t('sidebar.stamps'), href: ROUTES.STAMPS(activeCompany.id), icon: Stamp },
         {
           label: t('sidebar.auditLog'),
           href: ROUTES.AUDIT_LOGS(activeCompany.id),
@@ -158,9 +158,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         <div className="flex md:hidden items-center justify-between w-full">
           <div className="flex items-center gap-2.5">
             <AppLogo size={32} className="flex-shrink-0" />
-            <span className="text-lg font-semibold text-sidebar-foreground">
-              {t('app.name')}
-            </span>
+            <span className="text-lg font-semibold text-sidebar-foreground">{t('app.name')}</span>
           </div>
           <button
             type="button"
@@ -240,7 +238,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                       )}
                     </span>
                     {/* Desktop: respect collapse */}
-                    <span className={cn('hidden md:flex items-center gap-1 flex-1 min-w-0', textCls)}>
+                    <span
+                      className={cn('hidden md:flex items-center gap-1 flex-1 min-w-0', textCls)}
+                    >
                       <span className="truncate flex-1 text-left">{activeCompany.name}</span>
                       {switcherOpen ? (
                         <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
@@ -384,9 +384,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar — always visible */}
-      <div className="hidden md:block">
-        {sidebarContent}
-      </div>
+      <div className="hidden md:block">{sidebarContent}</div>
 
       {/* Mobile sidebar — animated overlay drawer */}
       {mobileVisible && (

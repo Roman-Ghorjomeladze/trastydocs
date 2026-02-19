@@ -221,15 +221,24 @@ export function PricingPage() {
           <p className="text-muted-foreground mb-6">
             {t('pricing.customPlanSubtitle')}
           </p>
-          {!isAuthenticated && (
-            <Link
-              to={ROUTES.REGISTER}
+          <div className="flex items-center justify-center gap-4 flex-wrap">
+            <a
+              href="mailto:support@trastydocs.com"
               className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium bg-accent text-white rounded-lg hover:bg-accent-hover transition-colors"
             >
-              {t('pricing.startFreeTrial')}
+              {t('pricing.contactUs')}
               <ArrowRight className="w-4 h-4" />
-            </Link>
-          )}
+            </a>
+            {!isAuthenticated && (
+              <Link
+                to={ROUTES.REGISTER}
+                className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium bg-muted text-foreground rounded-lg hover:bg-border transition-colors"
+              >
+                {t('pricing.startFreeTrial')}
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
+          </div>
         </div>
       </section>
     </div>

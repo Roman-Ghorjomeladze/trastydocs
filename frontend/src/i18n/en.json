@@ -461,8 +461,9 @@
     "featureAudit": "Audit log tracking",
     "featureDesign": "Dark mode & responsive design",
     "customPlanTitle": "Need a custom plan?",
-    "customPlanSubtitle": "Contact us for enterprise pricing with custom limits, priority support, and dedicated infrastructure.",
-    "startFreeTrial": "Start Free Trial"
+    "customPlanSubtitle": "Contact us at support@trastydocs.com for enterprise pricing with custom limits, priority support, and dedicated infrastructure. Enterprise plans start at $49/month and are tailored to your organization's needs.",
+    "startFreeTrial": "Start Free Trial",
+    "contactUs": "Contact Us"
   },
   "upgrade": {
     "limitReached": "Plan Limit Reached",
@@ -575,7 +576,7 @@
     "payments": {
       "title": "Subscription & Payments",
       "p1": "{{appName}} offers both free and paid subscription plans. By subscribing to a paid plan, you agree to the following:",
-      "item1": "Subscription fees are billed monthly in advance and are non-refundable except as described in our Refund Policy",
+      "item1": "Subscription fees are billed monthly in advance. All purchases include a 14-day money-back guarantee as described in our Refund Policy",
       "item2": "Payments are processed securely through our third-party payment processor (Paddle). We do not store your credit card details",
       "item3": "Prices are listed in USD and may be subject to applicable taxes based on your location",
       "item4": "Subscriptions automatically renew at the end of each billing period unless cancelled before the renewal date",
@@ -620,8 +621,8 @@
     },
     "refunds": {
       "title": "Refund Policy",
-      "p1": "Paid subscriptions may be eligible for a refund within 7 days of the initial purchase if you have not extensively used the Service during that period. Refund requests can be submitted by contacting our support team.",
-      "p2": "Renewals, upgrades, and downgrades are generally non-refundable. Cancelling a subscription will retain access until the end of the current billing period."
+      "p1": "All paid subscriptions come with a 14-day money-back guarantee. If you are not satisfied with the Service for any reason, you can request a full refund within 14 days of your purchase by contacting our support team. No questions asked.",
+      "p2": "Refunds are processed through Paddle, our payment processor, and will be returned to the original payment method. After a refund is issued, your account will be downgraded to the Free plan. Cancelling a subscription without requesting a refund will retain access until the end of the current billing period."
     },
     "privacy": {
       "title": "Privacy & Data Protection",

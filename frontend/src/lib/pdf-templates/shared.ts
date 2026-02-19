@@ -157,7 +157,8 @@ async function embedImageInDoc(
     }
 
     return await pdfDoc.embedPng(bytes);
-  } catch {
+  } catch (err) {
+    console.error('Failed to embed image in PDF:', imageUrl, err);
     return null;
   }
 }
@@ -168,7 +169,26 @@ export async function createTemplateContext(
 ): Promise<TemplateContext> {
   const labels = getInvoiceLabels((data.language || 'en') as InvoiceLanguage);
   const isTransport = data.documentType === 'transport_invoice';
-  const isGeorgian = (data.language || 'en') === 'ka';
+
+  // Check if any text content contains Georgian characters (not just the language setting)
+  const allTextContent = [
+    data.companyName, data.companyAddress, data.companyPhone, data.companyEmail,
+    data.buyerName, data.buyerAddress, data.buyerPhone, data.buyerEmail,
+    data.signerName, data.directorName, data.transportRoute,
+    data.serviceDescription, data.amountInWords, data.notes, data.paymentTerms,
+    ...(data.items?.map(i => i.description) || []),
+  ].filter(Boolean).join('');
+  const hasGeorgianContent = GEORGIAN_REGEX.test(allTextContent);
+  const isGeorgian = (data.language || 'en') === 'ka' || hasGeorgianContent;
+
+  console.log('[PDF Debug] language:', data.language);
+  console.log('[PDF Debug] buyerName:', data.buyerName);
+  console.log('[PDF Debug] buyerAddress:', data.buyerAddress);
+  console.log('[PDF Debug] companyName:', data.companyName);
+  console.log('[PDF Debug] hasGeorgianContent:', hasGeorgianContent);
+  console.log('[PDF Debug] isGeorgian:', isGeorgian);
+  console.log('[PDF Debug] signatureImageUrl:', data.signatureImageUrl);
+  console.log('[PDF Debug] stampImageUrl:', data.stampImageUrl);
 
   const pdfDoc = await PDFDocument.create();
   pdfDoc.registerFontkit(fontkit);
