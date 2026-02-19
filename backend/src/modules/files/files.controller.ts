@@ -5,6 +5,7 @@ import {
   Res,
   Inject,
   UseGuards,
+  Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import * as path from 'path';
@@ -25,6 +26,8 @@ const MIME_TYPES: Record<string, string> = {
 @Controller('files')
 @UseGuards(JwtGuard)
 export class FilesController {
+  private readonly logger = new Logger(FilesController.name);
+
   constructor(
     @Inject('STORAGE_PROVIDER')
     private readonly storage: StorageProvider,
@@ -65,55 +68,117 @@ export class FilesController {
   }
 
   /**
-   * Serve a local file from disk.
-   * Only works when STORAGE_PROVIDER=local.
-   * S3 files are served directly from Hetzner via presigned URLs.
+   * Serve a file from disk (local storage) or proxy from S3.
+   *
+   * Local storage: resolves the path on disk and streams the file.
+   * S3 storage: generates a presigned URL, fetches the object, and
+   *             streams it back to the client — avoids browser CORS
+   *             issues when the frontend needs raw bytes (e.g. PDF embedding).
    */
   @Get('*path')
-  serveFile(@Req() req: Request, @Res() res: Response): void {
+  async serveFile(@Req() req: Request, @Res() res: Response): Promise<void> {
     const rawPath = req.params['path'] ?? req.params[0] ?? '';
     const filePath = Array.isArray(rawPath) ? rawPath.join('/') : String(rawPath);
     const finalPath = filePath || req.url.replace(/^\/?/, '').split('?')[0];
 
-    if (!finalPath || !this.storage.resolveFilePath) {
+    if (!finalPath) {
       res.status(404).json({ message: 'File not found' });
       return;
     }
 
-    const fullPath = this.storage.resolveFilePath(`/api/files/${finalPath}`);
-    if (!fullPath) {
-      res.status(404).json({ message: 'File not found' });
-      return;
-    }
+    // ── Try local storage first ──
+    if (this.storage.resolveFilePath) {
+      const fullPath = this.storage.resolveFilePath(`/api/files/${finalPath}`);
+      if (fullPath) {
+        try {
+          const stat = statSync(fullPath);
+          const ext = path.extname(fullPath).toLowerCase();
+          const contentType = MIME_TYPES[ext] || 'application/octet-stream';
 
-    try {
-      const stat = statSync(fullPath);
-      const ext = path.extname(fullPath).toLowerCase();
-      const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+          res.setHeader('Content-Type', contentType);
+          res.setHeader('Content-Length', stat.size);
+          res.setHeader('Accept-Ranges', 'bytes');
+          res.setHeader('Cache-Control', 'private, no-cache');
+          res.setHeader('ETag', `"${stat.size}-${stat.mtimeMs}"`);
+          res.setHeader('Last-Modified', stat.mtime.toUTCString());
+          res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
 
-      res.setHeader('Content-Type', contentType);
-      res.setHeader('Content-Length', stat.size);
-      res.setHeader('Accept-Ranges', 'bytes');
-      // no-cache: browser must revalidate with the server each time.
-      // This ensures regenerated PDFs (same path, new content) are always fresh.
-      res.setHeader('Cache-Control', 'private, no-cache');
-      res.setHeader('ETag', `"${stat.size}-${stat.mtimeMs}"`);
-      res.setHeader('Last-Modified', stat.mtime.toUTCString());
-      res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+          if (contentType === 'application/pdf') {
+            res.setHeader('Content-Disposition', 'inline');
+          }
 
-      if (contentType === 'application/pdf') {
-        res.setHeader('Content-Disposition', 'inline');
-      }
-
-      const stream = createReadStream(fullPath);
-      stream.pipe(res);
-      stream.on('error', () => {
-        if (!res.headersSent) {
-          res.status(404).json({ message: 'File not found' });
+          const stream = createReadStream(fullPath);
+          stream.pipe(res);
+          stream.on('error', () => {
+            if (!res.headersSent) {
+              res.status(404).json({ message: 'File not found' });
+            }
+          });
+          return;
+        } catch {
+          // fall through to S3 proxy
         }
-      });
-    } catch {
-      res.status(404).json({ message: 'File not found' });
+      }
     }
+
+    // ── Try S3 proxy ──
+    if (this.storage.getSignedUrl) {
+      try {
+        const s3Url = `s3://${finalPath}`;
+        const signedUrl = await this.storage.getSignedUrl(s3Url);
+        if (!signedUrl) {
+          res.status(404).json({ message: 'File not found in S3' });
+          return;
+        }
+
+        // Fetch from S3 and stream back to client
+        const s3Response = await fetch(signedUrl);
+        if (!s3Response.ok || !s3Response.body) {
+          res.status(502).json({ message: 'Failed to fetch file from storage' });
+          return;
+        }
+
+        const ext = path.extname(finalPath).toLowerCase();
+        const contentType =
+          s3Response.headers.get('content-type') ||
+          MIME_TYPES[ext] ||
+          'application/octet-stream';
+        const contentLength = s3Response.headers.get('content-length');
+
+        res.setHeader('Content-Type', contentType);
+        if (contentLength) res.setHeader('Content-Length', contentLength);
+        res.setHeader('Cache-Control', 'private, no-cache');
+        res.setHeader('Cross-Origin-Resource-Policy', 'same-origin');
+
+        if (contentType === 'application/pdf') {
+          res.setHeader('Content-Disposition', 'inline');
+        }
+
+        // Stream the S3 response body to the client
+        const reader = s3Response.body.getReader();
+        const pump = async () => {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              res.end();
+              break;
+            }
+            if (!res.write(value)) {
+              await new Promise<void>((resolve) => res.once('drain', resolve));
+            }
+          }
+        };
+        await pump();
+        return;
+      } catch (err) {
+        this.logger.error('Failed to proxy S3 file:', err);
+        if (!res.headersSent) {
+          res.status(502).json({ message: 'Failed to proxy file from storage' });
+        }
+        return;
+      }
+    }
+
+    res.status(404).json({ message: 'File not found' });
   }
 }

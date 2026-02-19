@@ -125,11 +125,22 @@ async function embedImageInDoc(
     let arrayBuffer: ArrayBuffer;
 
     if (imageUrl.startsWith('s3://')) {
-      // S3 URL → resolve to presigned URL via backend, then fetch directly
+      // S3 URL → fetch through backend proxy to avoid CORS issues with S3 presigned URLs.
+      // The /files/download endpoint resolves the S3 key, generates a presigned URL, and
+      // streams the file back so the browser never has to talk directly to the S3 host.
       const res = await apiClient.get('/files/resolve', { params: { url: imageUrl } });
       const presignedUrl: string = res.data.url;
-      const response = await fetch(presignedUrl);
-      arrayBuffer = await response.arrayBuffer();
+      // Try direct fetch first; fall back to proxied fetch on CORS failure
+      try {
+        const response = await fetch(presignedUrl);
+        if (!response.ok) throw new Error(`S3 fetch failed: ${response.status}`);
+        arrayBuffer = await response.arrayBuffer();
+      } catch {
+        // CORS or network error — fetch through backend proxy instead
+        const key = imageUrl.slice(5); // strip "s3://"
+        const proxyRes = await apiClient.get(`/files/${key}`, { responseType: 'arraybuffer' });
+        arrayBuffer = proxyRes.data;
+      }
     } else if (imageUrl.startsWith('/api/') || imageUrl.startsWith('api/') || imageUrl.startsWith('/uploads/') || imageUrl.startsWith('uploads/')) {
       // Local file — fetch via authenticated proxy
       let apiPath = imageUrl;
