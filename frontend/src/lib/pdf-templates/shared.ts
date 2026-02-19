@@ -125,22 +125,15 @@ async function embedImageInDoc(
     let arrayBuffer: ArrayBuffer;
 
     if (imageUrl.startsWith('s3://')) {
-      // S3 URL → fetch through backend proxy to avoid CORS issues with S3 presigned URLs.
-      // The /files/download endpoint resolves the S3 key, generates a presigned URL, and
-      // streams the file back so the browser never has to talk directly to the S3 host.
-      const res = await apiClient.get('/files/resolve', { params: { url: imageUrl } });
-      const presignedUrl: string = res.data.url;
-      // Try direct fetch first; fall back to proxied fetch on CORS failure
-      try {
-        const response = await fetch(presignedUrl);
-        if (!response.ok) throw new Error(`S3 fetch failed: ${response.status}`);
-        arrayBuffer = await response.arrayBuffer();
-      } catch {
-        // CORS or network error — fetch through backend proxy instead
-        const key = imageUrl.slice(5); // strip "s3://"
-        const proxyRes = await apiClient.get(`/files/${key}`, { responseType: 'arraybuffer' });
-        arrayBuffer = proxyRes.data;
-      }
+      // S3-compatible storage (Hetzner, AWS, etc.)
+      // Always proxy through the backend to avoid CORS issues.
+      // Direct fetch to S3/Hetzner presigned URLs fails in the browser
+      // because the storage host doesn't set Access-Control-Allow-Origin.
+      const key = imageUrl.slice(5); // strip "s3://"
+      console.log('[PDF Embed] Fetching S3 image via proxy:', `/files/${key}`);
+      const proxyRes = await apiClient.get(`/files/${key}`, { responseType: 'arraybuffer' });
+      arrayBuffer = proxyRes.data;
+      console.log('[PDF Embed] S3 proxy success, bytes:', arrayBuffer.byteLength);
     } else if (imageUrl.startsWith('/api/') || imageUrl.startsWith('api/') || imageUrl.startsWith('/uploads/') || imageUrl.startsWith('uploads/')) {
       // Local file — fetch via authenticated proxy
       let apiPath = imageUrl;
@@ -148,17 +141,21 @@ async function embedImageInDoc(
       if (apiPath.startsWith('/uploads/')) apiPath = '/files' + apiPath.slice(8);
       if (apiPath.startsWith('uploads/')) apiPath = '/files/' + apiPath.slice(8);
       if (!apiPath.startsWith('/')) apiPath = '/' + apiPath;
+      console.log('[PDF Embed] Fetching local image:', apiPath);
       const response = await apiClient.get(apiPath, { responseType: 'arraybuffer' });
       arrayBuffer = response.data;
     } else if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:') || imageUrl.startsWith('http')) {
+      console.log('[PDF Embed] Fetching direct URL:', imageUrl.slice(0, 80));
       const response = await fetch(imageUrl);
       arrayBuffer = await response.arrayBuffer();
     } else {
+      console.log('[PDF Embed] Fetching unknown URL type:', imageUrl.slice(0, 80));
       const response = await fetch(imageUrl);
       arrayBuffer = await response.arrayBuffer();
     }
 
     const bytes = new Uint8Array(arrayBuffer);
+    console.log('[PDF Embed] Image bytes received:', bytes.length, 'first bytes:', bytes[0], bytes[1]);
 
     if (bytes[0] === 0x89 && bytes[1] === 0x50) {
       return await pdfDoc.embedPng(bytes);
@@ -169,7 +166,7 @@ async function embedImageInDoc(
 
     return await pdfDoc.embedPng(bytes);
   } catch (err) {
-    console.error('Failed to embed image in PDF:', imageUrl, err);
+    console.error('[PDF Embed] FAILED to embed image:', imageUrl, err);
     return null;
   }
 }

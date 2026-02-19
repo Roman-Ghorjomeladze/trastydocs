@@ -79,7 +79,11 @@ export class FilesController {
   async serveFile(@Req() req: Request, @Res() res: Response): Promise<void> {
     const rawPath = req.params['path'] ?? req.params[0] ?? '';
     const filePath = Array.isArray(rawPath) ? rawPath.join('/') : String(rawPath);
-    const finalPath = filePath || req.url.replace(/^\/?/, '').split('?')[0];
+    // Fallback: parse from URL if params extraction fails (strips /files/ prefix and query string)
+    const fromUrl = req.url.replace(/^\//, '').split('?')[0];
+    const finalPath = filePath || fromUrl;
+
+    this.logger.log(`[serveFile] rawPath=${JSON.stringify(rawPath)} filePath="${filePath}" fromUrl="${fromUrl}" finalPath="${finalPath}"`);
 
     if (!finalPath) {
       res.status(404).json({ message: 'File not found' });
@@ -125,11 +129,14 @@ export class FilesController {
     if (this.storage.getSignedUrl) {
       try {
         const s3Url = `s3://${finalPath}`;
+        this.logger.log(`[serveFile] Trying S3 proxy for: ${s3Url}`);
         const signedUrl = await this.storage.getSignedUrl(s3Url);
         if (!signedUrl) {
+          this.logger.warn(`[serveFile] getSignedUrl returned null for: ${s3Url}`);
           res.status(404).json({ message: 'File not found in S3' });
           return;
         }
+        this.logger.log(`[serveFile] Got presigned URL, fetching from S3...`);
 
         // Fetch from S3 and stream back to client
         const s3Response = await fetch(signedUrl);
