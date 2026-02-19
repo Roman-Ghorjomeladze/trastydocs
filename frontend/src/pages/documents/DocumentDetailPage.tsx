@@ -42,9 +42,10 @@ export function DocumentDetailPage() {
 	const [isDeleting, setIsDeleting] = useState(false);
 	const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 	const menuRef = useRef<HTMLDivElement>(null);
+	const pdfFileName = `${doc?.documentNumber || doc?.name || 'document'}.pdf`;
 	// Pass updatedAt as version key so the blob is refetched after PDF regeneration
 	// (the pdfUrl path stays the same when the file is overwritten)
-	const pdfBlobUrl = useAuthUrl(doc?.pdfUrl, doc?.updatedAt);
+	const pdfBlobUrl = useAuthUrl(doc?.pdfUrl, doc?.updatedAt, pdfFileName);
 
 	useEffect(() => {
 		if (documentId) fetchDocument(documentId);
@@ -376,8 +377,7 @@ export function DocumentDetailPage() {
 											<p className="text-muted-foreground mb-3">PDF preview not available in this browser</p>
 											<a
 												href={pdfBlobUrl}
-												target="_blank"
-												rel="noopener noreferrer"
+												download={pdfFileName}
 												className="px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover"
 											>
 												{t('documents.downloadPdf')}
@@ -392,8 +392,7 @@ export function DocumentDetailPage() {
 								<div className="mt-3 flex items-center gap-2">
 									<a
 										href={pdfBlobUrl || '#'}
-										target="_blank"
-										rel="noopener noreferrer"
+										download={pdfFileName}
 										className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted"
 									>
 										{t('documents.downloadPdf')}
@@ -517,6 +516,13 @@ export function DocumentDetailPage() {
 								</button>
 								<button
 									type="button"
+									onClick={() => handleStatusChange("SENT")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-cyan-50 hover:border-cyan-300"
+								>
+									{t('status.SENT')}
+								</button>
+								<button
+									type="button"
 									onClick={() => handleStatusChange("COMPLETED")}
 									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-green-50 hover:border-green-300"
 								>
@@ -549,13 +555,87 @@ export function DocumentDetailPage() {
 					{doc.status === "SIGNED" && (
 						<div className="bg-card border border-border rounded-lg p-6">
 							<h3 className="text-lg font-semibold text-foreground mb-3">{t('documents.updateStatus')}</h3>
-							<button
-								type="button"
-								onClick={() => handleStatusChange("COMPLETED")}
-								className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-green-50 hover:border-green-300"
-							>
-								{t('status.COMPLETED')}
-							</button>
+							<div className="space-y-2">
+								<button
+									type="button"
+									onClick={() => handleStatusChange("SENT")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-cyan-50 hover:border-cyan-300"
+								>
+									{t('status.SENT')}
+								</button>
+								<button
+									type="button"
+									onClick={() => handleStatusChange("COMPLETED")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-green-50 hover:border-green-300"
+								>
+									{t('status.COMPLETED')}
+								</button>
+							</div>
+						</div>
+					)}
+					{(doc.status === "SENT" || doc.status === "VIEWED") && (
+						<div className="bg-card border border-border rounded-lg p-6">
+							<h3 className="text-lg font-semibold text-foreground mb-3">{t('documents.updateStatus')}</h3>
+							<div className="space-y-2">
+								{doc.status === "SENT" && (
+									<button
+										type="button"
+										onClick={() => handleStatusChange("VIEWED")}
+										className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-indigo-50 hover:border-indigo-300"
+									>
+										{t('status.VIEWED')}
+									</button>
+								)}
+								<button
+									type="button"
+									onClick={() => handleStatusChange("PAID")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-emerald-50 hover:border-emerald-300"
+								>
+									{t('status.PAID')}
+								</button>
+							</div>
+						</div>
+					)}
+					{doc.status === "OVERDUE" && (
+						<div className="bg-card border border-border rounded-lg p-6">
+							<h3 className="text-lg font-semibold text-foreground mb-3">{t('documents.updateStatus')}</h3>
+							<div className="space-y-2">
+								<button
+									type="button"
+									onClick={() => handleStatusChange("PAID")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-emerald-50 hover:border-emerald-300"
+								>
+									{t('status.PAID')}
+								</button>
+								<button
+									type="button"
+									onClick={() => handleStatusChange("CANCELLED")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-red-50 hover:border-red-300"
+								>
+									{t('status.CANCELLED')}
+								</button>
+							</div>
+						</div>
+					)}
+					{doc.status === "COMPLETED" && (
+						<div className="bg-card border border-border rounded-lg p-6">
+							<h3 className="text-lg font-semibold text-foreground mb-3">{t('documents.updateStatus')}</h3>
+							<div className="space-y-2">
+								<button
+									type="button"
+									onClick={() => handleStatusChange("PAID")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-emerald-50 hover:border-emerald-300"
+								>
+									{t('status.PAID')}
+								</button>
+								<button
+									type="button"
+									onClick={() => handleStatusChange("ARCHIVED")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-orange-50 hover:border-orange-300"
+								>
+									{t('status.ARCHIVED')}
+								</button>
+							</div>
 						</div>
 					)}
 				</div>

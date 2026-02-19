@@ -8,7 +8,11 @@ export type DocumentStatus =
   | 'DRAFT'
   | 'PENDING_SIGNATURE'
   | 'SIGNED'
+  | 'SENT'
+  | 'VIEWED'
   | 'COMPLETED'
+  | 'PAID'
+  | 'OVERDUE'
   | 'CANCELLED'
   | 'ARCHIVED';
 
@@ -130,6 +134,7 @@ export interface Company {
   bankAccounts?: CompanyBankAccount[];
   nameTranslations?: Translations;
   addressTranslations?: Translations;
+  baseCurrency: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -187,6 +192,18 @@ export interface Document {
   notes?: string;
   metadata?: Record<string, unknown>;
   duplicatedFromId?: string;
+
+  // Currency conversion
+  baseCurrency?: string;
+  baseCurrencyAmount?: number;
+  exchangeRate?: number;
+
+  // Status tracking dates
+  dueDate?: string;
+  sentAt?: string;
+  viewedAt?: string;
+  paidAt?: string;
+
   createdBy?: User;
   buyer?: Contractor;
   seller?: Contractor;
@@ -221,6 +238,11 @@ export interface InvoiceData {
   invoiceDate: string;
   dueDate: string;
   currency: string;
+
+  // Base currency conversion
+  baseCurrency: string;
+  baseCurrencyAmount: number;
+  exchangeRate: number;
 
   // Company (seller) info
   companyName: string;
@@ -425,6 +447,7 @@ export interface UpdateCompanyDto {
   bankAccounts?: CompanyBankAccount[];
   nameTranslations?: Translations;
   addressTranslations?: Translations;
+  baseCurrency?: string;
 }
 
 export interface AddMemberDto {
@@ -479,4 +502,75 @@ export interface UpdateDocumentDto {
   status?: DocumentStatus;
   buyerId?: string | null;
   sellerId?: string | null;
+}
+
+// ── Exchange Rates ──
+
+export interface ExchangeRateEntry {
+  currency: string;
+  rate: number;
+  quantity: number;
+  date: string;
+}
+
+export interface CurrencyConversion {
+  convertedAmount: number;
+  exchangeRate: number;
+}
+
+// ── Analytics ──
+
+export interface AnalyticsFilters {
+  dateFrom?: string;
+  dateTo?: string;
+  companyIds?: string[];
+  statuses?: DocumentStatus[];
+  currencies?: string[];
+  vehiclePlates?: string[];
+  trailerPlates?: string[];
+}
+
+export interface AnalyticsData {
+  totalDocuments: number;
+  totalAmount: number;
+  totalBaseCurrencyAmount: number;
+  baseCurrency: string;
+  paidCount: number;
+  unpaidCount: number;
+  overdueCount: number;
+  byStatus: Record<string, number>;
+  byMonth: Array<{
+    month: string;
+    count: number;
+    amount: number;
+    baseCurrencyAmount: number;
+  }>;
+  byCompany: Array<{
+    companyId: string;
+    companyName: string;
+    count: number;
+    amount: number;
+    baseCurrencyAmount: number;
+  }>;
+  byCurrency: Array<{
+    currency: string;
+    count: number;
+    amount: number;
+  }>;
+  documents: AnalyticsDocument[];
+}
+
+export interface AnalyticsDocument {
+  id: string;
+  documentNumber?: string;
+  createdAt: string;
+  companyId: string;
+  companyName: string;
+  buyerName?: string;
+  status: DocumentStatus;
+  currency: string;
+  amount: number;
+  baseCurrency?: string;
+  baseCurrencyAmount?: number;
+  exchangeRate?: number;
 }

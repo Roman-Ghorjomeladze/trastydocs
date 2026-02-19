@@ -1,5 +1,7 @@
 import type {
   ApiResponse,
+  AnalyticsData,
+  AnalyticsFilters,
   DashboardStats,
   Document,
   DocumentSignature,
@@ -164,6 +166,60 @@ export async function removeSignature(
 export async function getDashboardStats(): Promise<DashboardStats> {
   const response = await apiClient.get<ApiResponse<DashboardStats>>(
     '/documents/dashboard/stats',
+  );
+  return response.data.data;
+}
+
+// ── Status Transitions ──
+
+export async function markDocumentSent(id: string): Promise<Document> {
+  const response = await apiClient.patch<ApiResponse<Document>>(
+    `/documents/${id}/status/send`,
+  );
+  return response.data.data;
+}
+
+export async function markDocumentViewed(id: string): Promise<Document> {
+  const response = await apiClient.patch<ApiResponse<Document>>(
+    `/documents/${id}/status/view`,
+  );
+  return response.data.data;
+}
+
+export async function markDocumentPaid(id: string): Promise<Document> {
+  const response = await apiClient.patch<ApiResponse<Document>>(
+    `/documents/${id}/status/pay`,
+  );
+  return response.data.data;
+}
+
+export async function updateDocumentStatus(
+  id: string,
+  status: DocumentStatus,
+): Promise<Document> {
+  const response = await apiClient.patch<ApiResponse<Document>>(
+    `/documents/${id}/status`,
+    { status },
+  );
+  return response.data.data;
+}
+
+// ── Analytics ──
+
+export async function getAnalytics(
+  filters?: AnalyticsFilters,
+): Promise<AnalyticsData> {
+  const params = new URLSearchParams();
+  if (filters?.dateFrom) params.set('dateFrom', filters.dateFrom);
+  if (filters?.dateTo) params.set('dateTo', filters.dateTo);
+  if (filters?.companyIds?.length) params.set('companyIds', filters.companyIds.join(','));
+  if (filters?.statuses?.length) params.set('statuses', filters.statuses.join(','));
+  if (filters?.currencies?.length) params.set('currencies', filters.currencies.join(','));
+  if (filters?.vehiclePlates?.length) params.set('vehiclePlates', filters.vehiclePlates.join(','));
+  if (filters?.trailerPlates?.length) params.set('trailerPlates', filters.trailerPlates.join(','));
+  const query = params.toString();
+  const response = await apiClient.get<ApiResponse<AnalyticsData>>(
+    `/documents/analytics${query ? `?${query}` : ''}`,
   );
   return response.data.data;
 }

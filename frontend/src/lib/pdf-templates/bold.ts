@@ -84,7 +84,7 @@ export const renderBold: TemplateRenderFn = async (ctx) => {
 
   // ── Company details (with red left accent bar) ──
   const companyDetails = [
-    data.companyAddress,
+    data.companyAddress ? `${labels.address}: ${data.companyAddress}` : '',
     data.companyPhone ? `${labels.phone}: ${data.companyPhone}` : '',
     data.companyEmail ? `${labels.email}: ${data.companyEmail}` : '',
     data.companyTaxId ? `${labels.taxId}: ${data.companyTaxId}` : '',
@@ -121,7 +121,7 @@ export const renderBold: TemplateRenderFn = async (ctx) => {
   y -= LINE_HEIGHT + 2;
 
   const buyerDetails = [
-    data.buyerAddress,
+    data.buyerAddress ? `${labels.address}: ${data.buyerAddress}` : '',
     data.buyerPhone ? `${labels.phone}: ${data.buyerPhone}` : '',
     data.buyerEmail ? `${labels.email}: ${data.buyerEmail}` : '',
     data.buyerTaxId ? `${labels.taxId}: ${data.buyerTaxId}` : '',

@@ -27,6 +27,7 @@ function normalizeLocalUrl(url: string): string {
 async function resolveFileUrl(
   src: string,
   signal: AbortSignal,
+  fileName?: string,
 ): Promise<{ url: string; needsRevoke: boolean }> {
   // Already usable directly
   if (src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('http')) {
@@ -45,7 +46,13 @@ async function resolveFileUrl(
   // Local file — fetch as blob through authenticated proxy
   const apiPath = normalizeLocalUrl(src);
   const res = await apiClient.get(apiPath, { responseType: 'blob', signal });
-  const objectUrl = URL.createObjectURL(res.data);
+
+  // Wrap in a File with a meaningful name so the browser PDF viewer shows it
+  const blob: Blob = res.data;
+  const file = fileName
+    ? new File([blob], fileName, { type: blob.type })
+    : blob;
+  const objectUrl = URL.createObjectURL(file);
   return { url: objectUrl, needsRevoke: true };
 }
 
@@ -62,6 +69,7 @@ async function resolveFileUrl(
 export function useAuthUrl(
   src: string | undefined | null,
   version?: string | number | null,
+  fileName?: string,
 ): string | null {
   const [resolvedUrl, setResolvedUrl] = useState<string | null>(null);
 
@@ -74,7 +82,7 @@ export function useAuthUrl(
     const controller = new AbortController();
     let objectUrl: string | null = null;
 
-    resolveFileUrl(src, controller.signal)
+    resolveFileUrl(src, controller.signal, fileName)
       .then((result) => {
         if (controller.signal.aborted) return;
         if (result.needsRevoke) objectUrl = result.url;

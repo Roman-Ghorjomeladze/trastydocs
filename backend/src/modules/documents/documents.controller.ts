@@ -6,8 +6,10 @@ import {
   Delete,
   Param,
   Body,
+  Query,
   UseGuards,
 } from '@nestjs/common';
+import type { DocumentStatus } from '@prisma/client';
 import { DocumentsService } from './documents.service.js';
 import { JwtGuard } from '../../common/guards/jwt.guard.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
@@ -27,6 +29,28 @@ export class DocumentsController {
   @Get('dashboard/stats')
   async getDashboardStats(@CurrentUser() user: { id: string }) {
     return this.documentsService.getDashboardStats(user.id);
+  }
+
+  @Get('analytics')
+  async getAnalytics(
+    @CurrentUser() user: { id: string },
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('companyIds') companyIds?: string,
+    @Query('statuses') statuses?: string,
+    @Query('currencies') currencies?: string,
+    @Query('vehiclePlates') vehiclePlates?: string,
+    @Query('trailerPlates') trailerPlates?: string,
+  ) {
+    return this.documentsService.getAnalytics(user.id, {
+      dateFrom,
+      dateTo,
+      companyIds: companyIds ? companyIds.split(',') : undefined,
+      statuses: statuses ? (statuses.split(',') as DocumentStatus[]) : undefined,
+      currencies: currencies ? currencies.split(',') : undefined,
+      vehiclePlates: vehiclePlates ? vehiclePlates.split(',') : undefined,
+      trailerPlates: trailerPlates ? trailerPlates.split(',') : undefined,
+    });
   }
 
   @Get(':id')
@@ -67,6 +91,45 @@ export class DocumentsController {
     @Body(new ZodValidationPipe(SendDocumentSchema)) dto: SendDocumentDto,
   ) {
     return this.documentsService.send(id, dto, user.id);
+  }
+
+  // ── Status Transitions ──
+
+  @Patch(':id/status/send')
+  async markSent(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.documentsService.updateStatus(id, 'SENT', user.id);
+  }
+
+  @Patch(':id/status/view')
+  async markViewed(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.documentsService.updateStatus(id, 'VIEWED', user.id);
+  }
+
+  @Patch(':id/status/pay')
+  async markPaid(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.documentsService.updateStatus(id, 'PAID', user.id);
+  }
+
+  @Patch(':id/status')
+  async updateStatus(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+    @Body() body: { status: string },
+  ) {
+    return this.documentsService.updateStatus(
+      id,
+      body.status as DocumentStatus,
+      user.id,
+    );
   }
 
   @Post(':id/duplicate')

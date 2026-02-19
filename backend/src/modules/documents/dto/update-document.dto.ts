@@ -9,7 +9,11 @@ export const UpdateDocumentSchema = z.object({
       'DRAFT',
       'PENDING_SIGNATURE',
       'SIGNED',
+      'SENT',
+      'VIEWED',
       'COMPLETED',
+      'PAID',
+      'OVERDUE',
       'CANCELLED',
       'ARCHIVED',
     ])

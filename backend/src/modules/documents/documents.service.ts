@@ -1,4 +1,5 @@
-import { ConflictException, Inject, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
 import type { DocumentStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -10,6 +11,20 @@ import type { CreateDocumentDto } from './dto/create-document.dto.js';
 import type { UpdateDocumentDto } from './dto/update-document.dto.js';
 import type { SendDocumentDto } from './dto/send-document.dto.js';
 import type { UploadPdfDto } from './dto/upload-pdf.dto.js';
+
+/** Valid status transitions map */
+const STATUS_TRANSITIONS: Record<string, string[]> = {
+  DRAFT: ['PENDING_SIGNATURE', 'SIGNED', 'SENT', 'COMPLETED', 'CANCELLED'],
+  PENDING_SIGNATURE: ['SIGNED', 'CANCELLED', 'DRAFT'],
+  SIGNED: ['SENT', 'COMPLETED', 'CANCELLED'],
+  SENT: ['VIEWED', 'PAID', 'OVERDUE', 'CANCELLED'],
+  VIEWED: ['PAID', 'OVERDUE', 'CANCELLED'],
+  COMPLETED: ['PAID', 'ARCHIVED', 'CANCELLED'],
+  PAID: ['ARCHIVED'],
+  OVERDUE: ['PAID', 'CANCELLED'],
+  CANCELLED: ['DRAFT'],
+  ARCHIVED: [],
+};
 
 /** Contractor fields needed for auto-fill in the invoice builder */
 const CONTRACTOR_SELECT = {
@@ -33,6 +48,8 @@ const DOCUMENT_INCLUDES_FULL = {
 
 @Injectable()
 export class DocumentsService {
+  private readonly logger = new Logger(DocumentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
@@ -195,11 +212,22 @@ export class DocumentsService {
     if (dto.notes !== undefined) data.notes = dto.notes;
     if (dto.buyerId !== undefined) data.buyerId = dto.buyerId;
     if (dto.sellerId !== undefined) data.sellerId = dto.sellerId;
-    if (dto.inputData !== undefined)
+    if (dto.inputData !== undefined) {
       data.inputData = dto.inputData as Prisma.InputJsonValue;
+
+      // Extract and persist currency conversion fields from inputData for analytics
+      const input = dto.inputData as Record<string, unknown>;
+      if (input.baseCurrency !== undefined) data.baseCurrency = input.baseCurrency;
+      if (input.baseCurrencyAmount !== undefined) data.baseCurrencyAmount = Number(input.baseCurrencyAmount) || null;
+      if (input.exchangeRate !== undefined) data.exchangeRate = Number(input.exchangeRate) || null;
+      if (input.dueDate !== undefined) data.dueDate = input.dueDate ? new Date(input.dueDate as string) : null;
+    }
     if (dto.status !== undefined) {
       data.status = dto.status;
       if (dto.status === 'COMPLETED') data.completedAt = new Date();
+      if (dto.status === 'SENT') data.sentAt = new Date();
+      if (dto.status === 'VIEWED') data.viewedAt = new Date();
+      if (dto.status === 'PAID') data.paidAt = new Date();
     }
 
     const updated = await this.prisma.document.update({
@@ -634,5 +662,315 @@ export class DocumentsService {
     });
 
     return { total, byStatus, recentDocuments };
+  }
+
+  // ────────────────────────────────────────────
+  // STATUS TRANSITIONS
+  // ────────────────────────────────────────────
+
+  /**
+   * Transition a document to a new status with validation.
+   */
+  async updateStatus(id: string, newStatus: DocumentStatus, userId: string) {
+    const doc = await this.findById(id);
+    const currentStatus = doc.status;
+    const allowedTransitions = STATUS_TRANSITIONS[currentStatus] || [];
+
+    if (!allowedTransitions.includes(newStatus)) {
+      throw new BadRequestException(
+        `Cannot transition from ${currentStatus} to ${newStatus}`,
+      );
+    }
+
+    const data: Record<string, unknown> = { status: newStatus };
+    if (newStatus === 'SENT') data.sentAt = new Date();
+    if (newStatus === 'VIEWED') data.viewedAt = new Date();
+    if (newStatus === 'PAID') data.paidAt = new Date();
+    if (newStatus === 'COMPLETED') data.completedAt = new Date();
+
+    const updated = await this.prisma.document.update({
+      where: { id },
+      data,
+      include: DOCUMENT_INCLUDES_FULL,
+    });
+
+    await this.audit.log({
+      action: 'UPDATE',
+      entity: 'Document',
+      entityId: id,
+      userId,
+      companyId: doc.companyId,
+      details: {
+        statusChange: { from: currentStatus, to: newStatus },
+      },
+    });
+
+    return updated;
+  }
+
+  // ────────────────────────────────────────────
+  // OVERDUE CRON
+  // ────────────────────────────────────────────
+
+  /**
+   * Daily cron at 1 AM: mark overdue documents.
+   */
+  @Cron('0 1 * * *')
+  async handleOverdueCron() {
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+
+    try {
+      const overdueDocuments = await this.prisma.document.findMany({
+        where: {
+          dueDate: { lt: now },
+          status: { in: ['SENT', 'VIEWED'] },
+        },
+        select: { id: true, companyId: true },
+      });
+
+      if (overdueDocuments.length === 0) return;
+
+      await this.prisma.document.updateMany({
+        where: {
+          id: { in: overdueDocuments.map((d) => d.id) },
+        },
+        data: { status: 'OVERDUE' },
+      });
+
+      // Log each overdue transition
+      for (const doc of overdueDocuments) {
+        await this.audit.log({
+          action: 'UPDATE',
+          entity: 'Document',
+          entityId: doc.id,
+          companyId: doc.companyId,
+          details: { statusChange: { from: 'auto', to: 'OVERDUE' }, reason: 'past_due_date' },
+        });
+      }
+
+      this.logger.log(`Marked ${overdueDocuments.length} documents as OVERDUE`);
+    } catch (err) {
+      this.logger.error('Failed to process overdue documents:', err);
+    }
+  }
+
+  // ────────────────────────────────────────────
+  // ANALYTICS
+  // ────────────────────────────────────────────
+
+  /**
+   * Get analytics data for the user's documents.
+   */
+  async getAnalytics(
+    userId: string,
+    filters?: {
+      dateFrom?: string;
+      dateTo?: string;
+      companyIds?: string[];
+      statuses?: DocumentStatus[];
+      currencies?: string[];
+      vehiclePlates?: string[];
+      trailerPlates?: string[];
+    },
+  ) {
+    // Get all companies the user belongs to
+    const memberships = await this.prisma.membership.findMany({
+      where: { userId, status: 'ACTIVE' },
+      select: { companyId: true, company: { select: { id: true, name: true, baseCurrency: true } } },
+    });
+
+    let companyIds = memberships.map((m) => m.companyId);
+
+    // Filter by specific companies if provided
+    if (filters?.companyIds?.length) {
+      companyIds = companyIds.filter((id) => filters.companyIds!.includes(id));
+    }
+
+    if (companyIds.length === 0) {
+      return {
+        totalDocuments: 0,
+        totalAmount: 0,
+        totalBaseCurrencyAmount: 0,
+        baseCurrency: 'GEL',
+        paidCount: 0,
+        unpaidCount: 0,
+        overdueCount: 0,
+        byStatus: {},
+        byMonth: [],
+        byCompany: [],
+        byCurrency: [],
+        documents: [],
+      };
+    }
+
+    // Determine the primary base currency (from first company or most common)
+    const primaryBaseCurrency =
+      memberships.find((m) => companyIds.includes(m.companyId))?.company?.baseCurrency || 'GEL';
+
+    // Build where clause
+    const where: Prisma.DocumentWhereInput = {
+      companyId: { in: companyIds },
+    };
+
+    if (filters?.statuses?.length) {
+      where.status = { in: filters.statuses };
+    }
+
+    if (filters?.dateFrom || filters?.dateTo) {
+      where.createdAt = {};
+      if (filters?.dateFrom) {
+        (where.createdAt as Prisma.DateTimeFilter).gte = new Date(filters.dateFrom);
+      }
+      if (filters?.dateTo) {
+        const endDate = new Date(filters.dateTo);
+        endDate.setHours(23, 59, 59, 999);
+        (where.createdAt as Prisma.DateTimeFilter).lte = endDate;
+      }
+    }
+
+    // Fetch all matching documents
+    const documents = await this.prisma.document.findMany({
+      where,
+      include: {
+        company: { select: { id: true, name: true } },
+        buyer: { select: { id: true, name: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    // Filter by currencies if provided
+    let filteredDocs = documents;
+    if (filters?.currencies?.length) {
+      filteredDocs = filteredDocs.filter((doc) => {
+        const inputData = doc.inputData as Record<string, unknown>;
+        const currency = (inputData?.currency as string) || 'GEL';
+        return filters.currencies!.includes(currency);
+      });
+    }
+
+    // Filter by vehicle plates if provided
+    if (filters?.vehiclePlates?.length) {
+      filteredDocs = filteredDocs.filter((doc) => {
+        const inputData = doc.inputData as Record<string, unknown>;
+        const vehiclePlate = (inputData?.vehiclePlate as string) || '';
+        return filters.vehiclePlates!.includes(vehiclePlate);
+      });
+    }
+
+    // Filter by trailer plates if provided
+    if (filters?.trailerPlates?.length) {
+      filteredDocs = filteredDocs.filter((doc) => {
+        const inputData = doc.inputData as Record<string, unknown>;
+        const trailerPlate = (inputData?.trailerPlate as string) || '';
+        return filters.trailerPlates!.includes(trailerPlate);
+      });
+    }
+
+    // Aggregate stats
+    let totalAmount = 0;
+    let totalBaseCurrencyAmount = 0;
+    let paidCount = 0;
+    let unpaidCount = 0;
+    let overdueCount = 0;
+    const byStatus: Record<string, number> = {};
+    const byMonthMap: Record<string, { count: number; amount: number; baseCurrencyAmount: number }> = {};
+    const byCompanyMap: Record<string, { companyName: string; count: number; amount: number; baseCurrencyAmount: number }> = {};
+    const byCurrencyMap: Record<string, { count: number; amount: number }> = {};
+    const analyticsDocuments: Array<{
+      id: string;
+      documentNumber?: string;
+      createdAt: string;
+      companyId: string;
+      companyName: string;
+      buyerName?: string;
+      status: string;
+      currency: string;
+      amount: number;
+      baseCurrency?: string;
+      baseCurrencyAmount?: number;
+      exchangeRate?: number;
+    }> = [];
+
+    for (const doc of filteredDocs) {
+      const inputData = doc.inputData as Record<string, unknown>;
+      const currency = (inputData?.currency as string) || 'GEL';
+      const amount = Number(inputData?.total) || 0;
+      const baseCurrencyAmt = doc.baseCurrencyAmount || amount;
+
+      totalAmount += amount;
+      totalBaseCurrencyAmount += baseCurrencyAmt;
+
+      // Status counts
+      byStatus[doc.status] = (byStatus[doc.status] || 0) + 1;
+      if (doc.status === 'PAID') paidCount++;
+      if (doc.status === 'OVERDUE') overdueCount++;
+      if (['DRAFT', 'SENT', 'VIEWED', 'PENDING_SIGNATURE', 'SIGNED'].includes(doc.status)) unpaidCount++;
+
+      // Monthly aggregation
+      const monthKey = `${doc.createdAt.getFullYear()}-${String(doc.createdAt.getMonth() + 1).padStart(2, '0')}`;
+      if (!byMonthMap[monthKey]) byMonthMap[monthKey] = { count: 0, amount: 0, baseCurrencyAmount: 0 };
+      byMonthMap[monthKey].count++;
+      byMonthMap[monthKey].amount += amount;
+      byMonthMap[monthKey].baseCurrencyAmount += baseCurrencyAmt;
+
+      // Company aggregation
+      const compId = doc.companyId;
+      if (!byCompanyMap[compId]) byCompanyMap[compId] = { companyName: doc.company?.name || '', count: 0, amount: 0, baseCurrencyAmount: 0 };
+      byCompanyMap[compId].count++;
+      byCompanyMap[compId].amount += amount;
+      byCompanyMap[compId].baseCurrencyAmount += baseCurrencyAmt;
+
+      // Currency aggregation
+      if (!byCurrencyMap[currency]) byCurrencyMap[currency] = { count: 0, amount: 0 };
+      byCurrencyMap[currency].count++;
+      byCurrencyMap[currency].amount += amount;
+
+      // Individual document
+      analyticsDocuments.push({
+        id: doc.id,
+        documentNumber: doc.documentNumber || undefined,
+        createdAt: doc.createdAt.toISOString(),
+        companyId: doc.companyId,
+        companyName: doc.company?.name || '',
+        buyerName: (doc.buyer as { name?: string })?.name || undefined,
+        status: doc.status,
+        currency,
+        amount,
+        baseCurrency: doc.baseCurrency || undefined,
+        baseCurrencyAmount: doc.baseCurrencyAmount || undefined,
+        exchangeRate: doc.exchangeRate || undefined,
+      });
+    }
+
+    // Convert maps to arrays
+    const byMonth = Object.entries(byMonthMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([month, data]) => ({ month, ...data }));
+
+    const byCompany = Object.entries(byCompanyMap).map(([companyId, data]) => ({
+      companyId,
+      ...data,
+    }));
+
+    const byCurrency = Object.entries(byCurrencyMap).map(([currency, data]) => ({
+      currency,
+      ...data,
+    }));
+
+    return {
+      totalDocuments: filteredDocs.length,
+      totalAmount: Math.round(totalAmount * 100) / 100,
+      totalBaseCurrencyAmount: Math.round(totalBaseCurrencyAmount * 100) / 100,
+      baseCurrency: primaryBaseCurrency,
+      paidCount,
+      unpaidCount,
+      overdueCount,
+      byStatus,
+      byMonth,
+      byCompany,
+      byCurrency,
+      documents: analyticsDocuments,
+    };
   }
 }

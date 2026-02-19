@@ -63,7 +63,11 @@ export const STATUS_LABELS: Record<string, string> = {
   DRAFT: 'Draft',
   PENDING_SIGNATURE: 'Pending Signature',
   SIGNED: 'Signed',
+  SENT: 'Sent',
+  VIEWED: 'Viewed',
   COMPLETED: 'Completed',
+  PAID: 'Paid',
+  OVERDUE: 'Overdue',
   CANCELLED: 'Cancelled',
   ARCHIVED: 'Archived',
 };
@@ -74,8 +78,12 @@ export const STATUS_COLORS: Record<string, string> = {
   DRAFT: 'bg-gray-100 text-gray-800',
   PENDING_SIGNATURE: 'bg-yellow-100 text-yellow-800',
   SIGNED: 'bg-blue-100 text-blue-800',
+  SENT: 'bg-cyan-100 text-cyan-800',
+  VIEWED: 'bg-indigo-100 text-indigo-800',
   COMPLETED: 'bg-green-100 text-green-800',
-  CANCELLED: 'bg-red-100 text-red-800',
+  PAID: 'bg-emerald-100 text-emerald-800',
+  OVERDUE: 'bg-red-100 text-red-800',
+  CANCELLED: 'bg-red-50 text-red-600',
   ARCHIVED: 'bg-orange-100 text-orange-800',
 };
 

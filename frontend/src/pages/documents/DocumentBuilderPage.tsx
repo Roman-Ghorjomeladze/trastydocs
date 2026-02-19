@@ -14,6 +14,8 @@ import {
   populateFromContractor,
   isInvoiceData,
 } from '../../lib/invoice-utils.ts';
+import { getCompany } from '../../api/companies.ts';
+import { getContractor } from '../../api/contractors.ts';
 import { getInvoiceLabels } from '../../lib/invoice-i18n.ts';
 import type { InvoiceLanguage } from '../../lib/invoice-i18n.ts';
 import { exportInvoicePdf } from '../../lib/pdf-export.ts';
@@ -435,6 +437,91 @@ export function DocumentBuilderPage() {
     });
   }, [doc, saveToServer]);
 
+  // Resync company data from settings (fetches latest from server)
+  const handleResyncCompany = useCallback(async () => {
+    if (!activeCompany?.id) return;
+    try {
+      const freshCompany = await getCompany(activeCompany.id);
+      const docLang = invoiceData.language || 'en';
+      const nameT = freshCompany.nameTranslations as Record<string, string> | undefined;
+      const addrT = freshCompany.addressTranslations as Record<string, string> | undefined;
+      const companyName = nameT?.[docLang] || freshCompany.name || '';
+      const companyAddress = addrT?.[docLang] || freshCompany.address || '';
+
+      // Re-resolve bank accounts
+      const companyBanks = freshCompany.bankAccounts ?? [];
+      const defaultBanks = companyBanks.filter((ba) => ba.isDefault);
+      const defaultIds = defaultBanks.map((ba) => ba.id);
+      const bankStr = defaultBanks
+        .map((ba) => `${ba.bankName}: ${ba.accountNumber}`)
+        .join('\n');
+
+      setSelectedBankAccountIds(defaultIds);
+
+      setInvoiceData((prev) => {
+        const updated = {
+          ...prev,
+          companyName,
+          companyAddress,
+          companyTaxId: freshCompany.taxId || '',
+          companyPhone: freshCompany.phone || '',
+          companyEmail: freshCompany.email || '',
+          companyBankAccounts: bankStr,
+        };
+
+        setHasUnsavedChanges(true);
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = setTimeout(() => {
+          saveToServer(updated);
+        }, AUTO_SAVE_DELAY);
+
+        return updated;
+      });
+
+      // Update the company in the store so subsequent operations use fresh data
+      useCompanyStore.getState().updateCompany(activeCompany.id, {});
+    } catch (err) {
+      console.error('Failed to resync company data:', err);
+    }
+  }, [activeCompany?.id, invoiceData.language, saveToServer]);
+
+  // Resync buyer data from settings (fetches latest from server)
+  const handleResyncBuyer = useCallback(async () => {
+    if (!doc?.buyer?.id || !companyId) return;
+    try {
+      const freshBuyer = await getContractor(companyId, doc.buyer.id);
+      setInvoiceData((prev) => {
+        const updated = populateFromContractor(
+          {
+            ...prev,
+            buyerName: '',
+            buyerAddress: '',
+            buyerTaxId: '',
+            buyerPhone: '',
+            buyerEmail: '',
+            buyerBankAccounts: '',
+          },
+          freshBuyer,
+          'buyer',
+          prev.language || 'en',
+        );
+
+        setHasUnsavedChanges(true);
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = setTimeout(() => {
+          saveToServer(updated);
+        }, AUTO_SAVE_DELAY);
+
+        return updated;
+      });
+
+      // Update doc.buyer so subsequent auto-fills use fresh data
+      setDoc((prev) => prev ? { ...prev, buyer: freshBuyer } : prev);
+    } catch (err) {
+      console.error('Failed to resync buyer data:', err);
+    }
+  }, [doc?.buyer?.id, companyId, saveToServer]);
+
   // Manual save
   const handleManualSave = async () => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -675,6 +762,7 @@ export function DocumentBuilderPage() {
                 bankAccounts={activeCompany?.bankAccounts}
                 selectedBankAccountIds={selectedBankAccountIds}
                 onBankAccountToggle={handleBankAccountToggle}
+                onResync={handleResyncCompany}
               />
             </div>
 
@@ -692,6 +780,7 @@ export function DocumentBuilderPage() {
                 labels={labels}
                 onChange={handleFieldChange}
                 onAutoFill={doc.buyer ? handleAutoFillBuyer : undefined}
+                onResync={doc.buyer ? handleResyncBuyer : undefined}
               />
             </div>
 

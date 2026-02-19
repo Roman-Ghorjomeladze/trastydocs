@@ -96,7 +96,7 @@ export const renderMinimal: TemplateRenderFn = async (ctx) => {
 
   // ── Company details (left) ──
   const companyDetails = [
-    data.companyAddress,
+    data.companyAddress ? `${labels.address}: ${data.companyAddress}` : '',
     data.companyPhone ? `${labels.phone}: ${data.companyPhone}` : '',
     data.companyEmail ? `${labels.email}: ${data.companyEmail}` : '',
     data.companyTaxId ? `${labels.taxId}: ${data.companyTaxId}` : '',
@@ -136,7 +136,7 @@ export const renderMinimal: TemplateRenderFn = async (ctx) => {
   y -= LINE_HEIGHT;
 
   const buyerDetails = [
-    data.buyerAddress,
+    data.buyerAddress ? `${labels.address}: ${data.buyerAddress}` : '',
     data.buyerPhone ? `${labels.phone}: ${data.buyerPhone}` : '',
     data.buyerEmail ? `${labels.email}: ${data.buyerEmail}` : '',
     data.buyerTaxId ? `${labels.taxId}: ${data.buyerTaxId}` : '',

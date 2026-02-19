@@ -19,6 +19,7 @@ export const UpdateCompanySchema = z.object({
   bankAccounts: z.array(BankAccountSchema).optional(),
   nameTranslations: TranslationsSchema,
   addressTranslations: TranslationsSchema,
+  baseCurrency: z.string().min(2).max(5).optional(),
 });
 
 export type UpdateCompanyDto = z.infer<typeof UpdateCompanySchema>;

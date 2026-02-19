@@ -660,6 +660,7 @@ function SettingsTab({
   const [phone, setPhone] = useState(company.phone ?? '');
   const [address, setAddress] = useState(company.address ?? '');
   const [taxId, setTaxId] = useState(company.taxId ?? '');
+  const [baseCurrency, setBaseCurrency] = useState(company.baseCurrency ?? 'GEL');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -717,6 +718,7 @@ function SettingsTab({
       if (address !== (company.address ?? ''))
         data.address = address || undefined;
       if (taxId !== (company.taxId ?? '')) data.taxId = taxId || undefined;
+      if (baseCurrency !== (company.baseCurrency ?? 'GEL')) data.baseCurrency = baseCurrency;
 
       if (Object.keys(data).length > 0) {
         await onUpdate(data);
@@ -877,6 +879,20 @@ function SettingsTab({
               placeholder="XX-XXXXXXX"
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              {t('companies.baseCurrency')}
+            </label>
+            <select
+              value={baseCurrency}
+              onChange={(e) => setBaseCurrency(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-card"
+            >
+              {['USD', 'EUR', 'GBP', 'ILS', 'GEL', 'JPY', 'CAD', 'AUD', 'CHF'].map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
           </div>
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium text-foreground mb-1">

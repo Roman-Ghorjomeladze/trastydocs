@@ -28,7 +28,11 @@ enum DocumentStatus {
   DRAFT
   PENDING_SIGNATURE
   SIGNED
+  SENT
+  VIEWED
   COMPLETED
+  PAID
+  OVERDUE
   CANCELLED
   ARCHIVED
 }
@@ -146,6 +150,7 @@ model Company {
   bankAccounts        Json?
   nameTranslations    Json?
   addressTranslations Json?
+  baseCurrency        String  @default("GEL")
   isActive            Boolean @default(true)
 
   createdAt DateTime @default(now())
@@ -250,6 +255,17 @@ model Document {
   notes          String?
   metadata       Json?
   duplicatedFromId String?
+
+  // Currency conversion fields
+  baseCurrency       String?
+  baseCurrencyAmount Float?
+  exchangeRate       Float?
+
+  // Status tracking dates
+  dueDate    DateTime?
+  sentAt     DateTime?
+  viewedAt   DateTime?
+  paidAt     DateTime?
 
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -522,4 +538,22 @@ model CreditTransaction {
 
   @@index([userId])
   @@map("credit_transactions")
+}
+
+// ─────────────────────────────────────────────
+// EXCHANGE RATES
+// ─────────────────────────────────────────────
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  date      DateTime @db.Date
+  base      String   @default("GEL")
+  currency  String
+  rate      Float
+  quantity  Int      @default(1)
+  createdAt DateTime @default(now())
+
+  @@unique([date, base, currency])
+  @@index([currency, date])
+  @@map("exchange_rates")
 }

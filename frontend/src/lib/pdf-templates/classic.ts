@@ -59,7 +59,11 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
   // Invoice details (right, starting at same Y as company name)
   let detailY = nameAndNumberY;
   if (data.invoiceNumber) {
-    drawText(page, `${labels.invoiceNumber}: ${data.invoiceNumber}`, rightX, detailY, { size: 9, bold: true, color: GRAY });
+    drawText(page, `${labels.invoiceNumber}: ${data.invoiceNumber}`, rightX, detailY, {
+      size: 9,
+      bold: true,
+      color: GRAY,
+    });
     detailY -= LINE_HEIGHT;
   }
   const detailsLines = [
@@ -116,7 +120,7 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
 
   // Company details (left, below company name)
   const companyDetails = [
-    data.companyAddress,
+    data.companyAddress ? `${labels.address}: ${data.companyAddress}` : '',
     data.companyPhone ? `${labels.phone}: ${data.companyPhone}` : '',
     data.companyEmail ? `${labels.email}: ${data.companyEmail}` : '',
     data.companyTaxId ? `${labels.taxId}: ${data.companyTaxId}` : '',
@@ -149,14 +153,14 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
   y -= LINE_HEIGHT;
 
   const buyerDetails = [
-    data.buyerAddress,
+    data.buyerAddress ? `${labels.address}: ${data.buyerAddress}` : '',
     data.buyerPhone ? `${labels.phone}: ${data.buyerPhone}` : '',
     data.buyerEmail ? `${labels.email}: ${data.buyerEmail}` : '',
     data.buyerTaxId ? `${labels.taxId}: ${data.buyerTaxId}` : '',
   ]
     .filter(Boolean)
     .join('\n');
-
+  console.log('buyerDetails: ', buyerDetails);
   y = drawMultiline(page, buyerDetails, MARGIN, y, { size: 9, color: GRAY });
   y -= SECTION_GAP + 4;
 
@@ -251,20 +255,12 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
       maxWidth: colWidths[1] - 8,
     });
     drawText(page, String(item.quantity), colStarts[2] + 4, rowY - 8, { size: 9 });
-    drawText(
-      page,
-      formatCurrency(item.unitPrice, data.currency),
-      colStarts[3] + 4,
-      rowY - 8,
-      { size: 9 },
-    );
-    drawText(
-      page,
-      formatCurrency(item.total, data.currency),
-      colStarts[4] + 4,
-      rowY - 8,
-      { size: 9 },
-    );
+    drawText(page, formatCurrency(item.unitPrice, data.currency), colStarts[3] + 4, rowY - 8, {
+      size: 9,
+    });
+    drawText(page, formatCurrency(item.total, data.currency), colStarts[4] + 4, rowY - 8, {
+      size: 9,
+    });
 
     y -= 20;
   }
@@ -305,7 +301,11 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
     return atY - (LINE_HEIGHT + 2);
   };
 
-  totalsY = drawTotalRow(`${labels.subtotal}:`, formatCurrency(data.subtotal, data.currency), totalsY);
+  totalsY = drawTotalRow(
+    `${labels.subtotal}:`,
+    formatCurrency(data.subtotal, data.currency),
+    totalsY,
+  );
   if (data.taxRate > 0) {
     totalsY = drawTotalRow(
       `${labels.tax} (${data.taxRate}%):`,
@@ -400,11 +400,7 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
     const stampDims = stampImage ? stampImage.scaleToFit(120, 120) : null;
     const sigDims = sigImage ? sigImage.scaleToFit(140, 70) : null;
 
-    const imageBlockHeight = Math.max(
-      stampDims?.height ?? 0,
-      sigDims?.height ?? 0,
-      60,
-    );
+    const imageBlockHeight = Math.max(stampDims?.height ?? 0, sigDims?.height ?? 0, 60);
 
     // Calculate actual space needed: images + gap + line + name + label
     // Use tight check (no extra buffer) since this is the last section on the page
@@ -448,26 +444,20 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
     const signerDisplayName = data.signerName || (isTransport ? data.directorName : '');
     if (signerDisplayName) {
       const nameWidth = textWidth(signerDisplayName, 9, false);
-      drawText(
-        page,
-        signerDisplayName,
-        sigBlockX + (sigBlockWidth - nameWidth) / 2,
-        y,
-        { size: 9, color: DARK },
-      );
+      drawText(page, signerDisplayName, sigBlockX + (sigBlockWidth - nameWidth) / 2, y, {
+        size: 9,
+        color: DARK,
+      });
       y -= LINE_HEIGHT;
     }
 
     if (isTransport && data.directorName) {
       const dirLabel = labels.directorName;
       const dirLabelWidth = textWidth(dirLabel, 8, false);
-      drawText(
-        page,
-        dirLabel,
-        sigBlockX + (sigBlockWidth - dirLabelWidth) / 2,
-        y,
-        { size: 8, color: GRAY },
-      );
+      drawText(page, dirLabel, sigBlockX + (sigBlockWidth - dirLabelWidth) / 2, y, {
+        size: 8,
+        color: GRAY,
+      });
     }
   }
 };

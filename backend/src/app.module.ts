@@ -19,7 +19,9 @@ import { AuditModule } from './modules/audit/audit.module.js';
 import { VehiclesModule } from './modules/vehicles/vehicles.module.js';
 import { AdminModule } from './modules/admin/admin.module.js';
 import { PaddleModule } from './integrations/paddle/paddle.module.js';
+import { NbgModule } from './integrations/nbg/nbg.module.js';
 import { PaymentsModule } from './modules/payments/payments.module.js';
+import { ExchangeRatesModule } from './modules/exchange-rates/exchange-rates.module.js';
 import { FilesModule } from './modules/files/files.module.js';
 import { HealthController } from './health.controller.js';
 
@@ -44,7 +46,9 @@ import { HealthController } from './health.controller.js';
     AuditModule,
     AdminModule,
     PaddleModule,
+    NbgModule,
     PaymentsModule,
+    ExchangeRatesModule,
     FilesModule,
   ],
   controllers: [HealthController],

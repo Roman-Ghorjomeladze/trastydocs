@@ -1,9 +1,12 @@
+import { useEffect, useState, useCallback } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { InvoiceData, DocumentType } from '../../../types/index.ts';
 import type { InvoiceLabels } from '../../../lib/invoice-i18n.ts';
 import { INVOICE_LANGUAGES } from '../../../lib/invoice-i18n.ts';
 import { TEMPLATE_OPTIONS } from '../../../lib/pdf-templates/index.ts';
+import { convertCurrency } from '../../../api/exchange-rates.ts';
 
-const CURRENCIES = ['USD', 'EUR', 'GBP', 'ILS', 'GEL', 'JPY', 'CAD', 'AUD', 'CHF'];
+export const CURRENCIES = ['USD', 'EUR', 'GBP', 'ILS', 'GEL', 'JPY', 'CAD', 'AUD', 'CHF'];
 
 const DOCUMENT_TYPES: { value: DocumentType; labelKey: 'invoice' | 'transportInvoice' }[] = [
   { value: 'invoice', labelKey: 'invoice' },
@@ -11,12 +14,48 @@ const DOCUMENT_TYPES: { value: DocumentType; labelKey: 'invoice' | 'transportInv
 ];
 
 interface Props {
-  data: Pick<InvoiceData, 'invoiceNumber' | 'invoiceDate' | 'dueDate' | 'currency' | 'language' | 'documentType' | 'template'>;
+  data: Pick<InvoiceData, 'invoiceNumber' | 'invoiceDate' | 'dueDate' | 'currency' | 'baseCurrency' | 'baseCurrencyAmount' | 'exchangeRate' | 'language' | 'documentType' | 'template'>;
   labels: InvoiceLabels;
-  onChange: (field: string, value: string) => void;
+  onChange: (field: string, value: string | number) => void;
+  total?: number;
 }
 
-export function InvoiceHeaderSection({ data, labels, onChange }: Props) {
+export function InvoiceHeaderSection({ data, labels, onChange, total }: Props) {
+  const { t } = useTranslation();
+  const [isConverting, setIsConverting] = useState(false);
+
+  // Auto-convert when currency, baseCurrency, or total changes
+  const doConvert = useCallback(async () => {
+    if (!total || !data.currency || !data.baseCurrency) return;
+    if (data.currency === data.baseCurrency) {
+      onChange('baseCurrencyAmount', total);
+      onChange('exchangeRate', 1);
+      return;
+    }
+
+    setIsConverting(true);
+    try {
+      const result = await convertCurrency(
+        total,
+        data.currency,
+        data.baseCurrency,
+        data.invoiceDate || undefined,
+      );
+      if (result) {
+        onChange('baseCurrencyAmount', result.convertedAmount);
+        onChange('exchangeRate', result.exchangeRate);
+      }
+    } catch {
+      // silently fail — rates may not be available
+    } finally {
+      setIsConverting(false);
+    }
+  }, [total, data.currency, data.baseCurrency, data.invoiceDate]);
+
+  useEffect(() => {
+    doConvert();
+  }, [doConvert]);
+
   return (
     <div className="bg-card border border-border rounded-lg p-5">
       <h3 className="text-sm font-semibold text-foreground mb-4 flex items-center gap-2">
@@ -107,7 +146,8 @@ export function InvoiceHeaderSection({ data, labels, onChange }: Props) {
           />
         </div>
 
-        <div className="col-span-2">
+        {/* Currency */}
+        <div>
           <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.currency}</label>
           <select
             value={data.currency}
@@ -121,6 +161,58 @@ export function InvoiceHeaderSection({ data, labels, onChange }: Props) {
             ))}
           </select>
         </div>
+
+        {/* Base Currency */}
+        <div>
+          <label className="block text-xs font-medium text-muted-foreground mb-1">
+            {t('invoiceBuilder.baseCurrency')}
+          </label>
+          <select
+            value={data.baseCurrency || 'GEL'}
+            onChange={(e) => onChange('baseCurrency', e.target.value)}
+            className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-card"
+          >
+            {CURRENCIES.map((c) => (
+              <option key={c} value={c}>
+                {c}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Exchange Rate Info */}
+        {data.currency !== data.baseCurrency && total !== undefined && total > 0 && (
+          <div className="col-span-2 bg-muted/50 rounded-lg p-3">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">
+                {t('invoiceBuilder.exchangeRate')}:
+              </span>
+              <span className="font-mono text-foreground">
+                {isConverting ? (
+                  <span className="text-muted-foreground">{t('common.loading')}...</span>
+                ) : data.exchangeRate ? (
+                  `1 ${data.currency} = ${data.exchangeRate} ${data.baseCurrency}`
+                ) : (
+                  <span className="text-muted-foreground">{t('invoiceBuilder.noRateAvailable')}</span>
+                )}
+              </span>
+            </div>
+            {data.baseCurrencyAmount !== undefined && data.baseCurrencyAmount > 0 && (
+              <div className="flex items-center justify-between text-xs mt-1">
+                <span className="text-muted-foreground">
+                  {t('invoiceBuilder.convertedTotal')}:
+                </span>
+                <span className="font-semibold text-foreground">
+                  {data.baseCurrencyAmount.toLocaleString(undefined, {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}{' '}
+                  {data.baseCurrency}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

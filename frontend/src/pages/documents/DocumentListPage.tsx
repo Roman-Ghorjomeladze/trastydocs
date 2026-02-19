@@ -19,7 +19,11 @@ const ALL_STATUSES: DocumentStatus[] = [
   'DRAFT',
   'PENDING_SIGNATURE',
   'SIGNED',
+  'SENT',
+  'VIEWED',
   'COMPLETED',
+  'PAID',
+  'OVERDUE',
   'CANCELLED',
   'ARCHIVED',
 ];

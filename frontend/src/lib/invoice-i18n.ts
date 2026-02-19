@@ -87,6 +87,7 @@ export interface InvoiceLabels {
 
   // Auto-fill
   autoFill: string;
+  resyncData: string;
 }
 
 const en: InvoiceLabels = {
@@ -164,6 +165,7 @@ const en: InvoiceLabels = {
   templateBold: 'Bold',
   templateCompact: 'Compact',
   autoFill: 'Auto-fill',
+  resyncData: 'Sync from settings',
 };
 
 const ru: InvoiceLabels = {
@@ -241,6 +243,7 @@ const ru: InvoiceLabels = {
   templateBold: 'Жирный',
   templateCompact: 'Компактный',
   autoFill: 'Автозаполнение',
+  resyncData: 'Обновить из настроек',
 };
 
 const ka: InvoiceLabels = {
@@ -318,6 +321,7 @@ const ka: InvoiceLabels = {
   templateBold: 'მუქი',
   templateCompact: 'კომპაქტური',
   autoFill: 'ავტომატური შევსება',
+  resyncData: 'პარამეტრებიდან განახლება',
 };
 
 const tr: InvoiceLabels = {
@@ -395,6 +399,7 @@ const tr: InvoiceLabels = {
   templateBold: 'Kalın',
   templateCompact: 'Kompakt',
   autoFill: 'Otomatik Doldur',
+  resyncData: 'Ayarlardan guncelle',
 };
 
 const TRANSLATIONS: Record<InvoiceLanguage, InvoiceLabels> = {

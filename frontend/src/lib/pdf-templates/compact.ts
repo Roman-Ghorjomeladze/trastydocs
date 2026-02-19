@@ -120,7 +120,7 @@ export const renderCompact: TemplateRenderFn = async (ctx) => {
 
   const companyLines = [
     data.companyName,
-    data.companyAddress,
+    data.companyAddress ? `${labels.address}: ${data.companyAddress}` : '',
     data.companyPhone ? `${labels.phone}: ${data.companyPhone}` : '',
     data.companyEmail ? `${labels.email}: ${data.companyEmail}` : '',
     data.companyTaxId ? `${labels.taxId}: ${data.companyTaxId}` : '',
@@ -137,7 +137,7 @@ export const renderCompact: TemplateRenderFn = async (ctx) => {
 
   const buyerLines = [
     data.buyerName || '-',
-    data.buyerAddress,
+    data.buyerAddress ? `${labels.address}: ${data.buyerAddress}` : '',
     data.buyerPhone ? `${labels.phone}: ${data.buyerPhone}` : '',
     data.buyerEmail ? `${labels.email}: ${data.buyerEmail}` : '',
     data.buyerTaxId ? `${labels.taxId}: ${data.buyerTaxId}` : '',
