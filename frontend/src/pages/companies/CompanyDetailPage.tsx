@@ -15,6 +15,7 @@ import { CURRENCIES } from '../documents/builder/InvoiceHeaderSection.tsx';
 import type {
   Company,
   CompanyBankAccount,
+  IntermediaryBankAccount,
   Membership,
   MembershipRole,
   Translations,
@@ -682,11 +683,20 @@ function SettingsTab({
   const [newBankName, setNewBankName] = useState('');
   const [newAccountNumber, setNewAccountNumber] = useState('');
   const [newBankCurrency, setNewBankCurrency] = useState(company.baseCurrency ?? 'GEL');
+  const [newSwiftCode, setNewSwiftCode] = useState('');
+  const [newBeneficiaryName, setNewBeneficiaryName] = useState('');
   const [bankSaving, setBankSaving] = useState(false);
 
   // Inline editing state
   const [editingBankId, setEditingBankId] = useState<string | null>(null);
-  const [editBankData, setEditBankData] = useState<{ bankName: string; accountNumber: string; currency: string }>({ bankName: '', accountNumber: '', currency: '' });
+  const [editBankData, setEditBankData] = useState<{
+    bankName: string;
+    accountNumber: string;
+    currency: string;
+    swiftCode: string;
+    beneficiaryName: string;
+    intermediaryBanks: IntermediaryBankAccount[];
+  }>({ bankName: '', accountNumber: '', currency: '', swiftCode: '', beneficiaryName: '', intermediaryBanks: [] });
 
   // Translations state
   const LANGS = [
@@ -773,25 +783,45 @@ function SettingsTab({
       bankName: newBankName.trim(),
       accountNumber: newAccountNumber.trim(),
       currency: newBankCurrency,
+      swiftCode: newSwiftCode.trim(),
+      beneficiaryName: newBeneficiaryName.trim(),
       isDefault: isFirst,
+      intermediaryBanks: [],
     };
     await saveBankAccounts([...bankAccounts, newAccount]);
     setNewBankName('');
     setNewAccountNumber('');
     setNewBankCurrency(company.baseCurrency ?? 'GEL');
+    setNewSwiftCode('');
+    setNewBeneficiaryName('');
     setShowAddBank(false);
   };
 
   const handleStartEditBank = (ba: CompanyBankAccount) => {
     setEditingBankId(ba.id);
-    setEditBankData({ bankName: ba.bankName, accountNumber: ba.accountNumber, currency: ba.currency || company.baseCurrency || 'GEL' });
+    setEditBankData({
+      bankName: ba.bankName,
+      accountNumber: ba.accountNumber,
+      currency: ba.currency || company.baseCurrency || 'GEL',
+      swiftCode: ba.swiftCode ?? '',
+      beneficiaryName: ba.beneficiaryName ?? '',
+      intermediaryBanks: ba.intermediaryBanks ?? [],
+    });
   };
 
   const handleSaveEditBank = async () => {
     if (!editingBankId || !editBankData.bankName.trim() || !editBankData.accountNumber.trim()) return;
     const updated = bankAccounts.map((ba) =>
       ba.id === editingBankId
-        ? { ...ba, bankName: editBankData.bankName.trim(), accountNumber: editBankData.accountNumber.trim(), currency: editBankData.currency }
+        ? {
+            ...ba,
+            bankName: editBankData.bankName.trim(),
+            accountNumber: editBankData.accountNumber.trim(),
+            currency: editBankData.currency,
+            swiftCode: editBankData.swiftCode.trim(),
+            beneficiaryName: editBankData.beneficiaryName.trim(),
+            intermediaryBanks: editBankData.intermediaryBanks,
+          }
         : ba,
     );
     await saveBankAccounts(updated);
@@ -1066,6 +1096,32 @@ function SettingsTab({
                 </select>
               </div>
             </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  {t('companies.swiftCode')}
+                </label>
+                <input
+                  type="text"
+                  value={newSwiftCode}
+                  onChange={(e) => setNewSwiftCode(e.target.value)}
+                  placeholder="BAGAGE22"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  {t('companies.beneficiaryName')}
+                </label>
+                <input
+                  type="text"
+                  value={newBeneficiaryName}
+                  onChange={(e) => setNewBeneficiaryName(e.target.value)}
+                  placeholder="Company LLC"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                />
+              </div>
+            </div>
             <div className="mt-3">
               <button
                 type="button"
@@ -1132,7 +1188,199 @@ function SettingsTab({
                         </select>
                       </div>
                     </div>
-                    <div className="mt-2 flex items-center gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">
+                          {t('companies.swiftCode')}
+                        </label>
+                        <input
+                          type="text"
+                          value={editBankData.swiftCode}
+                          onChange={(e) => setEditBankData((prev) => ({ ...prev, swiftCode: e.target.value }))}
+                          placeholder="BAGAGE22"
+                          className="w-full px-3 py-1.5 text-sm border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">
+                          {t('companies.beneficiaryName')}
+                        </label>
+                        <input
+                          type="text"
+                          value={editBankData.beneficiaryName}
+                          onChange={(e) => setEditBankData((prev) => ({ ...prev, beneficiaryName: e.target.value }))}
+                          placeholder="Company LLC"
+                          className="w-full px-3 py-1.5 text-sm border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* ── Intermediary Banks ── */}
+                    <div className="mt-4 border-t border-border pt-3">
+                      <div className="flex items-center justify-between mb-2">
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                          {t('companies.intermediaryBank')}
+                        </h4>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setEditBankData((prev) => ({
+                              ...prev,
+                              intermediaryBanks: [
+                                ...prev.intermediaryBanks,
+                                {
+                                  id: crypto.randomUUID(),
+                                  bankName: '',
+                                  accountNumber: '',
+                                  currency: company.baseCurrency || 'GEL',
+                                  swiftCode: '',
+                                  beneficiaryName: '',
+                                },
+                              ],
+                            }))
+                          }
+                          disabled={bankSaving}
+                          className="text-xs text-accent hover:text-accent-hover font-medium disabled:opacity-50 transition-colors"
+                        >
+                          + {t('companies.addIntermediaryBank')}
+                        </button>
+                      </div>
+
+                      {editBankData.intermediaryBanks.length === 0 ? (
+                        <p className="text-xs text-muted-foreground italic">
+                          {t('companies.intermediaryBank')} &mdash; none
+                        </p>
+                      ) : (
+                        <div className="space-y-3">
+                          {editBankData.intermediaryBanks.map((ib, idx) => (
+                            <div
+                              key={ib.id}
+                              className="p-3 border border-border rounded-lg bg-muted/50"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-medium text-muted-foreground">
+                                  {t('companies.intermediaryBank')} #{idx + 1}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setEditBankData((prev) => ({
+                                      ...prev,
+                                      intermediaryBanks: prev.intermediaryBanks.filter((b) => b.id !== ib.id),
+                                    }))
+                                  }
+                                  disabled={bankSaving}
+                                  className="text-xs text-danger hover:text-danger-hover disabled:opacity-50 transition-colors"
+                                >
+                                  {t('companies.removeIntermediaryBank')}
+                                </button>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                <div>
+                                  <label className="block text-xs text-muted-foreground mb-0.5">
+                                    {t('companies.bankName')}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={ib.bankName}
+                                    onChange={(e) =>
+                                      setEditBankData((prev) => ({
+                                        ...prev,
+                                        intermediaryBanks: prev.intermediaryBanks.map((b) =>
+                                          b.id === ib.id ? { ...b, bankName: e.target.value } : b,
+                                        ),
+                                      }))
+                                    }
+                                    className="w-full px-2 py-1 text-xs border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-muted-foreground mb-0.5">
+                                    {t('companies.accountNumber')}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={ib.accountNumber}
+                                    onChange={(e) =>
+                                      setEditBankData((prev) => ({
+                                        ...prev,
+                                        intermediaryBanks: prev.intermediaryBanks.map((b) =>
+                                          b.id === ib.id ? { ...b, accountNumber: e.target.value } : b,
+                                        ),
+                                      }))
+                                    }
+                                    className="w-full px-2 py-1 text-xs border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none font-mono"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-muted-foreground mb-0.5">
+                                    {t('companies.currency')}
+                                  </label>
+                                  <select
+                                    value={ib.currency}
+                                    onChange={(e) =>
+                                      setEditBankData((prev) => ({
+                                        ...prev,
+                                        intermediaryBanks: prev.intermediaryBanks.map((b) =>
+                                          b.id === ib.id ? { ...b, currency: e.target.value } : b,
+                                        ),
+                                      }))
+                                    }
+                                    className="w-full px-2 py-1 text-xs border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-card"
+                                  >
+                                    {CURRENCIES.map((c) => (
+                                      <option key={c} value={c}>{c}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
+                                <div>
+                                  <label className="block text-xs text-muted-foreground mb-0.5">
+                                    {t('companies.swiftCode')}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={ib.swiftCode}
+                                    onChange={(e) =>
+                                      setEditBankData((prev) => ({
+                                        ...prev,
+                                        intermediaryBanks: prev.intermediaryBanks.map((b) =>
+                                          b.id === ib.id ? { ...b, swiftCode: e.target.value } : b,
+                                        ),
+                                      }))
+                                    }
+                                    placeholder="BAGAGE22"
+                                    className="w-full px-2 py-1 text-xs border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none font-mono"
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-muted-foreground mb-0.5">
+                                    {t('companies.beneficiaryName')}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={ib.beneficiaryName}
+                                    onChange={(e) =>
+                                      setEditBankData((prev) => ({
+                                        ...prev,
+                                        intermediaryBanks: prev.intermediaryBanks.map((b) =>
+                                          b.id === ib.id ? { ...b, beneficiaryName: e.target.value } : b,
+                                        ),
+                                      }))
+                                    }
+                                    placeholder="Company LLC"
+                                    className="w-full px-2 py-1 text-xs border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
                       <button
                         type="button"
                         onClick={handleSaveEditBank}
@@ -1165,6 +1413,25 @@ function SettingsTab({
                             <span className="ml-2 font-sans text-accent">{ba.currency}</span>
                           )}
                         </p>
+                        {(ba.swiftCode || ba.beneficiaryName) && (
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {ba.swiftCode && (
+                              <span className="font-mono">{t('companies.swiftCode')}: {ba.swiftCode}</span>
+                            )}
+                            {ba.swiftCode && ba.beneficiaryName && (
+                              <span className="mx-1.5">&middot;</span>
+                            )}
+                            {ba.beneficiaryName && (
+                              <span>{t('companies.beneficiaryName')}: {ba.beneficiaryName}</span>
+                            )}
+                          </p>
+                        )}
+                        {ba.intermediaryBanks && ba.intermediaryBanks.length > 0 && (
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {t('companies.intermediaryBank')} ({ba.intermediaryBanks.length}):{' '}
+                            {ba.intermediaryBanks.map((ib) => ib.bankName).filter(Boolean).join(', ')}
+                          </p>
+                        )}
                       </div>
                       {ba.isDefault && (
                         <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-accent/10 text-accent">

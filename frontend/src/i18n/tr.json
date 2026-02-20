@@ -199,7 +199,12 @@
     "baseCurrency": "Temel Para Birimi",
     "currency": "Para Birimi",
     "editBankAccount": "Duzenle",
-    "saveBankAccount": "Kaydet"
+    "saveBankAccount": "Kaydet",
+    "swiftCode": "SWIFT/BIC",
+    "beneficiaryName": "Lehtar Adi",
+    "intermediaryBank": "Araci Banka",
+    "addIntermediaryBank": "Araci Banka Ekle",
+    "removeIntermediaryBank": "Araciyi Kaldir"
   },
   "contractors": {
     "title": "Yukleniciler",

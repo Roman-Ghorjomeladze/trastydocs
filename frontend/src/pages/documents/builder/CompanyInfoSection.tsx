@@ -32,6 +32,10 @@ export function CompanyInfoSection({
         value: ba.id,
         label: ba.bankName,
         sublabel: ba.accountNumber,
+        swift: ba.swiftCode || '',
+        beneficiary: ba.beneficiaryName || '',
+        currency: ba.currency || '',
+        hasIntermediary: (ba.intermediaryBanks?.length ?? 0) > 0,
       })),
     [bankAccounts],
   );
@@ -131,12 +135,23 @@ export function CompanyInfoSection({
                         : 'border-border bg-card text-muted-foreground hover:border-accent/50'
                     }`}
                   >
-                    <div>
-                      <span className={isSelected ? 'font-medium text-foreground' : ''}>{opt.label}</span>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className={isSelected ? 'font-medium text-foreground' : ''}>{opt.label}</span>
+                        {opt.currency && (
+                          <span className="text-xs text-accent font-medium">{opt.currency}</span>
+                        )}
+                      </div>
                       {opt.sublabel && (
-                        <span className="text-muted-foreground ml-1.5 text-xs font-mono">
+                        <div className="text-muted-foreground text-xs font-mono truncate">
                           {opt.sublabel}
-                        </span>
+                          {opt.swift && <span className="font-sans ml-1.5">SWIFT: {opt.swift}</span>}
+                        </div>
+                      )}
+                      {opt.beneficiary && (
+                        <div className="text-muted-foreground text-xs truncate">
+                          {labels.beneficiary}: {opt.beneficiary}
+                        </div>
                       )}
                     </div>
                     {isSelected && (

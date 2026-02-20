@@ -35,6 +35,7 @@ export function createEmptyInvoiceData(): InvoiceData {
     companyAddress: '',
     companyTaxId: '',
     companyBankAccounts: '',
+    selectedBankAccountIds: [],
     companyPhone: '',
     companyEmail: '',
 

@@ -487,38 +487,43 @@ export class DocumentsService {
 
   /**
    * Preview the next document number without incrementing the sequence.
+   * Format: DD/MM for first of the day, DD/MM-2, DD/MM-3, etc. for subsequent.
    */
   async previewNextDocumentNumber(companyId: string): Promise<string> {
-    const year = new Date().getFullYear();
-    const prefix = `DOC-${year}-`;
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const base = `${dd}/${mm}`;
 
-    const lastDoc = await this.prisma.document.findFirst({
+    // Check if the base number (DD/MM) is already taken
+    const baseExists = await this.prisma.document.findFirst({
+      where: { companyId, documentNumber: base },
+      select: { id: true },
+    });
+
+    if (!baseExists) {
+      return base;
+    }
+
+    // Find all documents with DD/MM-N suffix pattern
+    const suffixed = await this.prisma.document.findMany({
       where: {
         companyId,
-        documentNumber: { startsWith: prefix },
+        documentNumber: { startsWith: `${base}-` },
       },
-      orderBy: { documentNumber: 'desc' },
       select: { documentNumber: true },
     });
 
-    const lastCounter = lastDoc?.documentNumber
-      ? parseInt(lastDoc.documentNumber.replace(prefix, ''), 10) || 0
-      : 0;
+    let maxSuffix = 1; // base already exists, counts as 1
+    for (const doc of suffixed) {
+      const suffixStr = doc.documentNumber?.replace(`${base}-`, '') ?? '';
+      const num = parseInt(suffixStr, 10);
+      if (!isNaN(num) && num > maxSuffix) {
+        maxSuffix = num;
+      }
+    }
 
-    // Also check the sequence table for its current value
-    const seq = await this.prisma.documentSequence.findUnique({
-      where: {
-        companyId_prefix_year: {
-          companyId,
-          prefix: 'DOC',
-          year,
-        },
-      },
-      select: { counter: true },
-    });
-
-    const nextCounter = Math.max((seq?.counter ?? 0) + 1, lastCounter + 1);
-    return `DOC-${year}-${String(nextCounter).padStart(5, '0')}`;
+    return `${base}-${maxSuffix + 1}`;
   }
 
   /**
@@ -537,8 +542,8 @@ export class DocumentsService {
 
   /**
    * Increment the original document number for duplication.
-   * Parses the trailing numeric part, increments it, preserves zero-padding and prefix.
-   * Falls back to nextDocumentNumber if the original has no numeric suffix.
+   * For date-based numbers (DD/MM or DD/MM-N), generates a fresh number for today.
+   * For legacy numbers, parses trailing digits and increments them.
    */
   private async incrementDocumentNumber(
     tx: Prisma.TransactionClient,
@@ -546,7 +551,12 @@ export class DocumentsService {
     originalNumber: string,
     year: number,
   ): Promise<string> {
-    // Match trailing digits (e.g. "DOC-2026-00001" → prefix="DOC-2026-", digits="00001")
+    // Date-based format (DD/MM or DD/MM-N) → generate fresh for today
+    if (/^\d{2}\/\d{2}(-\d+)?$/.test(originalNumber)) {
+      return this.nextDocumentNumber(tx, companyId, year);
+    }
+
+    // Legacy: Match trailing digits (e.g. "DOC-2026-00001" → prefix="DOC-2026-", digits="00001")
     const match = originalNumber.match(/^(.*?)(\d+)$/);
     if (!match) {
       return this.nextDocumentNumber(tx, companyId, year);
@@ -574,54 +584,48 @@ export class DocumentsService {
   }
 
   /**
-   * Generate the next unique document number, handling out-of-sync sequences.
+   * Generate the next unique document number.
+   * Format: DD/MM for first of the day, DD/MM-2, DD/MM-3, etc. for subsequent.
    */
   private async nextDocumentNumber(
     tx: Prisma.TransactionClient,
     companyId: string,
-    year: number,
+    _year: number,
   ): Promise<string> {
-    const prefix = `DOC-${year}-`;
+    const now = new Date();
+    const dd = String(now.getDate()).padStart(2, '0');
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const base = `${dd}/${mm}`;
 
-    // Find the highest existing document number for this company/year
-    const lastDoc = await tx.document.findFirst({
+    // Check if the base number (DD/MM) is already taken
+    const baseExists = await tx.document.findFirst({
+      where: { companyId, documentNumber: base },
+      select: { id: true },
+    });
+
+    if (!baseExists) {
+      return base;
+    }
+
+    // Find all documents with DD/MM-N suffix pattern
+    const suffixed = await tx.document.findMany({
       where: {
         companyId,
-        documentNumber: { startsWith: prefix },
+        documentNumber: { startsWith: `${base}-` },
       },
-      orderBy: { documentNumber: 'desc' },
       select: { documentNumber: true },
     });
 
-    const lastCounter = lastDoc?.documentNumber
-      ? parseInt(lastDoc.documentNumber.replace(prefix, ''), 10) || 0
-      : 0;
-
-    // Upsert the sequence
-    const seq = await tx.documentSequence.upsert({
-      where: {
-        companyId_prefix_year: {
-          companyId,
-          prefix: 'DOC',
-          year,
-        },
-      },
-      create: { companyId, prefix: 'DOC', year, counter: lastCounter + 1 },
-      update: { counter: { increment: 1 } },
-    });
-
-    // Use whichever is higher: the sequence counter or lastCounter + 1
-    const nextCounter = Math.max(seq.counter, lastCounter + 1);
-
-    // Keep the sequence in sync if it fell behind
-    if (seq.counter < nextCounter) {
-      await tx.documentSequence.update({
-        where: { id: seq.id },
-        data: { counter: nextCounter },
-      });
+    let maxSuffix = 1; // base already exists, counts as 1
+    for (const doc of suffixed) {
+      const suffixStr = doc.documentNumber?.replace(`${base}-`, '') ?? '';
+      const num = parseInt(suffixStr, 10);
+      if (!isNaN(num) && num > maxSuffix) {
+        maxSuffix = num;
+      }
     }
 
-    return `DOC-${year}-${String(nextCounter).padStart(5, '0')}`;
+    return `${base}-${maxSuffix + 1}`;
   }
 
   async getDashboardStats(userId: string) {

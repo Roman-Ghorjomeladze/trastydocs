@@ -199,7 +199,12 @@
     "baseCurrency": "Base Currency",
     "currency": "Currency",
     "editBankAccount": "Edit",
-    "saveBankAccount": "Save"
+    "saveBankAccount": "Save",
+    "swiftCode": "SWIFT/BIC",
+    "beneficiaryName": "Beneficiary Name",
+    "intermediaryBank": "Intermediary Bank",
+    "addIntermediaryBank": "Add Intermediary Bank",
+    "removeIntermediaryBank": "Remove Intermediary"
   },
   "contractors": {
     "title": "Contractors",

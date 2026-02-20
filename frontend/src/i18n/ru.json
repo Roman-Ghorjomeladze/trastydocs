@@ -199,7 +199,12 @@
     "baseCurrency": "Базовая валюта",
     "currency": "Валюта",
     "editBankAccount": "Редактировать",
-    "saveBankAccount": "Сохранить"
+    "saveBankAccount": "Сохранить",
+    "swiftCode": "SWIFT/BIC",
+    "beneficiaryName": "Имя бенефициара",
+    "intermediaryBank": "Банк-посредник",
+    "addIntermediaryBank": "Добавить банк-посредник",
+    "removeIntermediaryBank": "Удалить посредника"
   },
   "contractors": {
     "title": "Контрагенты",

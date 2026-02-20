@@ -280,72 +280,37 @@ export const renderCompact: TemplateRenderFn = async (ctx) => {
     size: 10,
   });
 
-  y -= GAP;
+  // Save position after totals for two-column layout
+  const afterTotalsY = y;
 
-  // ── Amount in Words ──
-  if (isTransport && data.amountInWords) {
-    ensureSpace(20);
-    drawText(page, `${labels.amountInWords}: ${data.amountInWords}`, M, y, { size: 7, color: DARK });
-    y -= GAP + LH;
-  }
-
-  // ── Bank Accounts + Payment Terms + Notes (compact, side by side where possible) ──
-  const hasBank = !!data.companyBankAccounts;
-  const hasTerms = !!data.paymentTerms;
-  const hasNotes = !!data.notes;
-
-  if (hasBank) {
-    ensureSpace(30);
-    drawText(page, `${labels.paymentDetails}:`, M, y, { size: 7, bold: true, color: SLATE });
-    y -= LH;
-    y = drawMultiline(page, data.companyBankAccounts, M, y, { size: 7, color: DARK, lineHeight: LH });
-    y -= GAP;
-  }
-
-  if (hasTerms) {
-    ensureSpace(20);
-    drawText(page, `${labels.paymentTerms}:`, M, y, { size: 7, bold: true, color: SLATE });
-    y -= LH;
-    y = drawMultiline(page, data.paymentTerms, M, y, { size: 7, color: DARK, lineHeight: LH });
-    y -= GAP;
-  }
-
-  if (hasNotes) {
-    ensureSpace(20);
-    drawText(page, `${labels.notes}:`, M, y, { size: 7, bold: true, color: SLATE });
-    y -= LH;
-    y = drawMultiline(page, data.notes, M, y, { size: 7, color: DARK, lineHeight: LH });
-    y -= GAP;
-  }
-
-  // ── Signature & Stamp (compact) ──
+  // ── Right column: Signature & Stamp (below totals) ──
   const hasSignature = !!data.signatureImageUrl;
   const hasStamp = !!data.stampImageUrl;
+  let sigEndY = afterTotalsY;
 
   if (hasSignature || hasStamp || (isTransport && data.directorName)) {
-    const sigBlockX = PAGE_WIDTH - M - 180;
-    const sigBlockWidth = 180;
+    sigEndY -= 30; // separator spacing below totals
 
     const stampImage = hasStamp ? await ctx.embedImage(data.stampImageUrl) : null;
     const sigImage = hasSignature ? await ctx.embedImage(data.signatureImageUrl) : null;
 
-    const stampDims = stampImage ? stampImage.scaleToFit(120, 120) : null;
+    const stampDims = stampImage ? stampImage.scaleToFit(90, 90) : null;
     const sigDims = sigImage ? sigImage.scaleToFit(110, 55) : null;
 
-    const imageBlockHeight = Math.max(stampDims?.height ?? 0, sigDims?.height ?? 0, 60);
+    const hasBoth = !!(sigImage && sigDims && stampImage && stampDims);
+    const imgGap = hasBoth ? 10 : 0;
+    const sigBlockWidth = hasBoth
+      ? (sigDims?.width ?? 0) + imgGap + (stampDims?.width ?? 0)
+      : Math.max(sigDims?.width ?? 0, stampDims?.width ?? 0, 120);
+    const sigBlockX = PAGE_WIDTH - M - sigBlockWidth;
 
-    // Calculate actual space needed: images + gap + line + name + label
-    // Use tight check (no extra buffer) since this is the last section on the page
-    const neededSpace = imageBlockHeight + 8 + LH * 3;
-    if (y - neededSpace < M) {
-      page = ctx.addPage();
-      y = PAGE_HEIGHT - M;
-    }
-    const imageCenterY = y - imageBlockHeight / 2;
+    const imageBlockHeight = Math.max(stampDims?.height ?? 0, sigDims?.height ?? 0, 45);
+    const imageCenterY = sigEndY - imageBlockHeight / 2;
 
     if (sigImage && sigDims) {
+      const sigX = hasBoth ? sigBlockX : sigBlockX + (sigBlockWidth - sigDims.width) / 2;
       page.drawImage(sigImage, {
-        x: sigBlockX + (sigBlockWidth - sigDims.width) / 2,
+        x: sigX,
         y: imageCenterY - sigDims.height / 2,
         width: sigDims.width,
         height: sigDims.height,
@@ -353,8 +318,11 @@ export const renderCompact: TemplateRenderFn = async (ctx) => {
     }
 
     if (stampImage && stampDims) {
+      const stampX = hasBoth
+        ? sigBlockX + (sigDims?.width ?? 0) + imgGap
+        : sigBlockX + (sigBlockWidth - stampDims.width) / 2;
       page.drawImage(stampImage, {
-        x: sigBlockX + (sigBlockWidth - stampDims.width) / 2,
+        x: stampX,
         y: imageCenterY - stampDims.height / 2,
         width: stampDims.width,
         height: stampDims.height,
@@ -362,33 +330,70 @@ export const renderCompact: TemplateRenderFn = async (ctx) => {
       });
     }
 
-    y -= imageBlockHeight + 6;
+    sigEndY -= imageBlockHeight + 6;
 
     page.drawLine({
-      start: { x: sigBlockX + 10, y },
-      end: { x: sigBlockX + sigBlockWidth - 10, y },
+      start: { x: sigBlockX + 10, y: sigEndY },
+      end: { x: sigBlockX + sigBlockWidth - 10, y: sigEndY },
       thickness: 0.5,
       color: SLATE,
     });
-    y -= LH;
+    sigEndY -= LH;
 
     const signerDisplayName = data.signerName || (isTransport ? data.directorName : '');
     if (signerDisplayName) {
       const nameWidth = textWidth(signerDisplayName, 7, false);
-      drawText(page, signerDisplayName, sigBlockX + (sigBlockWidth - nameWidth) / 2, y, {
+      drawText(page, signerDisplayName, sigBlockX + (sigBlockWidth - nameWidth) / 2, sigEndY, {
         size: 7,
         color: DARK,
       });
-      y -= LH;
+      sigEndY -= LH;
     }
 
     if (isTransport && data.directorName) {
       const dirLabel = labels.directorName;
       const dirLabelWidth = textWidth(dirLabel, 6, false);
-      drawText(page, dirLabel, sigBlockX + (sigBlockWidth - dirLabelWidth) / 2, y, {
+      drawText(page, dirLabel, sigBlockX + (sigBlockWidth - dirLabelWidth) / 2, sigEndY, {
         size: 6,
         color: GRAY,
       });
+      sigEndY -= LH;
     }
   }
+
+  // ── Left column: remaining sections ──
+  y = afterTotalsY - GAP;
+
+  if (isTransport && data.amountInWords) {
+    drawText(page, `${labels.amountInWords}: ${data.amountInWords}`, M, y, { size: 7, color: DARK });
+    y -= GAP + LH;
+  }
+
+  const hasBank = !!data.companyBankAccounts;
+  const hasTerms = !!data.paymentTerms;
+  const hasNotes = !!data.notes;
+
+  if (hasBank) {
+    drawText(page, `${labels.paymentDetails}:`, M, y, { size: 7, bold: true, color: SLATE });
+    y -= LH;
+    y = drawMultiline(page, data.companyBankAccounts, M, y, { size: 7, color: DARK, lineHeight: LH });
+    y -= GAP;
+  }
+
+  if (hasTerms) {
+    drawText(page, `${labels.paymentTerms}:`, M, y, { size: 7, bold: true, color: SLATE });
+    y -= LH;
+    y = drawMultiline(page, data.paymentTerms, M, y, { size: 7, color: DARK, lineHeight: LH });
+    y -= GAP;
+  }
+
+  if (hasNotes) {
+    drawText(page, `${labels.notes}:`, M, y, { size: 7, bold: true, color: SLATE });
+    y -= LH;
+    y = drawMultiline(page, data.notes, M, y, { size: 7, color: DARK, lineHeight: LH });
+    y -= GAP;
+  }
+
+  // Continue from whichever column ended lower
+  y = Math.min(y, sigEndY);
 };

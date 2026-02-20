@@ -121,7 +121,7 @@ export function InvoiceHeaderSection({ data, labels, onChange, total }: Props) {
             type="text"
             value={data.invoiceNumber}
             onChange={(e) => onChange('invoiceNumber', e.target.value)}
-            placeholder="INV-2026-001"
+            placeholder="21/02"
             className="w-full px-3 py-2 border border-border rounded-lg text-sm font-mono focus:ring-2 focus:ring-accent focus:border-accent outline-none"
           />
         </div>

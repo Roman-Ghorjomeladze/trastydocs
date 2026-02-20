@@ -327,6 +327,83 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
     size: 13,
   });
 
+  // ── Right column: Signature & Stamp (below totals) ──
+  const hasSignature = !!data.signatureImageUrl;
+  const hasStamp = !!data.stampImageUrl;
+
+  if (hasSignature || hasStamp || (isTransport && data.directorName)) {
+    totalsY -= 32; // separator spacing below totals
+
+    const stampImage = hasStamp ? await ctx.embedImage(data.stampImageUrl) : null;
+    const sigImage = hasSignature ? await ctx.embedImage(data.signatureImageUrl) : null;
+
+    const stampDims = stampImage ? stampImage.scaleToFit(90, 90) : null;
+    const sigDims = sigImage ? sigImage.scaleToFit(110, 55) : null;
+
+    const hasBoth = !!(sigImage && sigDims && stampImage && stampDims);
+    const imgGap = hasBoth ? 10 : 0;
+    const sigBlockWidth = hasBoth
+      ? (sigDims?.width ?? 0) + imgGap + (stampDims?.width ?? 0)
+      : Math.max(sigDims?.width ?? 0, stampDims?.width ?? 0, 120);
+    const sigBlockX = PAGE_WIDTH - MARGIN - sigBlockWidth;
+
+    const imageBlockHeight = Math.max(stampDims?.height ?? 0, sigDims?.height ?? 0, 45);
+    const imageCenterY = totalsY - imageBlockHeight / 2;
+
+    if (sigImage && sigDims) {
+      const sigX = hasBoth ? sigBlockX : sigBlockX + (sigBlockWidth - sigDims.width) / 2;
+      page.drawImage(sigImage, {
+        x: sigX,
+        y: imageCenterY - sigDims.height / 2,
+        width: sigDims.width,
+        height: sigDims.height,
+      });
+    }
+
+    if (stampImage && stampDims) {
+      const stampX = hasBoth
+        ? sigBlockX + (sigDims?.width ?? 0) + imgGap
+        : sigBlockX + (sigBlockWidth - stampDims.width) / 2;
+      page.drawImage(stampImage, {
+        x: stampX,
+        y: imageCenterY - stampDims.height / 2,
+        width: stampDims.width,
+        height: stampDims.height,
+        opacity: 0.85,
+      });
+    }
+
+    totalsY -= imageBlockHeight + 6;
+
+    page.drawLine({
+      start: { x: sigBlockX + 10, y: totalsY },
+      end: { x: sigBlockX + sigBlockWidth - 10, y: totalsY },
+      thickness: 0.5,
+      color: GRAY,
+    });
+    totalsY -= LINE_HEIGHT;
+
+    const signerDisplayName = data.signerName || (isTransport ? data.directorName : '');
+    if (signerDisplayName) {
+      const nameWidth = textWidth(signerDisplayName, 9, false);
+      drawText(page, signerDisplayName, sigBlockX + (sigBlockWidth - nameWidth) / 2, totalsY, {
+        size: 9,
+        color: DARK,
+      });
+      totalsY -= LINE_HEIGHT;
+    }
+
+    if (isTransport && data.directorName) {
+      const dirLabel = labels.directorName;
+      const dirLabelWidth = textWidth(dirLabel, 8, false);
+      drawText(page, dirLabel, sigBlockX + (sigBlockWidth - dirLabelWidth) / 2, totalsY, {
+        size: 8,
+        color: GRAY,
+      });
+      totalsY -= LINE_HEIGHT;
+    }
+  }
+
   // ── Left column: Amount in words + Bank accounts ──
   let leftY = sectionStartY;
 
@@ -386,78 +463,4 @@ export const renderClassic: TemplateRenderFn = async (ctx) => {
     y -= SECTION_GAP + 4;
   }
 
-  // ── Signature & Stamp Section ──
-  const hasSignature = !!data.signatureImageUrl;
-  const hasStamp = !!data.stampImageUrl;
-
-  if (hasSignature || hasStamp || (isTransport && data.directorName)) {
-    const sigBlockX = PAGE_WIDTH - MARGIN - 220;
-    const sigBlockWidth = 220;
-
-    const stampImage = hasStamp ? await ctx.embedImage(data.stampImageUrl) : null;
-    const sigImage = hasSignature ? await ctx.embedImage(data.signatureImageUrl) : null;
-
-    const stampDims = stampImage ? stampImage.scaleToFit(120, 120) : null;
-    const sigDims = sigImage ? sigImage.scaleToFit(140, 70) : null;
-
-    const imageBlockHeight = Math.max(stampDims?.height ?? 0, sigDims?.height ?? 0, 60);
-
-    // Calculate actual space needed: images + gap + line + name + label
-    // Use tight check (no extra buffer) since this is the last section on the page
-    const neededSpace = imageBlockHeight + 8 + LINE_HEIGHT * 2;
-    if (y - neededSpace < MARGIN) {
-      page = ctx.addPage();
-      y = PAGE_HEIGHT - MARGIN;
-    }
-
-    const imageCenterY = y - imageBlockHeight / 2;
-
-    if (sigImage && sigDims) {
-      page.drawImage(sigImage, {
-        x: sigBlockX + (sigBlockWidth - sigDims.width) / 2,
-        y: imageCenterY - sigDims.height / 2,
-        width: sigDims.width,
-        height: sigDims.height,
-      });
-    }
-
-    if (stampImage && stampDims) {
-      page.drawImage(stampImage, {
-        x: sigBlockX + (sigBlockWidth - stampDims.width) / 2,
-        y: imageCenterY - stampDims.height / 2,
-        width: stampDims.width,
-        height: stampDims.height,
-        opacity: 0.85,
-      });
-    }
-
-    y -= imageBlockHeight + 8;
-
-    page.drawLine({
-      start: { x: sigBlockX + 10, y },
-      end: { x: sigBlockX + sigBlockWidth - 10, y },
-      thickness: 0.5,
-      color: GRAY,
-    });
-    y -= LINE_HEIGHT;
-
-    const signerDisplayName = data.signerName || (isTransport ? data.directorName : '');
-    if (signerDisplayName) {
-      const nameWidth = textWidth(signerDisplayName, 9, false);
-      drawText(page, signerDisplayName, sigBlockX + (sigBlockWidth - nameWidth) / 2, y, {
-        size: 9,
-        color: DARK,
-      });
-      y -= LINE_HEIGHT;
-    }
-
-    if (isTransport && data.directorName) {
-      const dirLabel = labels.directorName;
-      const dirLabelWidth = textWidth(dirLabel, 8, false);
-      drawText(page, dirLabel, sigBlockX + (sigBlockWidth - dirLabelWidth) / 2, y, {
-        size: 8,
-        color: GRAY,
-      });
-    }
-  }
 };

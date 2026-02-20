@@ -21,12 +21,24 @@ export interface BankAccount {
   accountNumber: string;
 }
 
+export interface IntermediaryBankAccount {
+  id: string;
+  bankName: string;
+  accountNumber: string;
+  currency: string;
+  swiftCode: string;
+  beneficiaryName: string;
+}
+
 export interface CompanyBankAccount {
   id: string;
   bankName: string;
   accountNumber: string;
   currency: string;
+  swiftCode: string;
+  beneficiaryName: string;
   isDefault: boolean;
+  intermediaryBanks: IntermediaryBankAccount[];
 }
 
 export type Translations = Record<string, string>;
@@ -250,6 +262,7 @@ export interface InvoiceData {
   companyAddress: string;
   companyTaxId: string;
   companyBankAccounts: string;
+  selectedBankAccountIds: string[];
   companyPhone: string;
   companyEmail: string;
 

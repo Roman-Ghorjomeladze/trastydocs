@@ -1,11 +1,23 @@
 import { z } from 'zod';
 
+const IntermediaryBankAccountSchema = z.object({
+  id: z.string(),
+  bankName: z.string().min(1).max(255),
+  accountNumber: z.string().min(1).max(100),
+  currency: z.string().min(2).max(5).default('GEL'),
+  swiftCode: z.string().max(11).default(''),
+  beneficiaryName: z.string().max(255).default(''),
+});
+
 const BankAccountSchema = z.object({
   id: z.string(),
   bankName: z.string().min(1).max(255),
   accountNumber: z.string().min(1).max(100),
   currency: z.string().min(2).max(5).default('GEL'),
+  swiftCode: z.string().max(11).default(''),
+  beneficiaryName: z.string().max(255).default(''),
   isDefault: z.boolean().default(false),
+  intermediaryBanks: z.array(IntermediaryBankAccountSchema).default([]),
 });
 
 const TranslationsSchema = z.record(z.string(), z.string().max(500)).optional();

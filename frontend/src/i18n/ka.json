@@ -199,7 +199,12 @@
     "baseCurrency": "საბაზისო ვალუტა",
     "currency": "ვალუტა",
     "editBankAccount": "რედაქტირება",
-    "saveBankAccount": "შენახვა"
+    "saveBankAccount": "შენახვა",
+    "swiftCode": "SWIFT/BIC",
+    "beneficiaryName": "ბენეფიციარის სახელი",
+    "intermediaryBank": "შუამავალი ბანკი",
+    "addIntermediaryBank": "შუამავალი ბანკის დამატება",
+    "removeIntermediaryBank": "შუამავლის წაშლა"
   },
   "contractors": {
     "title": "კონტრაქტორები",

@@ -19,6 +19,9 @@ export interface InvoiceLabels {
   email: string;
   taxId: string;
   bankAccounts: string;
+  beneficiary: string;
+  swiftCode: string;
+  intermediaryBank: string;
   identificationCode: string;
   bankCode: string;
   accountNumber: string;
@@ -106,7 +109,10 @@ const en: InvoiceLabels = {
   phone: 'Phone',
   email: 'Email',
   taxId: 'Tax ID',
-  bankAccounts: 'Bank Accounts',
+  bankAccounts: 'Bank Account',
+  beneficiary: 'Beneficiary',
+  swiftCode: 'SWIFT/BIC',
+  intermediaryBank: 'Intermediary Bank',
   identificationCode: 'Identification Code',
   bankCode: 'Bank Code',
   accountNumber: 'Account Number',
@@ -184,7 +190,10 @@ const ru: InvoiceLabels = {
   phone: 'Телефон',
   email: 'Эл. почта',
   taxId: 'ИНН',
-  bankAccounts: 'Банковские реквизиты',
+  bankAccounts: 'Банк',
+  beneficiary: 'Бенефициар',
+  swiftCode: 'SWIFT/BIC',
+  intermediaryBank: 'Банк-посредник',
   identificationCode: 'Идентификационный код',
   bankCode: 'Код банка',
   accountNumber: 'Номер счёта',
@@ -262,7 +271,10 @@ const ka: InvoiceLabels = {
   phone: 'ტელეფონი',
   email: 'ელ. ფოსტა',
   taxId: 'საიდენტიფიკაციო კოდი',
-  bankAccounts: 'საბანკო რეკვიზიტები',
+  bankAccounts: 'ბანკი',
+  beneficiary: 'ბენეფიციარი',
+  swiftCode: 'SWIFT/BIC',
+  intermediaryBank: 'შუამავალი ბანკი',
   identificationCode: 'საიდენტიფიკაციო კოდი',
   bankCode: 'ბანკის კოდი',
   accountNumber: 'ანგარიშის ნომერი',
@@ -340,7 +352,10 @@ const tr: InvoiceLabels = {
   phone: 'Telefon',
   email: 'E-posta',
   taxId: 'Vergi Numarası',
-  bankAccounts: 'Banka Hesapları',
+  bankAccounts: 'Banka Hesabı',
+  beneficiary: 'Lehtar',
+  swiftCode: 'SWIFT/BIC',
+  intermediaryBank: 'Aracı Banka',
   identificationCode: 'Kimlik Kodu',
   bankCode: 'Banka Kodu',
   accountNumber: 'Hesap Numarası',

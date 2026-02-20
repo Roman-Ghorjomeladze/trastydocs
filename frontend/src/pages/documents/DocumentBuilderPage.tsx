@@ -19,7 +19,7 @@ import { getContractor } from '../../api/contractors.ts';
 import { getInvoiceLabels } from '../../lib/invoice-i18n.ts';
 import type { InvoiceLanguage } from '../../lib/invoice-i18n.ts';
 import { exportInvoicePdf } from '../../lib/pdf-export.ts';
-import type { InvoiceData, InvoiceLineItem, Document, SignatureAsset } from '../../types/index.ts';
+import type { InvoiceData, InvoiceLineItem, Document, SignatureAsset, CompanyBankAccount } from '../../types/index.ts';
 import { InvoiceHeaderSection } from './builder/InvoiceHeaderSection.tsx';
 import { CompanyInfoSection } from './builder/CompanyInfoSection.tsx';
 import { BuyerInfoSection } from './builder/BuyerInfoSection.tsx';
@@ -36,8 +36,42 @@ interface SectionDef {
   label: string;
 }
 
+/**
+ * Serialize selected bank accounts into a multi-line string for the PDF.
+ * Labels use the **invoice language** so they render correctly in the document.
+ */
+function serializeBankAccounts(
+  banks: CompanyBankAccount[],
+  invoiceLang: string,
+): string {
+  const l = getInvoiceLabels((invoiceLang || 'en') as InvoiceLanguage);
+  return banks
+    .map((ba) => {
+      const lines: string[] = [];
+      if (ba.beneficiaryName) lines.push(`${l.beneficiary}: ${ba.beneficiaryName}`);
+      lines.push(`${l.bankAccounts}: ${ba.bankName}`);
+      lines.push(`${l.accountNumber}: ${ba.accountNumber}`);
+      if (ba.swiftCode) lines.push(`${l.swiftCode}: ${ba.swiftCode}`);
+      if (ba.currency) lines.push(`${l.currency}: ${ba.currency}`);
+      // Intermediary banks
+      if (ba.intermediaryBanks?.length) {
+        for (const ib of ba.intermediaryBanks) {
+          lines.push('');
+          lines.push(`${l.intermediaryBank}:`);
+          if (ib.beneficiaryName) lines.push(`  ${l.beneficiary}: ${ib.beneficiaryName}`);
+          lines.push(`  ${l.bankAccounts}: ${ib.bankName}`);
+          lines.push(`  ${l.accountNumber}: ${ib.accountNumber}`);
+          if (ib.swiftCode) lines.push(`  ${l.swiftCode}: ${ib.swiftCode}`);
+          if (ib.currency) lines.push(`  ${l.currency}: ${ib.currency}`);
+        }
+      }
+      return lines.join('\n');
+    })
+    .join('\n\n');
+}
+
 export function DocumentBuilderPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { companyId, documentId } = useParams<{
     companyId: string;
     documentId: string;
@@ -66,10 +100,10 @@ export function DocumentBuilderPage() {
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  // Compute i18n labels from language
+  // UI labels in the site language (what the user sees in the builder)
   const labels = useMemo(
-    () => getInvoiceLabels((invoiceData.language || 'en') as InvoiceLanguage),
-    [invoiceData.language],
+    () => getInvoiceLabels((i18n.language || 'en') as InvoiceLanguage),
+    [i18n.language],
   );
 
   // Build dynamic sections based on document type
@@ -179,19 +213,41 @@ export function DocumentBuilderPage() {
 
         // Always populate seller from the active company (using translated name/address)
         if (activeCompany) {
-          // Auto-select default bank account(s)
           const companyBanks = activeCompany.bankAccounts ?? [];
-          const defaultBanks = companyBanks.filter((ba) => ba.isDefault);
-          const defaultIds = defaultBanks.map((ba) => ba.id);
-          const bankStr = defaultBanks
-            .map((ba) => `${ba.bankName}: ${ba.accountNumber}`)
-            .join('\n');
 
           // Resolve translated company name & address
           const nameTranslations = activeCompany.nameTranslations as Record<string, string> | undefined;
           const addressTranslations = activeCompany.addressTranslations as Record<string, string> | undefined;
           const companyName = nameTranslations?.[docLang] || activeCompany.name || '';
           const companyAddress = addressTranslations?.[docLang] || activeCompany.address || '';
+
+          // Restore saved bank account selection, or fall back to defaults
+          const savedIds = Array.isArray(data.selectedBankAccountIds)
+            ? (data.selectedBankAccountIds as string[])
+            : null;
+
+          let bankIds: string[];
+          if (savedIds && savedIds.length > 0) {
+            // Use saved selection (filter out any IDs that no longer exist)
+            bankIds = savedIds.filter((id) => companyBanks.some((ba) => ba.id === id));
+          } else if (!data.companyBankAccounts) {
+            // New document — select defaults
+            const defaultBanks = companyBanks.filter((ba) => ba.isDefault);
+            bankIds = defaultBanks.map((ba) => ba.id);
+          } else {
+            // Has manual bank text but no saved IDs (legacy) — leave IDs empty
+            bankIds = [];
+          }
+
+          setSelectedBankAccountIds(bankIds);
+
+          // Re-serialize from the resolved IDs so text matches selection
+          const selectedBanks = bankIds
+            .map((id) => companyBanks.find((ba) => ba.id === id))
+            .filter((ba): ba is CompanyBankAccount => Boolean(ba));
+          const bankStr = selectedBanks.length > 0
+            ? serializeBankAccounts(selectedBanks, docLang)
+            : data.companyBankAccounts || '';
 
           data = {
             ...data,
@@ -200,13 +256,9 @@ export function DocumentBuilderPage() {
             companyTaxId: activeCompany.taxId || '',
             companyPhone: activeCompany.phone || '',
             companyEmail: activeCompany.email || '',
-            companyBankAccounts: data.companyBankAccounts || bankStr,
+            companyBankAccounts: bankStr,
+            selectedBankAccountIds: bankIds,
           };
-
-          // Only set default selection if no bank accounts are already in the data
-          if (!data.companyBankAccounts || data.companyBankAccounts === bankStr) {
-            setSelectedBankAccountIds(defaultIds);
-          }
         }
 
         // Recalculate totals
@@ -311,6 +363,17 @@ export function DocumentBuilderPage() {
             next.buyerName = nameT?.[newLang] || buyer.name || '';
             next.buyerAddress = addrT?.[newLang] || buyer.address || '';
           }
+
+          // Re-serialize bank accounts with new language labels
+          if (activeCompany) {
+            const companyBanks = activeCompany.bankAccounts ?? [];
+            const selectedBanks = selectedBankAccountIds
+              .map((id) => companyBanks.find((ba) => ba.id === id))
+              .filter((ba): ba is CompanyBankAccount => Boolean(ba));
+            if (selectedBanks.length > 0) {
+              next.companyBankAccounts = serializeBankAccounts(selectedBanks, newLang);
+            }
+          }
         }
 
         const totals = calculateTotals(next);
@@ -327,7 +390,7 @@ export function DocumentBuilderPage() {
         return updated;
       });
     },
-    [saveToServer, activeCompany, doc],
+    [saveToServer, activeCompany, doc, selectedBankAccountIds],
   );
 
   // Line items change handler
@@ -381,17 +444,15 @@ export function DocumentBuilderPage() {
           ? prev.filter((id) => id !== bankId)
           : [...prev, bankId];
 
-        // Serialize selected bank accounts into the companyBankAccounts string
+        // Serialize selected bank accounts using invoice-language labels
         const companyBanks = activeCompany?.bankAccounts ?? [];
-        const bankStr = next
+        const selectedBanks = next
           .map((id) => companyBanks.find((ba) => ba.id === id))
-          .filter(Boolean)
-          .map((ba) => `${ba!.bankName}: ${ba!.accountNumber}`)
-          .join('\n');
+          .filter((ba): ba is CompanyBankAccount => Boolean(ba));
 
-        // Update invoice data with the serialized bank accounts
         setInvoiceData((prevData) => {
-          const updated = { ...prevData, companyBankAccounts: bankStr };
+          const bankStr = serializeBankAccounts(selectedBanks, prevData.language);
+          const updated = { ...prevData, companyBankAccounts: bankStr, selectedBankAccountIds: next };
 
           setHasUnsavedChanges(true);
           if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -452,13 +513,11 @@ export function DocumentBuilderPage() {
       const companyBanks = freshCompany.bankAccounts ?? [];
       const defaultBanks = companyBanks.filter((ba) => ba.isDefault);
       const defaultIds = defaultBanks.map((ba) => ba.id);
-      const bankStr = defaultBanks
-        .map((ba) => `${ba.bankName}: ${ba.accountNumber}`)
-        .join('\n');
 
       setSelectedBankAccountIds(defaultIds);
 
       setInvoiceData((prev) => {
+        const bankStr = serializeBankAccounts(defaultBanks, prev.language);
         const updated = {
           ...prev,
           companyName,
@@ -467,6 +526,7 @@ export function DocumentBuilderPage() {
           companyPhone: freshCompany.phone || '',
           companyEmail: freshCompany.email || '',
           companyBankAccounts: bankStr,
+          selectedBankAccountIds: defaultIds,
         };
 
         setHasUnsavedChanges(true);
