@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import type { NestExpressApplication } from '@nestjs/platform-express';
+import express from 'express';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import { AppModule } from './app.module.js';
@@ -10,8 +11,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    rawBody: true,
-    bodyParser: false, // Disable default body parsers (100KB limit) — we register our own below with 5MB
+    bodyParser: false, // We register our own body parsers below with a higher limit
   });
 
   app.use(
@@ -24,10 +24,19 @@ async function bootstrap() {
 
   app.setGlobalPrefix('api');
 
-  // Increase JSON body limit to 5MB (default is 100KB)
-  // Needed for base64-encoded PDF uploads, signatures, stamps, etc.
-  app.useBodyParser('json', { limit: '5mb' });
-  app.useBodyParser('urlencoded', { limit: '5mb', extended: true });
+  // Register body parsers with 20MB limit (default is 100KB).
+  // Stamps and signatures are sent as base64-encoded PNGs after canvas processing
+  // (removeWhiteBackground), which can inflate a 200KB JPEG to 5-10MB+ as PNG base64.
+  // The verify callback captures the raw body buffer for Paddle webhook signature verification.
+  app.use(
+    express.json({
+      limit: '20mb',
+      verify: (req: any, _res, buf) => {
+        req.rawBody = buf;
+      },
+    }),
+  );
+  app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
   app.use(cookieParser());
 
