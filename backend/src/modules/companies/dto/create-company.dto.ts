@@ -4,6 +4,7 @@ const BankAccountSchema = z.object({
   id: z.string(),
   bankName: z.string().min(1).max(255),
   accountNumber: z.string().min(1).max(100),
+  currency: z.string().min(2).max(5).default('GEL'),
   isDefault: z.boolean().default(false),
 });
 

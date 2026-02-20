@@ -196,7 +196,10 @@
     "translationsHelp": "Provide the company name and address in different languages for multilingual invoices.",
     "confirmRemoveBank": "Are you sure you want to remove this bank account?",
     "removeBankTitle": "Remove Bank Account",
-    "baseCurrency": "Base Currency"
+    "baseCurrency": "Base Currency",
+    "currency": "Currency",
+    "editBankAccount": "Edit",
+    "saveBankAccount": "Save"
   },
   "contractors": {
     "title": "Contractors",

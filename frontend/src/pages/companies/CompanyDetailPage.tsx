@@ -11,6 +11,7 @@ import {
 } from '../../lib/constants.ts';
 import { cn, formatDate, getInitials } from '../../lib/utils.ts';
 import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
+import { CURRENCIES } from '../documents/builder/InvoiceHeaderSection.tsx';
 import type {
   Company,
   CompanyBankAccount,
@@ -680,7 +681,12 @@ function SettingsTab({
   const [showAddBank, setShowAddBank] = useState(false);
   const [newBankName, setNewBankName] = useState('');
   const [newAccountNumber, setNewAccountNumber] = useState('');
+  const [newBankCurrency, setNewBankCurrency] = useState(company.baseCurrency ?? 'GEL');
   const [bankSaving, setBankSaving] = useState(false);
+
+  // Inline editing state
+  const [editingBankId, setEditingBankId] = useState<string | null>(null);
+  const [editBankData, setEditBankData] = useState<{ bankName: string; accountNumber: string; currency: string }>({ bankName: '', accountNumber: '', currency: '' });
 
   // Translations state
   const LANGS = [
@@ -766,12 +772,34 @@ function SettingsTab({
       id: crypto.randomUUID(),
       bankName: newBankName.trim(),
       accountNumber: newAccountNumber.trim(),
+      currency: newBankCurrency,
       isDefault: isFirst,
     };
     await saveBankAccounts([...bankAccounts, newAccount]);
     setNewBankName('');
     setNewAccountNumber('');
+    setNewBankCurrency(company.baseCurrency ?? 'GEL');
     setShowAddBank(false);
+  };
+
+  const handleStartEditBank = (ba: CompanyBankAccount) => {
+    setEditingBankId(ba.id);
+    setEditBankData({ bankName: ba.bankName, accountNumber: ba.accountNumber, currency: ba.currency || company.baseCurrency || 'GEL' });
+  };
+
+  const handleSaveEditBank = async () => {
+    if (!editingBankId || !editBankData.bankName.trim() || !editBankData.accountNumber.trim()) return;
+    const updated = bankAccounts.map((ba) =>
+      ba.id === editingBankId
+        ? { ...ba, bankName: editBankData.bankName.trim(), accountNumber: editBankData.accountNumber.trim(), currency: editBankData.currency }
+        : ba,
+    );
+    await saveBankAccounts(updated);
+    setEditingBankId(null);
+  };
+
+  const handleCancelEditBank = () => {
+    setEditingBankId(null);
   };
 
   const handleRemoveBankAccount = (id: string) => {
@@ -889,7 +917,7 @@ function SettingsTab({
               onChange={(e) => setBaseCurrency(e.target.value)}
               className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-card"
             >
-              {['USD', 'EUR', 'GBP', 'ILS', 'GEL', 'JPY', 'CAD', 'AUD', 'CHF'].map((c) => (
+              {CURRENCIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
             </select>
@@ -997,7 +1025,7 @@ function SettingsTab({
 
         {showAddBank && (
           <div className="mb-4 p-4 border border-border rounded-lg bg-muted">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   {t('companies.bankName')}
@@ -1023,6 +1051,20 @@ function SettingsTab({
                   className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none font-mono"
                 />
               </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  {t('companies.currency')}
+                </label>
+                <select
+                  value={newBankCurrency}
+                  onChange={(e) => setNewBankCurrency(e.target.value)}
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-card"
+                >
+                  {CURRENCIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div className="mt-3">
               <button
@@ -1046,43 +1088,120 @@ function SettingsTab({
             {bankAccounts.map((ba) => (
               <div
                 key={ba.id}
-                className="flex items-center justify-between p-3 border border-border rounded-lg"
+                className="p-3 border border-border rounded-lg"
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">
-                      {ba.bankName}
-                    </p>
-                    <p className="text-xs text-muted-foreground font-mono truncate">
-                      {ba.accountNumber}
-                    </p>
+                {editingBankId === ba.id ? (
+                  /* ── Inline edit mode ── */
+                  <div>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">
+                          {t('companies.bankName')}
+                        </label>
+                        <input
+                          type="text"
+                          value={editBankData.bankName}
+                          onChange={(e) => setEditBankData((prev) => ({ ...prev, bankName: e.target.value }))}
+                          className="w-full px-3 py-1.5 text-sm border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                          autoFocus
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">
+                          {t('companies.accountNumber')}
+                        </label>
+                        <input
+                          type="text"
+                          value={editBankData.accountNumber}
+                          onChange={(e) => setEditBankData((prev) => ({ ...prev, accountNumber: e.target.value }))}
+                          className="w-full px-3 py-1.5 text-sm border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none font-mono"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-muted-foreground mb-1">
+                          {t('companies.currency')}
+                        </label>
+                        <select
+                          value={editBankData.currency}
+                          onChange={(e) => setEditBankData((prev) => ({ ...prev, currency: e.target.value }))}
+                          className="w-full px-3 py-1.5 text-sm border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none bg-card"
+                        >
+                          {CURRENCIES.map((c) => (
+                            <option key={c} value={c}>{c}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveEditBank}
+                        disabled={bankSaving || !editBankData.bankName.trim() || !editBankData.accountNumber.trim()}
+                        className="px-3 py-1 text-xs bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors"
+                      >
+                        {bankSaving ? t('companies.saving') : t('companies.saveBankAccount')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelEditBank}
+                        disabled={bankSaving}
+                        className="px-3 py-1 text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 transition-colors"
+                      >
+                        {t('common.cancel')}
+                      </button>
+                    </div>
                   </div>
-                  {ba.isDefault && (
-                    <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-accent/10 text-accent">
-                      {t('companies.defaultAccount')}
-                    </span>
-                  )}
-                </div>
-                <div className="flex items-center gap-2 shrink-0 ml-3">
-                  {!ba.isDefault && (
-                    <button
-                      type="button"
-                      onClick={() => handleSetDefaultBank(ba.id)}
-                      disabled={bankSaving}
-                      className="text-xs text-accent hover:text-accent-hover font-medium disabled:opacity-50"
-                    >
-                      {t('companies.setDefault')}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveBankAccount(ba.id)}
-                    disabled={bankSaving}
-                    className="text-xs text-danger hover:text-danger-hover disabled:opacity-50"
-                  >
-                    {t('companies.removeBankAccount')}
-                  </button>
-                </div>
+                ) : (
+                  /* ── Display mode ── */
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">
+                          {ba.bankName}
+                        </p>
+                        <p className="text-xs text-muted-foreground font-mono truncate">
+                          {ba.accountNumber}
+                          {ba.currency && (
+                            <span className="ml-2 font-sans text-accent">{ba.currency}</span>
+                          )}
+                        </p>
+                      </div>
+                      {ba.isDefault && (
+                        <span className="shrink-0 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-accent/10 text-accent">
+                          {t('companies.defaultAccount')}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 ml-3">
+                      <button
+                        type="button"
+                        onClick={() => handleStartEditBank(ba)}
+                        disabled={bankSaving}
+                        className="text-xs text-accent hover:text-accent-hover font-medium disabled:opacity-50"
+                      >
+                        {t('companies.editBankAccount')}
+                      </button>
+                      {!ba.isDefault && (
+                        <button
+                          type="button"
+                          onClick={() => handleSetDefaultBank(ba.id)}
+                          disabled={bankSaving}
+                          className="text-xs text-accent hover:text-accent-hover font-medium disabled:opacity-50"
+                        >
+                          {t('companies.setDefault')}
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveBankAccount(ba.id)}
+                        disabled={bankSaving}
+                        className="text-xs text-danger hover:text-danger-hover disabled:opacity-50"
+                      >
+                        {t('companies.removeBankAccount')}
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>

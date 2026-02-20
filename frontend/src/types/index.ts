@@ -25,6 +25,7 @@ export interface CompanyBankAccount {
   id: string;
   bankName: string;
   accountNumber: string;
+  currency: string;
   isDefault: boolean;
 }
 

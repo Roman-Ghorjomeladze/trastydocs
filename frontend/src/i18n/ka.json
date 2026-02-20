@@ -196,7 +196,10 @@
     "translationsHelp": "მიუთითეთ კომპანიის სახელი და მისამართი სხვადასხვა ენაზე მრავალენოვანი ინვოისებისთვის.",
     "confirmRemoveBank": "დარწმუნებული ხართ, რომ გსურთ ამ საბანკო ანგარიშის წაშლა?",
     "removeBankTitle": "საბანკო ანგარიშის წაშლა",
-    "baseCurrency": "საბაზისო ვალუტა"
+    "baseCurrency": "საბაზისო ვალუტა",
+    "currency": "ვალუტა",
+    "editBankAccount": "რედაქტირება",
+    "saveBankAccount": "შენახვა"
   },
   "contractors": {
     "title": "კონტრაქტორები",

@@ -196,7 +196,10 @@
     "translationsHelp": "Cok dilli faturalar icin sirket adini ve adresini farkli dillerde belirtin.",
     "confirmRemoveBank": "Bu banka hesabini kaldirmak istediginizden emin misiniz?",
     "removeBankTitle": "Banka Hesabini Kaldir",
-    "baseCurrency": "Temel Para Birimi"
+    "baseCurrency": "Temel Para Birimi",
+    "currency": "Para Birimi",
+    "editBankAccount": "Duzenle",
+    "saveBankAccount": "Kaydet"
   },
   "contractors": {
     "title": "Yukleniciler",

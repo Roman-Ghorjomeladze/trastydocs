@@ -11,6 +11,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     rawBody: true,
+    bodyParser: false, // Disable default body parsers (100KB limit) — we register our own below with 5MB
   });
 
   app.use(

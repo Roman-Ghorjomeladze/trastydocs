@@ -196,7 +196,10 @@
     "translationsHelp": "Укажите название компании и адрес на разных языках для многоязычных счетов.",
     "confirmRemoveBank": "Вы уверены, что хотите удалить этот банковский счёт?",
     "removeBankTitle": "Удалить банковский счёт",
-    "baseCurrency": "Базовая валюта"
+    "baseCurrency": "Базовая валюта",
+    "currency": "Валюта",
+    "editBankAccount": "Редактировать",
+    "saveBankAccount": "Сохранить"
   },
   "contractors": {
     "title": "Контрагенты",
