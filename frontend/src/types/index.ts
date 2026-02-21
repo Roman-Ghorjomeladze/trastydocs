@@ -32,6 +32,7 @@ export interface IntermediaryBankAccount {
 
 export interface CompanyBankAccount {
   id: string;
+  label?: string;
   bankName: string;
   accountNumber: string;
   currency: string;
@@ -114,6 +115,7 @@ export interface User {
   avatarUrl?: string;
   isActive: boolean;
   isAdmin?: boolean;
+  referralCode?: string;
   subscription?: UserSubscription | null;
   usage?: UsageCounts;
   creditBalance?: number;
@@ -147,7 +149,9 @@ export interface Company {
   bankAccounts?: CompanyBankAccount[];
   nameTranslations?: Translations;
   addressTranslations?: Translations;
+  directorNameTranslations?: Translations;
   baseCurrency: string;
+  directorName?: string;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -431,6 +435,7 @@ export interface RegisterDto {
   email: string;
   password: string;
   name: string;
+  ref?: string;
 }
 
 export interface AuthTokens {
@@ -459,8 +464,10 @@ export interface UpdateCompanyDto {
   taxId?: string;
   logoUrl?: string;
   bankAccounts?: CompanyBankAccount[];
+  directorName?: string;
   nameTranslations?: Translations;
   addressTranslations?: Translations;
+  directorNameTranslations?: Translations;
   baseCurrency?: string;
 }
 
@@ -542,6 +549,7 @@ export interface AnalyticsFilters {
   currencies?: string[];
   vehiclePlates?: string[];
   trailerPlates?: string[];
+  buyerIds?: string[];
 }
 
 export interface AnalyticsData {

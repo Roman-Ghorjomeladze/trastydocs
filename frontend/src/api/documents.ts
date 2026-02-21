@@ -217,6 +217,7 @@ export async function getAnalytics(
   if (filters?.currencies?.length) params.set('currencies', filters.currencies.join(','));
   if (filters?.vehiclePlates?.length) params.set('vehiclePlates', filters.vehiclePlates.join(','));
   if (filters?.trailerPlates?.length) params.set('trailerPlates', filters.trailerPlates.join(','));
+  if (filters?.buyerIds?.length) params.set('buyerIds', filters.buyerIds.join(','));
   const query = params.toString();
   const response = await apiClient.get<ApiResponse<AnalyticsData>>(
     `/documents/analytics${query ? `?${query}` : ''}`,

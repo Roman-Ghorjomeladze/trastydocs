@@ -77,7 +77,10 @@ export const useAuthStore = create<AuthState & AuthActions>((set) => ({
   register: async (data) => {
     set({ isLoading: true });
     try {
-      const result = await authApi.register(data);
+      // Attach referral code from localStorage if present
+      const ref = localStorage.getItem('referral_code') || undefined;
+      const result = await authApi.register({ ...data, ref });
+      localStorage.removeItem('referral_code');
       persistToken(result.accessToken);
       set({ accessToken: result.accessToken });
 

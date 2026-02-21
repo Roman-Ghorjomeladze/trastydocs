@@ -123,7 +123,25 @@
     "allContractors": "Tum yukleniciler",
     "contractor": "Yuklenici",
     "dateFrom": "Baslangic tarihi",
-    "dateTo": "Bitis tarihi"
+    "dateTo": "Bitis tarihi",
+    "addContractor": "Yuklenici Ekle",
+    "columnPicker": "Sutunlar",
+    "columns": {
+      "documentNumber": "Belge Numarasi",
+      "name": "Ad",
+      "contractorName": "Yuklenici",
+      "amount": "Tutar",
+      "currency": "Para Birimi",
+      "transportRoute": "Güzergah",
+      "status": "Durum",
+      "createdAt": "Tarih"
+    }
+  },
+  "invoiceBuilder": {
+    "baseCurrency": "Temel Para Birimi",
+    "exchangeRate": "Doviz Kuru",
+    "noRateAvailable": "Kur mevcut degil",
+    "convertedTotal": "Donusturulen Toplam"
   },
   "companies": {
     "title": "Sirketleriniz",
@@ -193,7 +211,8 @@
     "addressTranslations": "Adres Cevirileri",
     "nameInLang": "{{lang}} dilinde ad",
     "addressInLang": "{{lang}} dilinde adres",
-    "translationsHelp": "Cok dilli faturalar icin sirket adini ve adresini farkli dillerde belirtin.",
+    "directorNameInLang": "{{lang}} dilinde müdür",
+    "translationsHelp": "Cok dilli faturalar icin sirket adini, adresini ve müdür adini farkli dillerde belirtin.",
     "confirmRemoveBank": "Bu banka hesabini kaldirmak istediginizden emin misiniz?",
     "removeBankTitle": "Banka Hesabini Kaldir",
     "baseCurrency": "Temel Para Birimi",
@@ -204,7 +223,11 @@
     "beneficiaryName": "Lehtar Adi",
     "intermediaryBank": "Araci Banka",
     "addIntermediaryBank": "Araci Banka Ekle",
-    "removeIntermediaryBank": "Araciyi Kaldir"
+    "removeIntermediaryBank": "Araciyi Kaldir",
+    "bankLabel": "Etiket",
+    "bankLabelPlaceholder": "orn. Ana USD Hesabi",
+    "directorName": "Mudur Adi",
+    "directorNamePlaceholder": "orn. Mehmet Yilmaz"
   },
   "contractors": {
     "title": "Yukleniciler",
@@ -266,7 +289,10 @@
     "selectDefaultTrailer": "Varsayilan romork secin",
     "noDefaultTrailer": "Yok",
     "confirmDelete": "Bu araci silmek istediginizden emin misiniz? Bu islem geri alinamaz.",
-    "deleteVehicle": "Araci Sil"
+    "deleteVehicle": "Araci Sil",
+    "addTruck": "Kamyon Ekle",
+    "addTrailer": "Romork Ekle",
+    "quickAdd": "Hizli Ekle"
   },
   "stamps": {
     "title": "Sirket Kaseleri",
@@ -562,7 +588,11 @@
     "allTrucks": "Tum Kamyonlar",
     "trailer": "Romork",
     "allTrailers": "Tum Romorkler",
-    "clearFilters": "Filtreleri temizle"
+    "clearFilters": "Filtreleri temizle",
+    "contractor": "Yuklenici",
+    "allContractors": "Tum Yukleniciler",
+    "currency": "Para Birimi",
+    "allCurrencies": "Tum Para Birimleri"
   },
   "invoice": {
     "baseCurrency": "Temel Para Birimi",

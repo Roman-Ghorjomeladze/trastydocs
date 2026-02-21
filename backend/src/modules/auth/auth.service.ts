@@ -67,6 +67,23 @@ export class AuthService {
       },
     });
 
+    // Track referral if ref code provided
+    if (dto.ref) {
+      try {
+        const referrer = await this.prisma.user.findUnique({
+          where: { referralCode: dto.ref },
+        });
+        if (referrer) {
+          await this.prisma.user.update({
+            where: { id: user.id },
+            data: { referredBy: referrer.id },
+          });
+        }
+      } catch {
+        // Non-critical: referral tracking failure shouldn't block registration
+      }
+    }
+
     // Auto-assign free plan to new user
     await this.assignFreePlan(user.id);
 
@@ -250,7 +267,7 @@ export class AuthService {
     }
   }
 
-  async googleLogin(profile: GoogleProfile) {
+  async googleLogin(profile: GoogleProfile, referralCode?: string) {
     let user = await this.prisma.user.findUnique({
       where: { email: profile.email },
     });
@@ -265,6 +282,23 @@ export class AuthService {
           googleId: profile.email,
         },
       });
+
+      // Track referral if code provided
+      if (referralCode) {
+        try {
+          const referrer = await this.prisma.user.findUnique({
+            where: { referralCode },
+          });
+          if (referrer) {
+            await this.prisma.user.update({
+              where: { id: user.id },
+              data: { referredBy: referrer.id },
+            });
+          }
+        } catch {
+          // Non-critical
+        }
+      }
 
       // Auto-assign free plan to new user
       await this.assignFreePlan(user.id);
@@ -310,6 +344,7 @@ export class AuthService {
         name: true,
         avatarUrl: true,
         isActive: true,
+        referralCode: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -412,6 +447,7 @@ export class AuthService {
       name: user.name,
       avatarUrl: user.avatarUrl,
       isActive: user.isActive,
+      referralCode: user.referralCode,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };

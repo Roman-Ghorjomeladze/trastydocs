@@ -123,7 +123,25 @@
     "allContractors": "ყველა კონტრაქტორი",
     "contractor": "კონტრაქტორი",
     "dateFrom": "თარიღიდან",
-    "dateTo": "თარიღამდე"
+    "dateTo": "თარიღამდე",
+    "addContractor": "კონტრაქტორის დამატება",
+    "columnPicker": "სვეტები",
+    "columns": {
+      "documentNumber": "დოკუმენტის ნომერი",
+      "name": "სახელი",
+      "contractorName": "კონტრაქტორი",
+      "amount": "თანხა",
+      "currency": "ვალუტა",
+      "transportRoute": "მარშრუტი",
+      "status": "სტატუსი",
+      "createdAt": "თარიღი"
+    }
+  },
+  "invoiceBuilder": {
+    "baseCurrency": "ბაზისური ვალუტა",
+    "exchangeRate": "გაცვლითი კურსი",
+    "noRateAvailable": "კურსი მიუწვდომელია",
+    "convertedTotal": "კონვერტირებული ჯამი"
   },
   "companies": {
     "title": "თქვენი კომპანიები",
@@ -193,7 +211,8 @@
     "addressTranslations": "მისამართის თარგმანები",
     "nameInLang": "სახელი {{lang}}-ზე",
     "addressInLang": "მისამართი {{lang}}-ზე",
-    "translationsHelp": "მიუთითეთ კომპანიის სახელი და მისამართი სხვადასხვა ენაზე მრავალენოვანი ინვოისებისთვის.",
+    "directorNameInLang": "დირექტორი {{lang}}-ზე",
+    "translationsHelp": "მიუთითეთ კომპანიის სახელი, მისამართი და დირექტორის სახელი სხვადასხვა ენაზე მრავალენოვანი ინვოისებისთვის.",
     "confirmRemoveBank": "დარწმუნებული ხართ, რომ გსურთ ამ საბანკო ანგარიშის წაშლა?",
     "removeBankTitle": "საბანკო ანგარიშის წაშლა",
     "baseCurrency": "საბაზისო ვალუტა",
@@ -204,7 +223,11 @@
     "beneficiaryName": "ბენეფიციარის სახელი",
     "intermediaryBank": "შუამავალი ბანკი",
     "addIntermediaryBank": "შუამავალი ბანკის დამატება",
-    "removeIntermediaryBank": "შუამავლის წაშლა"
+    "removeIntermediaryBank": "შუამავლის წაშლა",
+    "bankLabel": "იარლიყი",
+    "bankLabelPlaceholder": "მაგ. მთავარი USD ანგარიში",
+    "directorName": "დირექტორის სახელი",
+    "directorNamePlaceholder": "მაგ. გიორგი გიორგაძე"
   },
   "contractors": {
     "title": "კონტრაქტორები",
@@ -266,7 +289,10 @@
     "selectDefaultTrailer": "აირჩიეთ ნაგულისხმევი მისაბმელი",
     "noDefaultTrailer": "არცერთი",
     "confirmDelete": "დარწმუნებული ხართ, რომ გსურთ ამ ტრანსპორტის წაშლა? ეს მოქმედება შეუქცევადია.",
-    "deleteVehicle": "ტრანსპორტის წაშლა"
+    "deleteVehicle": "ტრანსპორტის წაშლა",
+    "addTruck": "სატვირთოს დამატება",
+    "addTrailer": "მისაბმელის დამატება",
+    "quickAdd": "სწრაფი დამატება"
   },
   "stamps": {
     "title": "კომპანიის ბეჭდები",
@@ -562,7 +588,11 @@
     "allTrucks": "ყველა სატვირთო",
     "trailer": "მისაბმელი",
     "allTrailers": "ყველა მისაბმელი",
-    "clearFilters": "ფილტრების გასუფთავება"
+    "clearFilters": "ფილტრების გასუფთავება",
+    "contractor": "კონტრაქტორი",
+    "allContractors": "ყველა კონტრაქტორი",
+    "currency": "ვალუტა",
+    "allCurrencies": "ყველა ვალუტა"
   },
   "invoice": {
     "baseCurrency": "საბაზისო ვალუტა",

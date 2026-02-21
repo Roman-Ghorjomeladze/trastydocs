@@ -10,9 +10,10 @@ interface Props {
   onChange: (field: string, value: string) => void;
   onAutoFill?: () => void;
   onResync?: () => void;
+  onAddContractor?: () => void;
 }
 
-export function BuyerInfoSection({ data, labels, onChange, onAutoFill, onResync }: Props) {
+export function BuyerInfoSection({ data, labels, onChange, onAutoFill, onResync, onAddContractor }: Props) {
   return (
     <div className="bg-card border border-border rounded-lg p-5">
       <div className="flex items-center justify-between mb-4">
@@ -21,6 +22,18 @@ export function BuyerInfoSection({ data, labels, onChange, onAutoFill, onResync 
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
           {labels.buyerClient}
+          {onAddContractor && (
+            <button
+              type="button"
+              onClick={onAddContractor}
+              className="text-accent hover:text-accent-hover"
+              title={labels.buyerClient}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            </button>
+          )}
         </h3>
         <div className="flex items-center gap-2">
           {onResync && (

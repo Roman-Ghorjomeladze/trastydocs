@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Copy, Trash2, Ban, SlidersHorizontal, RotateCcw } from 'lucide-react';
+import { Copy, Trash2, Ban, SlidersHorizontal, RotateCcw, Columns3 } from 'lucide-react';
 import { useDocumentStore } from '../../stores/document.store.ts';
 import { useContractorStore } from '../../stores/contractor.store.ts';
 import { getNextDocumentNumber, checkDocumentNumber } from '../../api/documents.ts';
@@ -14,6 +14,27 @@ import { Tooltip } from '../../components/shared/Tooltip.tsx';
 import { MultiSelect } from '../../components/shared/MultiSelect.tsx';
 import type { MultiSelectOption } from '../../components/shared/MultiSelect.tsx';
 import type { DocumentStatus, Contractor, DocumentType } from '../../types/index.ts';
+
+type ColumnKey = 'documentNumber' | 'name' | 'contractorName' | 'amount' | 'currency' | 'transportRoute' | 'status' | 'createdAt';
+
+const ALL_COLUMNS: ColumnKey[] = ['documentNumber', 'name', 'contractorName', 'amount', 'currency', 'transportRoute', 'status', 'createdAt'];
+const DEFAULT_COLUMNS: ColumnKey[] = ['documentNumber', 'name', 'status', 'createdAt'];
+
+function getStoredColumns(companyId: string): ColumnKey[] {
+  try {
+    const raw = localStorage.getItem(`doc-list-columns-${companyId}`);
+    if (!raw) return DEFAULT_COLUMNS;
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every((c: string) => ALL_COLUMNS.includes(c as ColumnKey))) {
+      return parsed as ColumnKey[];
+    }
+  } catch { /* ignore */ }
+  return DEFAULT_COLUMNS;
+}
+
+function storeColumns(companyId: string, columns: ColumnKey[]) {
+  localStorage.setItem(`doc-list-columns-${companyId}`, JSON.stringify(columns));
+}
 
 const ALL_STATUSES: DocumentStatus[] = [
   'DRAFT',
@@ -62,6 +83,13 @@ export function DocumentListPage() {
   const [docNumberError, setDocNumberError] = useState('');
   const [isCheckingNumber, setIsCheckingNumber] = useState(false);
   const debouncedDocNumber = useDebounce(docNumber, 400);
+
+  // Column visibility
+  const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>(() =>
+    companyId ? getStoredColumns(companyId) : DEFAULT_COLUMNS,
+  );
+  const [showColumnPicker, setShowColumnPicker] = useState(false);
+  const columnPickerRef = useRef<HTMLDivElement>(null);
 
   // Confirm modals
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
@@ -219,6 +247,41 @@ export function DocumentListPage() {
     setDateTo('');
   };
 
+  // Close column picker on click outside
+  useEffect(() => {
+    if (!showColumnPicker) return;
+    const handler = (e: MouseEvent) => {
+      if (columnPickerRef.current && !columnPickerRef.current.contains(e.target as Node)) {
+        setShowColumnPicker(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showColumnPicker]);
+
+  const toggleColumn = (col: ColumnKey) => {
+    setVisibleColumns((prev) => {
+      const next = prev.includes(col) ? prev.filter((c) => c !== col) : [...prev, col];
+      // Don't allow empty columns
+      if (next.length === 0) return prev;
+      if (companyId) storeColumns(companyId, next);
+      return next;
+    });
+  };
+
+  // Parse amount/currency from inputData
+  const getDocAmount = (inputData: Record<string, unknown>): string => {
+    const total = inputData?.total;
+    if (typeof total === 'number') return total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    return '-';
+  };
+
+  const getDocCurrency = (inputData: Record<string, unknown>): string => {
+    const currency = inputData?.currency;
+    if (typeof currency === 'string') return currency;
+    return '-';
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
@@ -274,6 +337,42 @@ export function DocumentListPage() {
             )}
           </button>
         </Tooltip>
+
+        {/* Column Picker */}
+        <div className="relative" ref={columnPickerRef}>
+          <Tooltip content={t('documents.columnPicker')}>
+            <button
+              type="button"
+              onClick={() => setShowColumnPicker(!showColumnPicker)}
+              className={cn(
+                'p-2 border rounded-lg transition-colors',
+                showColumnPicker
+                  ? 'border-accent bg-accent/10 text-accent'
+                  : 'border-border text-muted-foreground hover:text-foreground hover:border-accent/50',
+              )}
+            >
+              <Columns3 className="w-5 h-5" />
+            </button>
+          </Tooltip>
+          {showColumnPicker && (
+            <div className="absolute right-0 top-full mt-1 w-48 bg-card border border-border rounded-lg shadow-lg z-30 py-1 animate-fade-in">
+              {ALL_COLUMNS.map((col) => (
+                <label
+                  key={col}
+                  className="flex items-center gap-2 px-3 py-1.5 hover:bg-muted cursor-pointer text-sm text-foreground"
+                >
+                  <input
+                    type="checkbox"
+                    checked={visibleColumns.includes(col)}
+                    onChange={() => toggleColumn(col)}
+                    className="rounded border-border text-accent focus:ring-accent"
+                  />
+                  {t(`documents.columns.${col}`)}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Filter Panel */}
@@ -382,85 +481,144 @@ export function DocumentListPage() {
           <table className="w-full">
             <thead className="bg-muted">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                  {t('documents.number')}
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                  {t('documents.name')}
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                  {t('documents.status')}
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
-                  {t('documents.date')}
-                </th>
+                {visibleColumns.includes('documentNumber') && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.documentNumber')}
+                  </th>
+                )}
+                {visibleColumns.includes('name') && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.name')}
+                  </th>
+                )}
+                {visibleColumns.includes('contractorName') && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.contractorName')}
+                  </th>
+                )}
+                {visibleColumns.includes('amount') && (
+                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.amount')}
+                  </th>
+                )}
+                {visibleColumns.includes('currency') && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.currency')}
+                  </th>
+                )}
+                {visibleColumns.includes('transportRoute') && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.transportRoute')}
+                  </th>
+                )}
+                {visibleColumns.includes('status') && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.status')}
+                  </th>
+                )}
+                {visibleColumns.includes('createdAt') && (
+                  <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.createdAt')}
+                  </th>
+                )}
                 <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">
                   {t('documents.actions')}
                 </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {documents.map((doc) => (
-                <tr
-                  key={doc.id}
-                  className="hover:bg-muted cursor-pointer"
-                  onClick={() => navigate(ROUTES.DOCUMENT_DETAIL(companyId!, doc.id))}
-                >
-                  <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
-                    {doc.documentNumber || '-'}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-medium text-foreground">{doc.name}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={cn(
-                        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                        STATUS_COLORS[doc.status] || 'bg-gray-100 text-gray-800',
-                      )}
-                    >
-                      {t(`status.${doc.status}`)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {formatDate(doc.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div
-                      className="flex items-center justify-end gap-1"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Tooltip content={t('documents.duplicate')}>
-                        <button
-                          type="button"
-                          onClick={() => handleDuplicate(doc.id)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-muted transition-colors"
+              {documents.map((doc) => {
+                const inputData = (doc.inputData || {}) as Record<string, unknown>;
+                return (
+                  <tr
+                    key={doc.id}
+                    className="hover:bg-muted cursor-pointer"
+                    onClick={() => navigate(ROUTES.DOCUMENT_DETAIL(companyId!, doc.id))}
+                  >
+                    {visibleColumns.includes('documentNumber') && (
+                      <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
+                        {doc.documentNumber || '-'}
+                      </td>
+                    )}
+                    {visibleColumns.includes('name') && (
+                      <td className="px-4 py-3 text-sm font-medium text-foreground">{doc.name}</td>
+                    )}
+                    {visibleColumns.includes('contractorName') && (
+                      <td className="px-4 py-3 text-sm text-foreground">
+                        {doc.buyer?.name || '-'}
+                      </td>
+                    )}
+                    {visibleColumns.includes('amount') && (
+                      <td className="px-4 py-3 text-sm text-foreground text-right font-mono">
+                        {getDocAmount(inputData)}
+                      </td>
+                    )}
+                    {visibleColumns.includes('currency') && (
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {getDocCurrency(inputData)}
+                      </td>
+                    )}
+                    {visibleColumns.includes('transportRoute') && (
+                      <td className="px-4 py-3 text-sm text-foreground truncate max-w-[200px]">
+                        {(inputData?.transportRoute as string) || '-'}
+                      </td>
+                    )}
+                    {visibleColumns.includes('status') && (
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                            STATUS_COLORS[doc.status] || 'bg-gray-100 text-gray-800',
+                          )}
                         >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </Tooltip>
-                      {doc.status !== 'CANCELLED' && (
-                        <Tooltip content={t('documents.cancel')}>
+                          {t(`status.${doc.status}`)}
+                        </span>
+                      </td>
+                    )}
+                    {visibleColumns.includes('createdAt') && (
+                      <td className="px-4 py-3 text-sm text-muted-foreground">
+                        {formatDate(doc.createdAt)}
+                      </td>
+                    )}
+                    <td className="px-4 py-3 text-right">
+                      <div
+                        className="flex items-center justify-end gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Tooltip content={t('documents.duplicate')}>
                           <button
                             type="button"
-                            onClick={() => setCancelTargetId(doc.id)}
-                            className="p-1.5 rounded-md text-muted-foreground hover:text-orange-500 hover:bg-muted transition-colors"
+                            onClick={() => handleDuplicate(doc.id)}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-accent hover:bg-muted transition-colors"
                           >
-                            <Ban className="w-4 h-4" />
+                            <Copy className="w-4 h-4" />
                           </button>
                         </Tooltip>
-                      )}
-                      <Tooltip content={t('common.delete')}>
-                        <button
-                          type="button"
-                          onClick={() => setDeleteTargetId(doc.id)}
-                          className="p-1.5 rounded-md text-muted-foreground hover:text-danger hover:bg-muted transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </Tooltip>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                        {doc.status !== 'CANCELLED' && (
+                          <Tooltip content={t('documents.cancel')}>
+                            <button
+                              type="button"
+                              onClick={() => setCancelTargetId(doc.id)}
+                              className="p-1.5 rounded-md text-muted-foreground hover:text-orange-500 hover:bg-muted transition-colors"
+                            >
+                              <Ban className="w-4 h-4" />
+                            </button>
+                          </Tooltip>
+                        )}
+                        <Tooltip content={t('common.delete')}>
+                          <button
+                            type="button"
+                            onClick={() => setDeleteTargetId(doc.id)}
+                            className="p-1.5 rounded-md text-muted-foreground hover:text-danger hover:bg-muted transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </Tooltip>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

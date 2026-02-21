@@ -123,7 +123,25 @@
     "allContractors": "All contractors",
     "contractor": "Contractor",
     "dateFrom": "Date from",
-    "dateTo": "Date to"
+    "dateTo": "Date to",
+    "addContractor": "Add Contractor",
+    "columnPicker": "Columns",
+    "columns": {
+      "documentNumber": "Document Number",
+      "name": "Name",
+      "contractorName": "Contractor",
+      "amount": "Amount",
+      "currency": "Currency",
+      "transportRoute": "Route",
+      "status": "Status",
+      "createdAt": "Date"
+    }
+  },
+  "invoiceBuilder": {
+    "baseCurrency": "Base Currency",
+    "exchangeRate": "Exchange Rate",
+    "noRateAvailable": "No rate available",
+    "convertedTotal": "Converted Total"
   },
   "companies": {
     "title": "Your Companies",
@@ -193,7 +211,8 @@
     "addressTranslations": "Address Translations",
     "nameInLang": "Name in {{lang}}",
     "addressInLang": "Address in {{lang}}",
-    "translationsHelp": "Provide the company name and address in different languages for multilingual invoices.",
+    "directorNameInLang": "Director in {{lang}}",
+    "translationsHelp": "Provide the company name, address and director name in different languages for multilingual invoices.",
     "confirmRemoveBank": "Are you sure you want to remove this bank account?",
     "removeBankTitle": "Remove Bank Account",
     "baseCurrency": "Base Currency",
@@ -204,7 +223,11 @@
     "beneficiaryName": "Beneficiary Name",
     "intermediaryBank": "Intermediary Bank",
     "addIntermediaryBank": "Add Intermediary Bank",
-    "removeIntermediaryBank": "Remove Intermediary"
+    "removeIntermediaryBank": "Remove Intermediary",
+    "bankLabel": "Label",
+    "bankLabelPlaceholder": "e.g. Main USD Account",
+    "directorName": "Director Name",
+    "directorNamePlaceholder": "e.g. John Smith"
   },
   "contractors": {
     "title": "Contractors",
@@ -266,7 +289,10 @@
     "selectDefaultTrailer": "Select default trailer",
     "noDefaultTrailer": "None",
     "confirmDelete": "Are you sure you want to delete this vehicle? This action cannot be undone.",
-    "deleteVehicle": "Delete Vehicle"
+    "deleteVehicle": "Delete Vehicle",
+    "addTruck": "Add Truck",
+    "addTrailer": "Add Trailer",
+    "quickAdd": "Quick Add"
   },
   "stamps": {
     "title": "Company Stamps",
@@ -562,7 +588,11 @@
     "allTrucks": "All Trucks",
     "trailer": "Trailer",
     "allTrailers": "All Trailers",
-    "clearFilters": "Clear filters"
+    "clearFilters": "Clear filters",
+    "contractor": "Contractor",
+    "allContractors": "All Contractors",
+    "currency": "Currency",
+    "allCurrencies": "All Currencies"
   },
   "invoice": {
     "baseCurrency": "Base Currency",

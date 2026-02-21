@@ -663,6 +663,7 @@ function SettingsTab({
   const [address, setAddress] = useState(company.address ?? '');
   const [taxId, setTaxId] = useState(company.taxId ?? '');
   const [baseCurrency, setBaseCurrency] = useState(company.baseCurrency ?? 'GEL');
+  const [directorName, setDirectorName] = useState(company.directorName ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -680,6 +681,7 @@ function SettingsTab({
     company.bankAccounts ?? [],
   );
   const [showAddBank, setShowAddBank] = useState(false);
+  const [newBankLabel, setNewBankLabel] = useState('');
   const [newBankName, setNewBankName] = useState('');
   const [newAccountNumber, setNewAccountNumber] = useState('');
   const [newBankCurrency, setNewBankCurrency] = useState(company.baseCurrency ?? 'GEL');
@@ -690,13 +692,14 @@ function SettingsTab({
   // Inline editing state
   const [editingBankId, setEditingBankId] = useState<string | null>(null);
   const [editBankData, setEditBankData] = useState<{
+    label: string;
     bankName: string;
     accountNumber: string;
     currency: string;
     swiftCode: string;
     beneficiaryName: string;
     intermediaryBanks: IntermediaryBankAccount[];
-  }>({ bankName: '', accountNumber: '', currency: '', swiftCode: '', beneficiaryName: '', intermediaryBanks: [] });
+  }>({ label: '', bankName: '', accountNumber: '', currency: '', swiftCode: '', beneficiaryName: '', intermediaryBanks: [] });
 
   // Translations state
   const LANGS = [
@@ -710,6 +713,9 @@ function SettingsTab({
   );
   const [addressTranslations, setAddressTranslations] = useState<Translations>(
     company.addressTranslations ?? {},
+  );
+  const [directorNameTranslations, setDirectorNameTranslations] = useState<Translations>(
+    company.directorNameTranslations ?? {},
   );
   const [translationsSaving, setTranslationsSaving] = useState(false);
   const [translationsSaved, setTranslationsSaved] = useState(false);
@@ -735,6 +741,7 @@ function SettingsTab({
         data.address = address || undefined;
       if (taxId !== (company.taxId ?? '')) data.taxId = taxId || undefined;
       if (baseCurrency !== (company.baseCurrency ?? 'GEL')) data.baseCurrency = baseCurrency;
+      if (directorName !== (company.directorName ?? '')) data.directorName = directorName;
 
       if (Object.keys(data).length > 0) {
         await onUpdate(data);
@@ -765,7 +772,7 @@ function SettingsTab({
   const handleSaveTranslations = async () => {
     setTranslationsSaving(true);
     try {
-      await onUpdate({ nameTranslations, addressTranslations });
+      await onUpdate({ nameTranslations, addressTranslations, directorNameTranslations });
       setTranslationsSaved(true);
       setTimeout(() => setTranslationsSaved(false), 3000);
     } catch (err: unknown) {
@@ -780,6 +787,7 @@ function SettingsTab({
     const isFirst = bankAccounts.length === 0;
     const newAccount: CompanyBankAccount = {
       id: crypto.randomUUID(),
+      label: newBankLabel.trim() || undefined,
       bankName: newBankName.trim(),
       accountNumber: newAccountNumber.trim(),
       currency: newBankCurrency,
@@ -789,6 +797,7 @@ function SettingsTab({
       intermediaryBanks: [],
     };
     await saveBankAccounts([...bankAccounts, newAccount]);
+    setNewBankLabel('');
     setNewBankName('');
     setNewAccountNumber('');
     setNewBankCurrency(company.baseCurrency ?? 'GEL');
@@ -800,6 +809,7 @@ function SettingsTab({
   const handleStartEditBank = (ba: CompanyBankAccount) => {
     setEditingBankId(ba.id);
     setEditBankData({
+      label: ba.label ?? '',
       bankName: ba.bankName,
       accountNumber: ba.accountNumber,
       currency: ba.currency || company.baseCurrency || 'GEL',
@@ -815,6 +825,7 @@ function SettingsTab({
       ba.id === editingBankId
         ? {
             ...ba,
+            label: editBankData.label.trim() || undefined,
             bankName: editBankData.bankName.trim(),
             accountNumber: editBankData.accountNumber.trim(),
             currency: editBankData.currency,
@@ -952,6 +963,18 @@ function SettingsTab({
               ))}
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-1">
+              {t('companies.directorName')}
+            </label>
+            <input
+              type="text"
+              value={directorName}
+              onChange={(e) => setDirectorName(e.target.value)}
+              placeholder={t('companies.directorNamePlaceholder')}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+            />
+          </div>
           <div className="sm:col-span-2">
             <label className="block text-sm font-medium text-foreground mb-1">
               {t('companies.address')}
@@ -991,7 +1014,7 @@ function SettingsTab({
 
         <div className="space-y-4">
           {LANGS.map((lang) => (
-            <div key={lang.code} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div key={lang.code} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
                   {t('companies.nameInLang', { lang: lang.label })}
@@ -1017,6 +1040,20 @@ function SettingsTab({
                     setAddressTranslations((prev) => ({ ...prev, [lang.code]: e.target.value }))
                   }
                   placeholder={company.address ?? ''}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-foreground mb-1">
+                  {t('companies.directorNameInLang', { lang: lang.label })}
+                </label>
+                <input
+                  type="text"
+                  value={directorNameTranslations[lang.code] ?? ''}
+                  onChange={(e) =>
+                    setDirectorNameTranslations((prev) => ({ ...prev, [lang.code]: e.target.value }))
+                  }
+                  placeholder={company.directorName ?? ''}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
                 />
               </div>
@@ -1055,6 +1092,19 @@ function SettingsTab({
 
         {showAddBank && (
           <div className="mb-4 p-4 border border-border rounded-lg bg-muted">
+            <div className="mb-3">
+              <label className="block text-sm font-medium text-foreground mb-1">
+                {t('companies.bankLabel')} <span className="text-muted-foreground font-normal">{t('common.optional')}</span>
+              </label>
+              <input
+                type="text"
+                value={newBankLabel}
+                onChange={(e) => setNewBankLabel(e.target.value)}
+                placeholder={t('companies.bankLabelPlaceholder')}
+                className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                autoFocus
+              />
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-sm font-medium text-foreground mb-1">
@@ -1066,7 +1116,6 @@ function SettingsTab({
                   onChange={(e) => setNewBankName(e.target.value)}
                   placeholder="Bank of Georgia"
                   className="w-full px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
-                  autoFocus
                 />
               </div>
               <div>
@@ -1149,6 +1198,19 @@ function SettingsTab({
                 {editingBankId === ba.id ? (
                   /* ── Inline edit mode ── */
                   <div>
+                    <div className="mb-3">
+                      <label className="block text-xs font-medium text-muted-foreground mb-1">
+                        {t('companies.bankLabel')} <span className="text-muted-foreground font-normal">{t('common.optional')}</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editBankData.label}
+                        onChange={(e) => setEditBankData((prev) => ({ ...prev, label: e.target.value }))}
+                        placeholder={t('companies.bankLabelPlaceholder')}
+                        className="w-full px-3 py-1.5 text-sm border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+                        autoFocus
+                      />
+                    </div>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                       <div>
                         <label className="block text-xs font-medium text-muted-foreground mb-1">
@@ -1159,7 +1221,6 @@ function SettingsTab({
                           value={editBankData.bankName}
                           onChange={(e) => setEditBankData((prev) => ({ ...prev, bankName: e.target.value }))}
                           className="w-full px-3 py-1.5 text-sm border border-border rounded-lg focus:ring-2 focus:ring-accent focus:border-accent outline-none"
-                          autoFocus
                         />
                       </div>
                       <div>
@@ -1404,6 +1465,9 @@ function SettingsTab({
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="min-w-0">
+                        {ba.label && (
+                          <p className="text-xs font-medium text-accent truncate">{ba.label}</p>
+                        )}
                         <p className="text-sm font-medium text-foreground truncate">
                           {ba.bankName}
                         </p>

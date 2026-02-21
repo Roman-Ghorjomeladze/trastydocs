@@ -32,13 +32,21 @@ export class MailService {
     email: string,
     senderName: string,
     documentName: string,
-    documentUrl: string,
+    pdfBuffer: Buffer,
+    pdfFilename: string,
   ): Promise<void> {
     await this.mailerService.sendMail({
       to: email,
       subject: `${senderName} sent you a document`,
       template: 'document-sent',
-      context: { senderName, documentName, documentUrl },
+      context: { senderName, documentName },
+      attachments: [
+        {
+          filename: pdfFilename,
+          content: pdfBuffer,
+          contentType: 'application/pdf',
+        },
+      ],
     });
   }
 }

@@ -21,7 +21,9 @@ export async function refreshToken(): Promise<{ accessToken: string }> {
 }
 
 export async function googleLogin(): Promise<void> {
-  window.location.href = `${apiClient.defaults.baseURL}/auth/google`;
+  const ref = localStorage.getItem('referral_code') || '';
+  const refParam = ref ? `?ref=${encodeURIComponent(ref)}` : '';
+  window.location.href = `${apiClient.defaults.baseURL}/auth/google${refParam}`;
 }
 
 export async function getMe(): Promise<User> {

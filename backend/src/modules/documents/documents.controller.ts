@@ -41,6 +41,7 @@ export class DocumentsController {
     @Query('currencies') currencies?: string,
     @Query('vehiclePlates') vehiclePlates?: string,
     @Query('trailerPlates') trailerPlates?: string,
+    @Query('buyerIds') buyerIds?: string,
   ) {
     return this.documentsService.getAnalytics(user.id, {
       dateFrom,
@@ -50,6 +51,7 @@ export class DocumentsController {
       currencies: currencies ? currencies.split(',') : undefined,
       vehiclePlates: vehiclePlates ? vehiclePlates.split(',') : undefined,
       trailerPlates: trailerPlates ? trailerPlates.split(',') : undefined,
+      buyerIds: buyerIds ? buyerIds.split(',') : undefined,
     });
   }
 

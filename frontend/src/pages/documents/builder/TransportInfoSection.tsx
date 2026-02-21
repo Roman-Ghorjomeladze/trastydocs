@@ -12,9 +12,12 @@ interface Props {
   onChange: (field: string, value: string) => void;
   trucks?: Vehicle[];
   trailers?: Vehicle[];
+  onAutoFillAmountInWords?: () => void;
+  onAddTruck?: () => void;
+  onAddTrailer?: () => void;
 }
 
-export function TransportInfoSection({ data, labels, onChange, trucks, trailers }: Props) {
+export function TransportInfoSection({ data, labels, onChange, trucks, trailers, onAutoFillAmountInWords, onAddTruck, onAddTrailer }: Props) {
   const [selectedTruckId, setSelectedTruckId] = useState('');
   const [selectedTrailerId, setSelectedTrailerId] = useState('');
 
@@ -101,8 +104,20 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
         {hasTrucks ? (
           <>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-2">
                 {labels.vehicleModel}
+                {onAddTruck && (
+                  <button
+                    type="button"
+                    onClick={onAddTruck}
+                    className="text-accent hover:text-accent-hover"
+                    title={labels.vehicleModel}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                )}
               </label>
               <SearchSelect
                 options={truckOptions}
@@ -137,7 +152,21 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
         ) : (
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.vehicleModel}</label>
+              <label className="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-2">
+                {labels.vehicleModel}
+                {onAddTruck && (
+                  <button
+                    type="button"
+                    onClick={onAddTruck}
+                    className="text-accent hover:text-accent-hover"
+                    title={labels.vehicleModel}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                )}
+              </label>
               <input
                 type="text"
                 value={data.vehicleModel}
@@ -163,8 +192,20 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
         {hasTrailers ? (
           <>
             <div>
-              <label className="block text-xs font-medium text-muted-foreground mb-1">
+              <label className="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-2">
                 {labels.trailerPlate}
+                {onAddTrailer && (
+                  <button
+                    type="button"
+                    onClick={onAddTrailer}
+                    className="text-accent hover:text-accent-hover"
+                    title={labels.trailerPlate}
+                  >
+                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                  </button>
+                )}
               </label>
               <SearchSelect
                 options={trailerOptions}
@@ -187,7 +228,21 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
           </>
         ) : (
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.trailerPlate}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-2">
+              {labels.trailerPlate}
+              {onAddTrailer && (
+                <button
+                  type="button"
+                  onClick={onAddTrailer}
+                  className="text-accent hover:text-accent-hover"
+                  title={labels.trailerPlate}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                  </svg>
+                </button>
+              )}
+            </label>
             <input
               type="text"
               value={data.trailerPlate}
@@ -211,7 +266,21 @@ export function TransportInfoSection({ data, labels, onChange, trucks, trailers 
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-muted-foreground mb-1">{labels.amountInWords}</label>
+            <label className="block text-xs font-medium text-muted-foreground mb-1 flex items-center gap-2">
+              {labels.amountInWords}
+              {onAutoFillAmountInWords && (
+                <button
+                  type="button"
+                  onClick={onAutoFillAmountInWords}
+                  className="text-accent hover:text-accent-hover"
+                  title={labels.autoFill}
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                  </svg>
+                </button>
+              )}
+            </label>
             <input
               type="text"
               value={data.amountInWords}

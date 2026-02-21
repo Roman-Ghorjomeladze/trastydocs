@@ -19,6 +19,7 @@ import { getContractor } from '../../api/contractors.ts';
 import { getInvoiceLabels } from '../../lib/invoice-i18n.ts';
 import type { InvoiceLanguage } from '../../lib/invoice-i18n.ts';
 import { exportInvoicePdf } from '../../lib/pdf-export.ts';
+import { numberToWords } from '../../lib/number-to-words.ts';
 import type { InvoiceData, InvoiceLineItem, Document, SignatureAsset, CompanyBankAccount } from '../../types/index.ts';
 import { InvoiceHeaderSection } from './builder/InvoiceHeaderSection.tsx';
 import { CompanyInfoSection } from './builder/CompanyInfoSection.tsx';
@@ -28,6 +29,9 @@ import { TotalsSection } from './builder/TotalsSection.tsx';
 import { NotesSection } from './builder/NotesSection.tsx';
 import { TransportInfoSection } from './builder/TransportInfoSection.tsx';
 import { SignatureStampSection } from './builder/SignatureStampSection.tsx';
+import { useAuthStore } from '../../stores/auth.store.ts';
+import { AddContractorModal } from '../../components/AddContractorModal.tsx';
+import { AddVehicleModal } from '../../components/AddVehicleModal.tsx';
 
 const AUTO_SAVE_DELAY = 2000;
 
@@ -78,6 +82,7 @@ export function DocumentBuilderPage() {
   }>();
   const navigate = useNavigate();
   const { fetchDocument, updateDocument, uploadPdf } = useDocumentStore();
+  const authUser = useAuthStore((s) => s.user);
   const { activeCompany } = useCompanyStore();
   const { vehicles, fetchVehicles } = useVehicleStore();
   const { signatures, fetchSignatures } = useSignatureStore();
@@ -95,6 +100,8 @@ export function DocumentBuilderPage() {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [selectedBankAccountIds, setSelectedBankAccountIds] = useState<string[]>([]);
+  const [showAddContractorModal, setShowAddContractorModal] = useState(false);
+  const [showAddVehicleModal, setShowAddVehicleModal] = useState<'TRUCK' | 'TRAILER' | null>(null);
 
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
@@ -215,11 +222,13 @@ export function DocumentBuilderPage() {
         if (activeCompany) {
           const companyBanks = activeCompany.bankAccounts ?? [];
 
-          // Resolve translated company name & address
+          // Resolve translated company name, address & director name
           const nameTranslations = activeCompany.nameTranslations as Record<string, string> | undefined;
           const addressTranslations = activeCompany.addressTranslations as Record<string, string> | undefined;
+          const directorNameTranslations = activeCompany.directorNameTranslations as Record<string, string> | undefined;
           const companyName = nameTranslations?.[docLang] || activeCompany.name || '';
           const companyAddress = addressTranslations?.[docLang] || activeCompany.address || '';
+          const resolvedDirectorName = directorNameTranslations?.[docLang] || activeCompany.directorName || '';
 
           // Restore saved bank account selection, or fall back to defaults
           const savedIds = Array.isArray(data.selectedBankAccountIds)
@@ -258,6 +267,8 @@ export function DocumentBuilderPage() {
             companyEmail: activeCompany.email || '',
             companyBankAccounts: bankStr,
             selectedBankAccountIds: bankIds,
+            directorName: data.directorName || resolvedDirectorName,
+            signerName: data.signerName || resolvedDirectorName,
           };
         }
 
@@ -318,7 +329,7 @@ export function DocumentBuilderPage() {
 
         // Silently regenerate and upload PDF so preview stays in sync
         try {
-          const pdfBytes = await exportInvoicePdf(data);
+          const pdfBytes = await exportInvoicePdf(data, authUser?.referralCode);
           const base64 = btoa(
             Array.from(pdfBytes)
               .map((b) => String.fromCharCode(b))
@@ -347,12 +358,15 @@ export function DocumentBuilderPage() {
         if (field === 'language') {
           const newLang = value as string;
 
-          // Re-populate seller (company) name & address from translations
+          // Re-populate seller (company) name, address & director name from translations
           if (activeCompany) {
             const nameT = activeCompany.nameTranslations as Record<string, string> | undefined;
             const addrT = activeCompany.addressTranslations as Record<string, string> | undefined;
+            const dirT = activeCompany.directorNameTranslations as Record<string, string> | undefined;
             next.companyName = nameT?.[newLang] || activeCompany.name || '';
             next.companyAddress = addrT?.[newLang] || activeCompany.address || '';
+            next.directorName = dirT?.[newLang] || activeCompany.directorName || '';
+            next.signerName = dirT?.[newLang] || activeCompany.directorName || '';
           }
 
           // Re-populate buyer name & address from translations
@@ -374,6 +388,16 @@ export function DocumentBuilderPage() {
               next.companyBankAccounts = serializeBankAccounts(selectedBanks, newLang);
             }
           }
+
+          // Auto-update amount in words for transport invoices when language changes
+          if (next.documentType === 'transport_invoice' && next.total > 0) {
+            next.amountInWords = numberToWords(next.total, newLang, next.currency);
+          }
+        }
+
+        // Auto-update amount in words when currency changes
+        if (field === 'currency' && next.documentType === 'transport_invoice' && next.total > 0) {
+          next.amountInWords = numberToWords(next.total, next.language, value as string);
         }
 
         const totals = calculateTotals(next);
@@ -399,7 +423,12 @@ export function DocumentBuilderPage() {
       setInvoiceData((prev) => {
         const next = { ...prev, items };
         const totals = calculateTotals(next);
-        const updated = { ...next, ...totals };
+        let updated = { ...next, ...totals };
+
+        // Auto-update amount in words for transport invoices
+        if (updated.documentType === 'transport_invoice' && updated.total > 0) {
+          updated = { ...updated, amountInWords: numberToWords(updated.total, updated.language, updated.currency) };
+        }
 
         setHasUnsavedChanges(true);
 
@@ -420,7 +449,12 @@ export function DocumentBuilderPage() {
       setInvoiceData((prev) => {
         const next = { ...prev, taxRate: rate };
         const totals = calculateTotals(next);
-        const updated = { ...next, ...totals };
+        let updated = { ...next, ...totals };
+
+        // Auto-update amount in words for transport invoices
+        if (updated.documentType === 'transport_invoice' && updated.total > 0) {
+          updated = { ...updated, amountInWords: numberToWords(updated.total, updated.language, updated.currency) };
+        }
 
         setHasUnsavedChanges(true);
 
@@ -506,8 +540,10 @@ export function DocumentBuilderPage() {
       const docLang = invoiceData.language || 'en';
       const nameT = freshCompany.nameTranslations as Record<string, string> | undefined;
       const addrT = freshCompany.addressTranslations as Record<string, string> | undefined;
+      const dirT = freshCompany.directorNameTranslations as Record<string, string> | undefined;
       const companyName = nameT?.[docLang] || freshCompany.name || '';
       const companyAddress = addrT?.[docLang] || freshCompany.address || '';
+      const resolvedDirector = dirT?.[docLang] || freshCompany.directorName || '';
 
       // Re-resolve bank accounts
       const companyBanks = freshCompany.bankAccounts ?? [];
@@ -527,6 +563,8 @@ export function DocumentBuilderPage() {
           companyEmail: freshCompany.email || '',
           companyBankAccounts: bankStr,
           selectedBankAccountIds: defaultIds,
+          directorName: resolvedDirector || prev.directorName,
+          signerName: prev.signerName || resolvedDirector,
         };
 
         setHasUnsavedChanges(true);
@@ -582,6 +620,72 @@ export function DocumentBuilderPage() {
     }
   }, [doc?.buyer?.id, companyId, saveToServer]);
 
+  // Handle contractor created from quick-add modal
+  const handleContractorCreated = useCallback(
+    async (contractor: import('../../types/index.ts').Contractor) => {
+      setShowAddContractorModal(false);
+
+      // Link the contractor to the document as buyer
+      if (documentId) {
+        try {
+          await updateDocument(documentId, { buyerId: contractor.id });
+        } catch (err) {
+          console.error('Failed to link contractor to document:', err);
+        }
+      }
+
+      // Update local doc state with buyer
+      setDoc((prev) => (prev ? { ...prev, buyerId: contractor.id, buyer: contractor } : prev));
+
+      // Auto-populate buyer fields from the new contractor
+      const docLang = invoiceData.language || 'en';
+      setInvoiceData((prev) => {
+        const updated = populateFromContractor(
+          {
+            ...prev,
+            buyerName: '',
+            buyerAddress: '',
+            buyerTaxId: '',
+            buyerPhone: '',
+            buyerEmail: '',
+            buyerBankAccounts: '',
+          },
+          contractor,
+          'buyer',
+          docLang,
+        );
+
+        setHasUnsavedChanges(true);
+        if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+        autoSaveTimerRef.current = setTimeout(() => {
+          saveToServer(updated);
+        }, AUTO_SAVE_DELAY);
+
+        return updated;
+      });
+    },
+    [documentId, updateDocument, invoiceData.language, saveToServer],
+  );
+
+  // Handle vehicle created from quick-add modal
+  const handleVehicleCreated = useCallback(
+    (vehicle: import('../../types/index.ts').Vehicle) => {
+      setShowAddVehicleModal(null);
+
+      if (vehicle.type === 'TRUCK') {
+        handleFieldChange('vehicleModel', vehicle.model);
+        handleFieldChange('vehiclePlate', vehicle.licensePlate);
+        // If the truck has a default trailer, also populate trailer plate
+        if (vehicle.defaultTrailer) {
+          handleFieldChange('trailerPlate', vehicle.defaultTrailer.licensePlate);
+        }
+      } else {
+        handleFieldChange('trailerPlate', vehicle.licensePlate);
+      }
+    },
+    [handleFieldChange],
+  );
+
   // Manual save
   const handleManualSave = async () => {
     if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
@@ -605,7 +709,7 @@ export function DocumentBuilderPage() {
         });
       }
 
-      const pdfBytes = await exportInvoicePdf(invoiceData);
+      const pdfBytes = await exportInvoicePdf(invoiceData, authUser?.referralCode);
       const blob = new Blob([pdfBytes.buffer as ArrayBuffer], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
 
@@ -841,6 +945,7 @@ export function DocumentBuilderPage() {
                 onChange={handleFieldChange}
                 onAutoFill={doc.buyer ? handleAutoFillBuyer : undefined}
                 onResync={doc.buyer ? handleResyncBuyer : undefined}
+                onAddContractor={() => setShowAddContractorModal(true)}
               />
             </div>
 
@@ -860,6 +965,12 @@ export function DocumentBuilderPage() {
                   onChange={handleFieldChange}
                   trucks={trucks}
                   trailers={trailers}
+                  onAutoFillAmountInWords={() => {
+                    const words = numberToWords(invoiceData.total, invoiceData.language, invoiceData.currency);
+                    handleFieldChange('amountInWords', words);
+                  }}
+                  onAddTruck={() => setShowAddVehicleModal('TRUCK')}
+                  onAddTrailer={() => setShowAddVehicleModal('TRAILER')}
                 />
               </div>
             )}
@@ -941,6 +1052,26 @@ export function DocumentBuilderPage() {
           </div>
         </div>
       </div>
+      {/* Quick-add contractor modal */}
+      {companyId && (
+        <AddContractorModal
+          isOpen={showAddContractorModal}
+          companyId={companyId}
+          onCreated={handleContractorCreated}
+          onClose={() => setShowAddContractorModal(false)}
+        />
+      )}
+
+      {/* Quick-add vehicle modal */}
+      {companyId && showAddVehicleModal && (
+        <AddVehicleModal
+          isOpen={true}
+          companyId={companyId}
+          type={showAddVehicleModal}
+          onCreated={handleVehicleCreated}
+          onClose={() => setShowAddVehicleModal(null)}
+        />
+      )}
     </div>
   );
 }

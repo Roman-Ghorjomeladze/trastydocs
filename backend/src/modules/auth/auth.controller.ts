@@ -89,8 +89,26 @@ export class AuthController {
   }
 
   @Get('google')
+  async googleAuth(
+    @Req() req: any,
+    @Res() res: Response,
+  ) {
+    // Store referral code in cookie before redirecting to Google OAuth
+    const ref = req.query?.ref;
+    if (ref) {
+      res.cookie('referral_code', ref, {
+        httpOnly: true,
+        maxAge: 10 * 60 * 1000, // 10 minutes
+        sameSite: 'lax',
+      });
+    }
+    // Redirect to the Passport-guarded endpoint that initiates Google OAuth
+    res.redirect('/api/auth/google/init');
+  }
+
+  @Get('google/init')
   @UseGuards(AuthGuard('google'))
-  async googleAuth() {
+  async googleInit() {
     // Passport redirects to Google
   }
 
@@ -100,7 +118,14 @@ export class AuthController {
     @Req() req: any,
     @Res() res: Response,
   ) {
-    const result = await this.authService.googleLogin(req.user);
+    // Read referral code from cookie (set during /auth/google)
+    const referralCode = req.cookies?.referral_code || undefined;
+    const result = await this.authService.googleLogin(req.user, referralCode);
+
+    // Clear the referral cookie
+    if (referralCode) {
+      res.clearCookie('referral_code');
+    }
 
     this.setRefreshTokenCookie(res, result.refreshToken);
     this.setAccessTokenCookie(res, result.accessToken);

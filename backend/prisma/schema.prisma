@@ -85,6 +85,8 @@ model User {
   isActive              Boolean   @default(true)
   googleId              String?   @unique
   paddleCustomerId       String?  @unique
+  referralCode           String   @unique @default(cuid())
+  referredBy             String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 
@@ -148,9 +150,11 @@ model Company {
   email     String?
   taxId               String?
   bankAccounts        Json?
-  nameTranslations    Json?
-  addressTranslations Json?
+  nameTranslations            Json?
+  addressTranslations         Json?
+  directorNameTranslations    Json?
   baseCurrency        String  @default("GEL")
+  directorName        String  @default("")
   isActive            Boolean @default(true)
 
   createdAt DateTime @default(now())

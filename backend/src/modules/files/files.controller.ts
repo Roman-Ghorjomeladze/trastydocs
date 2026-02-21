@@ -42,10 +42,7 @@ export class FilesController {
    * - Local URLs → returns JSON with the /api/files/... path (frontend uses it as-is)
    */
   @Get('resolve')
-  async resolveUrl(
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<void> {
+  async resolveUrl(@Req() req: Request, @Res() res: Response): Promise<void> {
     const fileUrl = req.query.url as string;
     if (!fileUrl) {
       res.status(400).json({ message: 'Missing url query parameter' });
@@ -87,7 +84,9 @@ export class FilesController {
     const fromUrl = req.url.replace(/^\//, '').split('?')[0];
     const finalPath = (filePath || fromUrl).replace(/^\/+/, '');
 
-    this.logger.log(`[serveFile] rawPath=${JSON.stringify(rawPath)} filePath="${filePath}" fromUrl="${fromUrl}" finalPath="${finalPath}"`);
+    this.logger.log(
+      `[serveFile] rawPath=${JSON.stringify(rawPath)} filePath="${filePath}" fromUrl="${fromUrl}" finalPath="${finalPath}"`,
+    );
 
     if (!finalPath) {
       res.status(404).json({ message: 'File not found' });
@@ -136,7 +135,9 @@ export class FilesController {
         this.logger.log(`[serveFile] Trying S3 proxy for: ${s3Url}`);
         const signedUrl = await this.storage.getSignedUrl(s3Url);
         if (!signedUrl) {
-          this.logger.warn(`[serveFile] getSignedUrl returned null for: ${s3Url}`);
+          this.logger.warn(
+            `[serveFile] getSignedUrl returned null for: ${s3Url}`,
+          );
           res.status(404).json({ message: 'File not found in S3' });
           return;
         }
@@ -145,7 +146,9 @@ export class FilesController {
         // Fetch from S3 and stream back to client
         const s3Response = await fetch(signedUrl);
         if (!s3Response.ok || !s3Response.body) {
-          res.status(502).json({ message: 'Failed to fetch file from storage' });
+          res
+            .status(502)
+            .json({ message: 'Failed to fetch file from storage' });
           return;
         }
 
@@ -184,7 +187,9 @@ export class FilesController {
       } catch (err) {
         this.logger.error('Failed to proxy S3 file:', err);
         if (!res.headersSent) {
-          res.status(502).json({ message: 'Failed to proxy file from storage' });
+          res
+            .status(502)
+            .json({ message: 'Failed to proxy file from storage' });
         }
         return;
       }

@@ -11,6 +11,7 @@ const IntermediaryBankAccountSchema = z.object({
 
 const BankAccountSchema = z.object({
   id: z.string(),
+  label: z.string().max(100).default(''),
   bankName: z.string().min(1).max(255),
   accountNumber: z.string().min(1).max(100),
   currency: z.string().min(2).max(5).default('GEL'),
@@ -29,6 +30,7 @@ export const CreateCompanySchema = z.object({
   address: z.string().max(500).optional(),
   taxId: z.string().max(100).optional(),
   bankAccounts: z.array(BankAccountSchema).optional(),
+  directorName: z.string().max(255).default(''),
   nameTranslations: TranslationsSchema,
   addressTranslations: TranslationsSchema,
 });

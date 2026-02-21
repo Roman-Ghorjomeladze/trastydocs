@@ -30,12 +30,14 @@ export function CompanyInfoSection({
     () =>
       (bankAccounts || []).map((ba) => ({
         value: ba.id,
-        label: ba.bankName,
+        label: ba.label || ba.bankName,
+        bankName: ba.bankName,
         sublabel: ba.accountNumber,
         swift: ba.swiftCode || '',
         beneficiary: ba.beneficiaryName || '',
         currency: ba.currency || '',
         hasIntermediary: (ba.intermediaryBanks?.length ?? 0) > 0,
+        hasLabel: !!ba.label,
       })),
     [bankAccounts],
   );
@@ -142,6 +144,9 @@ export function CompanyInfoSection({
                           <span className="text-xs text-accent font-medium">{opt.currency}</span>
                         )}
                       </div>
+                      {opt.hasLabel && (
+                        <div className="text-muted-foreground text-xs truncate">{opt.bankName}</div>
+                      )}
                       {opt.sublabel && (
                         <div className="text-muted-foreground text-xs font-mono truncate">
                           {opt.sublabel}

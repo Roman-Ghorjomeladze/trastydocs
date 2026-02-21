@@ -69,6 +69,24 @@ export class S3StorageProvider implements StorageProvider {
     return `s3://${path}`;
   }
 
+  async read(fileUrl: string): Promise<Buffer> {
+    const key = this.extractKey(fileUrl);
+    if (!key) throw new Error('Invalid file URL');
+
+    const command = new GetObjectCommand({
+      Bucket: this.bucket,
+      Key: key,
+    });
+
+    const response = await this.s3Client.send(command);
+    const stream = response.Body as NodeJS.ReadableStream;
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(Buffer.from(chunk));
+    }
+    return Buffer.concat(chunks);
+  }
+
   async delete(fileUrl: string): Promise<void> {
     const key = this.extractKey(fileUrl);
     if (!key) return;

@@ -4,6 +4,11 @@ export interface StorageProvider {
   getUrl(key: string): string;
 
   /**
+   * Read a file from storage and return its contents as a Buffer.
+   */
+  read(fileUrl: string): Promise<Buffer>;
+
+  /**
    * Resolve a stored URL back to the absolute file path on disk.
    * Only implemented by LocalStorageProvider.
    */

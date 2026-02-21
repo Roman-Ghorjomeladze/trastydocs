@@ -25,6 +25,23 @@ export class LocalStorageProvider implements StorageProvider {
     return `${FILE_URL_PREFIX}${filePath}`;
   }
 
+  async read(fileUrl: string): Promise<Buffer> {
+    const filePath = fileUrl.replace(FILE_URL_PREFIX, '').replace('/uploads/', '');
+    const fullPath = path.resolve(this.uploadDir, filePath);
+
+    // Prevent directory traversal attacks
+    const resolvedUploadDir = path.resolve(this.uploadDir);
+    if (!fullPath.startsWith(resolvedUploadDir)) {
+      throw new Error('Invalid file path');
+    }
+
+    if (!fs.existsSync(fullPath)) {
+      throw new Error(`File not found: ${filePath}`);
+    }
+
+    return fs.readFileSync(fullPath);
+  }
+
   async delete(fileUrl: string): Promise<void> {
     // Support both old /uploads/ and new /api/files/ prefixes for backwards compat
     const filePath = fileUrl.replace(FILE_URL_PREFIX, '').replace('/uploads/', '');

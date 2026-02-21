@@ -287,24 +287,30 @@ export class DocumentsService {
   }
 
   /**
-   * Send a document to a recipient via email.
+   * Send a document to a recipient via email with PDF attachment.
    */
   async send(id: string, dto: SendDocumentDto, userId: string) {
     const doc = await this.findById(id);
+
+    if (!doc.pdfUrl) {
+      throw new BadRequestException('Document has no PDF. Please generate the PDF first.');
+    }
 
     const sender = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { name: true },
     });
 
-    const documentUrl =
-      doc.pdfUrl || `${process.env.FRONTEND_URL || ''}/documents/${id}`;
+    // Read the PDF file into a buffer
+    const pdfBuffer = await this.storage.read(doc.pdfUrl);
+    const pdfFilename = `${doc.documentNumber || doc.name || 'document'}.pdf`;
 
     await this.mail.sendDocumentEmail(
       dto.recipientEmail,
       sender?.name || 'Someone',
       doc.name,
-      documentUrl,
+      pdfBuffer,
+      pdfFilename,
     );
 
     await this.audit.log({
@@ -776,6 +782,7 @@ export class DocumentsService {
       currencies?: string[];
       vehiclePlates?: string[];
       trailerPlates?: string[];
+      buyerIds?: string[];
     },
   ) {
     // Get all companies the user belongs to
@@ -831,6 +838,10 @@ export class DocumentsService {
         endDate.setHours(23, 59, 59, 999);
         (where.createdAt as Prisma.DateTimeFilter).lte = endDate;
       }
+    }
+
+    if (filters?.buyerIds?.length) {
+      where.buyerId = { in: filters.buyerIds };
     }
 
     // Fetch all matching documents

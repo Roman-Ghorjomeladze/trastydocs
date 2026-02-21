@@ -22,7 +22,8 @@ import { exportAnalyticsToExcel } from '../../lib/excel-export.ts';
 import { ROUTES, STATUS_COLORS, STATUS_LABELS } from '../../lib/constants.ts';
 import { formatDate } from '../../lib/utils.ts';
 import { getVehicles } from '../../api/vehicles.ts';
-import type { DashboardStats, AnalyticsData, AnalyticsFilters, Vehicle } from '../../types/index.ts';
+import { getContractors } from '../../api/contractors.ts';
+import type { DashboardStats, AnalyticsData, AnalyticsFilters, Vehicle, Contractor } from '../../types/index.ts';
 
 // ── Chart Colors ──
 const CHART_COLORS = [
@@ -222,8 +223,9 @@ export function DashboardPage() {
   const [isAnalyticsLoading, setIsAnalyticsLoading] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
 
-  // Vehicles data
+  // Vehicles & contractors data
   const [allVehicles, setAllVehicles] = useState<Vehicle[]>([]);
+  const [allContractors, setAllContractors] = useState<Contractor[]>([]);
 
   // Filters
   const [datePreset, setDatePreset] = useState<DatePreset>('this_year');
@@ -232,6 +234,8 @@ export function DashboardPage() {
   const [selectedCompanyIds, setSelectedCompanyIds] = useState<string[]>([]);
   const [selectedVehiclePlates, setSelectedVehiclePlates] = useState<string[]>([]);
   const [selectedTrailerPlates, setSelectedTrailerPlates] = useState<string[]>([]);
+  const [selectedBuyerIds, setSelectedBuyerIds] = useState<string[]>([]);
+  const [selectedCurrencies, setSelectedCurrencies] = useState<string[]>([]);
 
   // Ensure companies are loaded
   useEffect(() => {
@@ -240,22 +244,28 @@ export function DashboardPage() {
     }
   }, [companies.length, fetchCompanies]);
 
-  // Load vehicles for all companies
+  // Load vehicles and contractors for all companies
   useEffect(() => {
-    const loadVehicles = async () => {
+    const loadData = async () => {
       if (companies.length === 0) return;
       try {
-        const allResults: Vehicle[] = [];
+        const vehicleResults: Vehicle[] = [];
+        const contractorResults: Contractor[] = [];
         for (const company of companies) {
-          const vehicles = await getVehicles(company.id);
-          allResults.push(...vehicles);
+          const [vehicles, contractors] = await Promise.all([
+            getVehicles(company.id),
+            getContractors(company.id),
+          ]);
+          vehicleResults.push(...vehicles);
+          contractorResults.push(...contractors);
         }
-        setAllVehicles(allResults);
+        setAllVehicles(vehicleResults);
+        setAllContractors(contractorResults);
       } catch {
         // silently fail
       }
     };
-    loadVehicles();
+    loadData();
   }, [companies]);
 
   // Memoize truck and trailer options
@@ -274,6 +284,29 @@ export function DashboardPage() {
       label: `${v.model} (${v.licensePlate})`,
     }));
   }, [allVehicles]);
+
+  // Contractor options for filter
+  const contractorOptions = useMemo(() => {
+    const activeContractors = allContractors.filter((c) => c.isActive);
+    // Deduplicate by id (in case same contractor appears in multiple companies)
+    const seen = new Set<string>();
+    return activeContractors
+      .filter((c) => {
+        if (seen.has(c.id)) return false;
+        seen.add(c.id);
+        return true;
+      })
+      .map((c) => ({ value: c.id, label: c.name }));
+  }, [allContractors]);
+
+  // Currency options extracted from analytics data
+  const currencyOptions = useMemo(() => {
+    if (!analytics?.byCurrency) return [];
+    return analytics.byCurrency.map((c) => ({
+      value: c.currency,
+      label: c.currency,
+    }));
+  }, [analytics?.byCurrency]);
 
   // Load basic dashboard stats
   useEffect(() => {
@@ -305,6 +338,8 @@ export function DashboardPage() {
           companyIds: selectedCompanyIds.length > 0 ? selectedCompanyIds : undefined,
           vehiclePlates: selectedVehiclePlates.length > 0 ? selectedVehiclePlates : undefined,
           trailerPlates: selectedTrailerPlates.length > 0 ? selectedTrailerPlates : undefined,
+          buyerIds: selectedBuyerIds.length > 0 ? selectedBuyerIds : undefined,
+          currencies: selectedCurrencies.length > 0 ? selectedCurrencies : undefined,
         };
 
         const data = await fetchAnalytics(filters);
@@ -316,7 +351,7 @@ export function DashboardPage() {
       }
     };
     loadAnalytics();
-  }, [datePreset, customDateFrom, customDateTo, selectedCompanyIds, selectedVehiclePlates, selectedTrailerPlates]);
+  }, [datePreset, customDateFrom, customDateTo, selectedCompanyIds, selectedVehiclePlates, selectedTrailerPlates, selectedBuyerIds, selectedCurrencies]);
 
   // Format currency
   const formatAmount = (amount: number, currency?: string) => {
@@ -352,6 +387,18 @@ export function DashboardPage() {
   const toggleTrailerFilter = useCallback((plate: string) => {
     setSelectedTrailerPlates((prev) =>
       prev.includes(plate) ? prev.filter((p) => p !== plate) : [...prev, plate],
+    );
+  }, []);
+
+  const toggleBuyerFilter = useCallback((buyerId: string) => {
+    setSelectedBuyerIds((prev) =>
+      prev.includes(buyerId) ? prev.filter((id) => id !== buyerId) : [...prev, buyerId],
+    );
+  }, []);
+
+  const toggleCurrencyFilter = useCallback((currency: string) => {
+    setSelectedCurrencies((prev) =>
+      prev.includes(currency) ? prev.filter((c) => c !== currency) : [...prev, currency],
     );
   }, []);
 
@@ -414,12 +461,18 @@ export function DashboardPage() {
 
   // Check if we have any filters active
   const hasActiveFilters =
-    selectedCompanyIds.length > 0 || selectedVehiclePlates.length > 0 || selectedTrailerPlates.length > 0;
+    selectedCompanyIds.length > 0 ||
+    selectedVehiclePlates.length > 0 ||
+    selectedTrailerPlates.length > 0 ||
+    selectedBuyerIds.length > 0 ||
+    selectedCurrencies.length > 0;
 
   const clearAllFilters = () => {
     setSelectedCompanyIds([]);
     setSelectedVehiclePlates([]);
     setSelectedTrailerPlates([]);
+    setSelectedBuyerIds([]);
+    setSelectedCurrencies([]);
     setDatePreset('this_year');
     setCustomDateFrom('');
     setCustomDateTo('');
@@ -561,6 +614,28 @@ export function DashboardPage() {
                   options={trailerOptions}
                   onToggle={toggleTrailerFilter}
                   allLabel={t('analytics.allTrailers')}
+                />
+              )}
+
+              {/* Contractor filter dropdown */}
+              {contractorOptions.length > 0 && (
+                <MultiFilterDropdown
+                  label={t('analytics.contractor')}
+                  selectedValues={selectedBuyerIds}
+                  options={contractorOptions}
+                  onToggle={toggleBuyerFilter}
+                  allLabel={t('analytics.allContractors')}
+                />
+              )}
+
+              {/* Currency filter dropdown */}
+              {currencyOptions.length > 0 && (
+                <MultiFilterDropdown
+                  label={t('analytics.currency')}
+                  selectedValues={selectedCurrencies}
+                  options={currencyOptions}
+                  onToggle={toggleCurrencyFilter}
+                  allLabel={t('analytics.allCurrencies')}
                 />
               )}
 

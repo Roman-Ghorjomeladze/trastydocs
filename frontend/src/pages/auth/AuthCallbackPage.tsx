@@ -16,6 +16,7 @@ export function AuthCallbackPage() {
 
     if (token) {
       setToken(token);
+      localStorage.removeItem('referral_code');
       fetchUser().then(() => {
         navigate(ROUTES.DASHBOARD, { replace: true });
       });

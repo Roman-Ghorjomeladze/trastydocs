@@ -123,7 +123,25 @@
     "allContractors": "Все контрагенты",
     "contractor": "Контрагент",
     "dateFrom": "Дата от",
-    "dateTo": "Дата до"
+    "dateTo": "Дата до",
+    "addContractor": "Добавить контрагента",
+    "columnPicker": "Столбцы",
+    "columns": {
+      "documentNumber": "Номер документа",
+      "name": "Название",
+      "contractorName": "Контрагент",
+      "amount": "Сумма",
+      "currency": "Валюта",
+      "transportRoute": "Маршрут",
+      "status": "Статус",
+      "createdAt": "Дата"
+    }
+  },
+  "invoiceBuilder": {
+    "baseCurrency": "Базовая валюта",
+    "exchangeRate": "Курс обмена",
+    "noRateAvailable": "Курс недоступен",
+    "convertedTotal": "Конвертированная сумма"
   },
   "companies": {
     "title": "Ваши компании",
@@ -193,7 +211,8 @@
     "addressTranslations": "Переводы адреса",
     "nameInLang": "Название на {{lang}}",
     "addressInLang": "Адрес на {{lang}}",
-    "translationsHelp": "Укажите название компании и адрес на разных языках для многоязычных счетов.",
+    "directorNameInLang": "Директор на {{lang}}",
+    "translationsHelp": "Укажите название компании, адрес и имя директора на разных языках для многоязычных счетов.",
     "confirmRemoveBank": "Вы уверены, что хотите удалить этот банковский счёт?",
     "removeBankTitle": "Удалить банковский счёт",
     "baseCurrency": "Базовая валюта",
@@ -204,7 +223,11 @@
     "beneficiaryName": "Имя бенефициара",
     "intermediaryBank": "Банк-посредник",
     "addIntermediaryBank": "Добавить банк-посредник",
-    "removeIntermediaryBank": "Удалить посредника"
+    "removeIntermediaryBank": "Удалить посредника",
+    "bankLabel": "Метка",
+    "bankLabelPlaceholder": "напр. Основной счёт USD",
+    "directorName": "Имя директора",
+    "directorNamePlaceholder": "напр. Иванов Иван Иванович"
   },
   "contractors": {
     "title": "Контрагенты",
@@ -266,7 +289,10 @@
     "selectDefaultTrailer": "Выберите прицеп по умолчанию",
     "noDefaultTrailer": "Нет",
     "confirmDelete": "Вы уверены, что хотите удалить этот транспорт? Это действие нельзя отменить.",
-    "deleteVehicle": "Удалить транспорт"
+    "deleteVehicle": "Удалить транспорт",
+    "addTruck": "Добавить грузовик",
+    "addTrailer": "Добавить прицеп",
+    "quickAdd": "Быстро добавить"
   },
   "stamps": {
     "title": "Печати компании",
@@ -562,7 +588,11 @@
     "allTrucks": "Все грузовики",
     "trailer": "Прицеп",
     "allTrailers": "Все прицепы",
-    "clearFilters": "Сбросить фильтры"
+    "clearFilters": "Сбросить фильтры",
+    "contractor": "Контрагент",
+    "allContractors": "Все контрагенты",
+    "currency": "Валюта",
+    "allCurrencies": "Все валюты"
   },
   "invoice": {
     "baseCurrency": "Базовая валюта",

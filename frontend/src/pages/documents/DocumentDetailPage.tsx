@@ -7,6 +7,7 @@ import { ROUTES, STATUS_COLORS } from "../../lib/constants.ts";
 import { cn } from "../../lib/utils.ts";
 import { isInvoiceData } from "../../lib/invoice-utils.ts";
 import { exportInvoicePdf } from "../../lib/pdf-export.ts";
+import { useAuthStore } from "../../stores/auth.store.ts";
 import { getDocument } from "../../api/documents.ts";
 import { ConfirmModal } from "../../components/shared/ConfirmModal.tsx";
 import { AuthImage, useAuthUrl } from "../../components/shared/AuthImage.tsx";
@@ -29,6 +30,7 @@ export function DocumentDetailPage() {
 		duplicateDocument,
 		uploadPdf,
 	} = useDocumentStore();
+	const authUser = useAuthStore((s) => s.user);
 
 	const [isEditing, setIsEditing] = useState(false);
 	const [editName, setEditName] = useState("");
@@ -128,7 +130,7 @@ export function DocumentDetailPage() {
 			}
 
 			const invoiceData = inputData as unknown as InvoiceData;
-			const pdfBytes = await exportInvoicePdf(invoiceData);
+			const pdfBytes = await exportInvoicePdf(invoiceData, authUser?.referralCode);
 
 			// Upload to server so the embedded viewer refreshes
 			const base64 = btoa(
@@ -236,7 +238,11 @@ export function DocumentDetailPage() {
 					)}
 					<button
 						type="button"
-						onClick={() => setShowSendModal(true)}
+						onClick={() => {
+							const inputData = doc.inputData as Record<string, unknown> | undefined;
+							setSendEmail((inputData?.buyerEmail as string) || '');
+							setShowSendModal(true);
+						}}
 						className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted"
 					>
 						{t('documents.send')}
@@ -321,6 +327,8 @@ export function DocumentDetailPage() {
 											type="button"
 											onClick={() => {
 												setMobileMenuOpen(false);
+												const inputData = doc.inputData as Record<string, unknown> | undefined;
+												setSendEmail((inputData?.buyerEmail as string) || '');
 												setShowSendModal(true);
 											}}
 											className="w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-foreground hover:bg-muted transition-colors"
@@ -377,7 +385,8 @@ export function DocumentDetailPage() {
 											<p className="text-muted-foreground mb-3">PDF preview not available in this browser</p>
 											<a
 												href={pdfBlobUrl}
-												download={pdfFileName}
+												target="_blank"
+												rel="noopener noreferrer"
 												className="px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover"
 											>
 												{t('documents.downloadPdf')}
@@ -392,7 +401,8 @@ export function DocumentDetailPage() {
 								<div className="mt-3 flex items-center gap-2">
 									<a
 										href={pdfBlobUrl || '#'}
-										download={pdfFileName}
+										target="_blank"
+										rel="noopener noreferrer"
 										className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted"
 									>
 										{t('documents.downloadPdf')}
