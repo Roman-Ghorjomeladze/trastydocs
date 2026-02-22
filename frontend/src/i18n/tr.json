@@ -133,6 +133,7 @@
       "amount": "Tutar",
       "currency": "Para Birimi",
       "transportRoute": "Güzergah",
+      "baseAmount": "Baz Tutar",
       "status": "Durum",
       "createdAt": "Tarih"
     }

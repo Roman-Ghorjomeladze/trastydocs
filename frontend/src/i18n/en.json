@@ -133,6 +133,7 @@
       "amount": "Amount",
       "currency": "Currency",
       "transportRoute": "Route",
+      "baseAmount": "Base Amount",
       "status": "Status",
       "createdAt": "Date"
     }

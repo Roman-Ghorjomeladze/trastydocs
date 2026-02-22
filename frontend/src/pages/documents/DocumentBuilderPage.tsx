@@ -269,6 +269,7 @@ export function DocumentBuilderPage() {
             selectedBankAccountIds: bankIds,
             directorName: data.directorName || resolvedDirectorName,
             signerName: data.signerName || resolvedDirectorName,
+            baseCurrency: data.baseCurrency || activeCompany.baseCurrency || 'GEL',
           };
         }
 
@@ -907,6 +908,7 @@ export function DocumentBuilderPage() {
                 data={invoiceData}
                 labels={labels}
                 onChange={handleFieldChange}
+                total={invoiceData.total}
               />
             </div>
 

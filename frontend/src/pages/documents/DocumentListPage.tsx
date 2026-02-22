@@ -15,9 +15,9 @@ import { MultiSelect } from '../../components/shared/MultiSelect.tsx';
 import type { MultiSelectOption } from '../../components/shared/MultiSelect.tsx';
 import type { DocumentStatus, Contractor, DocumentType } from '../../types/index.ts';
 
-type ColumnKey = 'documentNumber' | 'name' | 'contractorName' | 'amount' | 'currency' | 'transportRoute' | 'status' | 'createdAt';
+type ColumnKey = 'documentNumber' | 'name' | 'contractorName' | 'amount' | 'currency' | 'baseAmount' | 'transportRoute' | 'status' | 'createdAt';
 
-const ALL_COLUMNS: ColumnKey[] = ['documentNumber', 'name', 'contractorName', 'amount', 'currency', 'transportRoute', 'status', 'createdAt'];
+const ALL_COLUMNS: ColumnKey[] = ['documentNumber', 'name', 'contractorName', 'amount', 'currency', 'baseAmount', 'transportRoute', 'status', 'createdAt'];
 const DEFAULT_COLUMNS: ColumnKey[] = ['documentNumber', 'name', 'status', 'createdAt'];
 
 function getStoredColumns(companyId: string): ColumnKey[] {
@@ -282,6 +282,23 @@ export function DocumentListPage() {
     return '-';
   };
 
+  const getDocBaseAmount = (inputData: Record<string, unknown>): string => {
+    const total = inputData?.total;
+    const exchangeRate = inputData?.exchangeRate;
+    const currency = inputData?.currency as string | undefined;
+    const baseCurrency = inputData?.baseCurrency as string | undefined;
+
+    if (typeof total !== 'number' || !total) return '-';
+
+    // Same currency — base amount equals total
+    if (!baseCurrency || currency === baseCurrency || !exchangeRate || exchangeRate === 1) {
+      return `${total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrency || currency || ''}`;
+    }
+
+    const baseAmount = total * (exchangeRate as number);
+    return `${baseAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} ${baseCurrency}`;
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
@@ -506,6 +523,11 @@ export function DocumentListPage() {
                     {t('documents.columns.currency')}
                   </th>
                 )}
+                {visibleColumns.includes('baseAmount') && (
+                  <th className="px-4 py-3 text-right text-xs font-medium text-muted-foreground uppercase">
+                    {t('documents.columns.baseAmount')}
+                  </th>
+                )}
                 {visibleColumns.includes('transportRoute') && (
                   <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase">
                     {t('documents.columns.transportRoute')}
@@ -556,6 +578,11 @@ export function DocumentListPage() {
                     {visibleColumns.includes('currency') && (
                       <td className="px-4 py-3 text-sm text-muted-foreground">
                         {getDocCurrency(inputData)}
+                      </td>
+                    )}
+                    {visibleColumns.includes('baseAmount') && (
+                      <td className="px-4 py-3 text-sm text-foreground text-right font-mono">
+                        {getDocBaseAmount(inputData)}
                       </td>
                     )}
                     {visibleColumns.includes('transportRoute') && (

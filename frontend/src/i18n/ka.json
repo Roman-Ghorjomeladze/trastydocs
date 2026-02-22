@@ -133,6 +133,7 @@
       "amount": "თანხა",
       "currency": "ვალუტა",
       "transportRoute": "მარშრუტი",
+      "baseAmount": "საბაზისო თანხა",
       "status": "სტატუსი",
       "createdAt": "თარიღი"
     }

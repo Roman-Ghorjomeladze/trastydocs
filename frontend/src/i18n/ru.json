@@ -133,6 +133,7 @@
       "amount": "Сумма",
       "currency": "Валюта",
       "transportRoute": "Маршрут",
+      "baseAmount": "Базовая сумма",
       "status": "Статус",
       "createdAt": "Дата"
     }
