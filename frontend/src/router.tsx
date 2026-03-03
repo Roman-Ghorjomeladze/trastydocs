@@ -38,8 +38,8 @@ import { AdminDashboardPage } from './pages/admin/AdminDashboardPage.tsx';
 import { AdminUsersPage } from './pages/admin/AdminUsersPage.tsx';
 import { AdminUserDetailPage } from './pages/admin/AdminUserDetailPage.tsx';
 import { AdminPlansPage } from './pages/admin/AdminPlansPage.tsx';
-import { AdminCompaniesPage } from './pages/admin/AdminCompaniesPage.tsx';
 import { AdminDocumentsPage } from './pages/admin/AdminDocumentsPage.tsx';
+import { AdminCompaniesPage } from './pages/admin/AdminCompaniesPage.tsx';
 
 // Checkout pages
 import { CheckoutSuccessPage } from './pages/checkout/CheckoutSuccessPage.tsx';
@@ -92,7 +92,7 @@ function GuestGuard({ children }: { children: ReactNode }) {
 // ── Router Configuration ──
 
 export const router = createBrowserRouter([
-  // Public routes (landing, login, register) — all under PublicLayout
+  // Public routes (landing, login, register)
   {
     element: <PublicLayout />,
     children: [
