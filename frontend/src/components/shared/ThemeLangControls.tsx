@@ -38,7 +38,7 @@ export function ThemeLangControls() {
       <div className="relative">
         <button
           onClick={() => setLangOpen(!langOpen)}
-          className="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors text-sm flex items-center gap-1"
+          className="p-2 rounded-xl hover:bg-muted text-muted-foreground transition-all duration-200 text-sm flex items-center gap-1"
           aria-label="Change language"
         >
           <span>{currentLang.flag}</span>
@@ -48,7 +48,7 @@ export function ThemeLangControls() {
         {langOpen && (
           <>
             <div className="fixed inset-0 z-40" onClick={() => setLangOpen(false)} />
-            <div className="absolute right-0 mt-1 bg-card border border-border rounded-lg shadow-lg z-50 py-1 min-w-[140px]">
+            <div className="absolute right-0 mt-1.5 bg-card border border-border rounded-xl shadow-xl z-50 py-1.5 min-w-[140px]">
               {LANGUAGES.map((lang) => (
                 <button
                   key={lang.code}
@@ -71,7 +71,7 @@ export function ThemeLangControls() {
       {/* Theme toggle */}
       <button
         onClick={cycleTheme}
-        className="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+        className="p-2 rounded-xl hover:bg-muted text-muted-foreground transition-all duration-200"
         aria-label={`Theme: ${theme}`}
         title={`Theme: ${theme}`}
       >

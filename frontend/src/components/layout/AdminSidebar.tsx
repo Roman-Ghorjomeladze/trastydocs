@@ -23,18 +23,18 @@ export function AdminSidebar() {
   const location = useLocation();
 
   return (
-    <aside className="bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border shadow-[4px_0_12px_rgba(0,0,0,0.15)] w-64 min-h-screen">
+    <aside className="bg-sidebar text-sidebar-foreground flex flex-col w-64 min-h-screen">
       {/* Header */}
-      <div className="flex items-center gap-2.5 border-b border-sidebar-border h-16 px-4">
+      <div className="flex items-center gap-2.5 h-16 px-4">
         <AppLogo size={32} />
         <div>
-          <span className="text-lg font-semibold text-sidebar-foreground">Admin</span>
-          <span className="text-xs text-muted-foreground ml-1.5">Panel</span>
+          <span className="text-lg font-semibold text-white tracking-tight">Admin</span>
+          <span className="text-xs text-sidebar-foreground ml-1.5">Panel</span>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 space-y-1 p-3">
+      <nav className="flex-1 space-y-1 px-3 py-2">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = item.exact
@@ -46,13 +46,18 @@ export function AdminSidebar() {
               key={item.href}
               to={item.href}
               className={cn(
-                'flex items-center gap-3 rounded-md text-sm h-9 px-2.5',
+                'group flex items-center gap-3 rounded-xl text-sm font-medium h-11 px-3 transition-all duration-200',
                 active
-                  ? 'bg-sidebar-hover text-white'
+                  ? 'bg-sidebar-active text-sidebar-active-text'
                   : 'text-sidebar-foreground hover:bg-sidebar-hover hover:text-white',
               )}
             >
-              <Icon className="w-[18px] h-[18px] flex-shrink-0" />
+              <Icon
+                className={cn(
+                  'w-4.5 h-4.5 flex-shrink-0 transition-colors duration-200',
+                  active ? 'text-sidebar-active-text' : 'text-sidebar-foreground group-hover:text-white',
+                )}
+              />
               <span>{item.label}</span>
             </Link>
           );
@@ -60,12 +65,12 @@ export function AdminSidebar() {
       </nav>
 
       {/* Back to App */}
-      <div className="p-3 border-t border-sidebar-border">
+      <div className="px-3 pb-3">
         <Link
           to={ROUTES.DASHBOARD}
-          className="flex items-center gap-3 rounded-md text-sm h-9 px-2.5 text-sidebar-foreground hover:bg-sidebar-hover hover:text-white"
+          className="group flex items-center gap-3 rounded-xl text-sm font-medium h-11 px-3 text-sidebar-foreground hover:bg-sidebar-hover hover:text-white transition-all duration-200"
         >
-          <ArrowLeft className="w-[18px] h-[18px] flex-shrink-0" />
+          <ArrowLeft className="w-4.5 h-4.5 flex-shrink-0 text-sidebar-foreground group-hover:text-white transition-colors duration-200" />
           <span>Back to App</span>
         </Link>
       </div>

@@ -8,6 +8,8 @@ export interface Toast {
 }
 
 export type Theme = 'light' | 'dark' | 'system';
+export type FontFamily = 'inter' | 'nunito' | 'grotesk';
+export type FontSize = 'standard' | 'medium' | 'large';
 
 interface UpgradeModalState {
   isOpen: boolean;
@@ -21,6 +23,8 @@ interface UiState {
   sidebarOpen: boolean;
   toasts: Toast[];
   theme: Theme;
+  fontFamily: FontFamily;
+  fontSize: FontSize;
   upgradeModal: UpgradeModalState;
 }
 
@@ -30,6 +34,8 @@ interface UiActions {
   addToast: (toast: Omit<Toast, 'id'>) => void;
   removeToast: (id: string) => void;
   setTheme: (theme: Theme) => void;
+  setFontFamily: (font: FontFamily) => void;
+  setFontSize: (size: FontSize) => void;
   showUpgradeModal: (data?: Omit<UpgradeModalState, 'isOpen'>) => void;
   hideUpgradeModal: () => void;
 }
@@ -61,15 +67,57 @@ function getInitialTheme(): Theme {
   return 'light';
 }
 
-// Apply initial theme on module load
+const FONT_FAMILY_MAP: Record<FontFamily, string> = {
+  inter: "'Inter', 'BPG Arial', sans-serif",
+  nunito: "'Nunito Sans', 'BPG Nino Elite Round', sans-serif",
+  grotesk: "'Space Grotesk', 'BPG Glaho', sans-serif",
+};
+
+function applyFontFamily(font: FontFamily) {
+  document.documentElement.style.setProperty('--font-family', FONT_FAMILY_MAP[font]);
+}
+
+function getInitialFont(): FontFamily {
+  const stored = localStorage.getItem('app_font');
+  if (stored === 'inter' || stored === 'nunito' || stored === 'grotesk') {
+    return stored;
+  }
+  return 'inter';
+}
+
+const FONT_SIZE_MAP: Record<FontSize, string> = {
+  standard: '16px',
+  medium: '18px',
+  large: '20px',
+};
+
+function applyFontSize(size: FontSize) {
+  document.documentElement.style.fontSize = FONT_SIZE_MAP[size];
+}
+
+function getInitialFontSize(): FontSize {
+  const stored = localStorage.getItem('app_font_size');
+  if (stored === 'standard' || stored === 'medium' || stored === 'large') {
+    return stored;
+  }
+  return 'standard';
+}
+
+// Apply initial theme, font and size on module load
 const initialTheme = getInitialTheme();
+const initialFont = getInitialFont();
+const initialFontSize = getInitialFontSize();
 applyThemeClass(initialTheme);
+applyFontFamily(initialFont);
+applyFontSize(initialFontSize);
 
 export const useUiStore = create<UiState & UiActions>((set) => ({
   // ── State ──
   sidebarOpen: true,
   toasts: [],
   theme: initialTheme,
+  fontFamily: initialFont,
+  fontSize: initialFontSize,
   upgradeModal: { isOpen: false },
 
   // ── Actions ──
@@ -81,6 +129,18 @@ export const useUiStore = create<UiState & UiActions>((set) => ({
     localStorage.setItem('app_theme', theme);
     applyThemeClass(theme);
     set({ theme });
+  },
+
+  setFontFamily: (font) => {
+    localStorage.setItem('app_font', font);
+    applyFontFamily(font);
+    set({ fontFamily: font });
+  },
+
+  setFontSize: (size) => {
+    localStorage.setItem('app_font_size', size);
+    applyFontSize(size);
+    set({ fontSize: size });
   },
 
   addToast: (toast) => {

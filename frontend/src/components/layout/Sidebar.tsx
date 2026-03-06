@@ -127,10 +127,37 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     textOpacity ? 'opacity-100' : 'opacity-0 pointer-events-none',
   );
 
+  const renderNavLink = (item: NavItem, active: boolean) => {
+    const Icon = item.icon;
+    return (
+      <Link
+        key={item.href}
+        to={item.href}
+        title={collapsed ? item.label : undefined}
+        className={cn(
+          'group flex items-center gap-3 rounded-xl text-sm font-medium h-11 px-3 whitespace-nowrap transition-all duration-200',
+          active
+            ? 'bg-sidebar-active text-sidebar-active-text'
+            : 'text-sidebar-foreground hover:bg-sidebar-hover hover:text-white',
+        )}
+      >
+        <Icon
+          className={cn(
+            'w-4.5 h-4.5 flex-shrink-0 transition-colors duration-200',
+            active ? 'text-sidebar-active-text' : 'text-sidebar-foreground group-hover:text-white',
+          )}
+        />
+        {/* On mobile always show text, on desktop respect collapse */}
+        <span className={cn('md:hidden')}>{item.label}</span>
+        <span className={cn('hidden md:inline', textCls)}>{item.label}</span>
+      </Link>
+    );
+  };
+
   const sidebarContent = (
     <aside
       className={cn(
-        'bg-sidebar text-sidebar-foreground flex flex-col border-r border-sidebar-border shadow-[4px_0_12px_rgba(0,0,0,0.15)] overflow-hidden',
+        'bg-sidebar text-sidebar-foreground flex flex-col overflow-hidden',
         // Mobile: full-width drawer, fixed height
         'h-full w-72',
         // Desktop: collapsible width with smooth transition
@@ -138,18 +165,18 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         collapsed ? 'md:w-16' : 'md:w-64',
       )}
     >
-      {/* Header — fixed h-16, icon always at same position */}
-      <div className="flex items-center border-b border-sidebar-border h-16 px-4 whitespace-nowrap">
+      {/* Header */}
+      <div className="flex items-center h-16 px-4 whitespace-nowrap">
         <button
           onClick={() => {
             setCollapsed(!collapsed);
             if (!collapsed) setSwitcherOpen(false);
           }}
-          className="hidden md:flex items-center gap-2.5 rounded-md hover:opacity-80"
+          className="hidden md:flex items-center gap-2.5 rounded-xl hover:opacity-80 transition-opacity"
           aria-label={collapsed ? t('sidebar.expandSidebar') : t('sidebar.collapseSidebar')}
         >
           <AppLogo size={32} className="flex-shrink-0" />
-          <span className={cn('text-lg font-semibold text-sidebar-foreground', textCls)}>
+          <span className={cn('text-lg font-semibold text-white tracking-tight', textCls)}>
             {t('app.name')}
           </span>
         </button>
@@ -158,12 +185,12 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         <div className="flex md:hidden items-center justify-between w-full">
           <div className="flex items-center gap-2.5">
             <AppLogo size={32} className="flex-shrink-0" />
-            <span className="text-lg font-semibold text-sidebar-foreground">{t('app.name')}</span>
+            <span className="text-lg font-semibold text-white tracking-tight">{t('app.name')}</span>
           </div>
           <button
             type="button"
             onClick={onMobileClose}
-            className="p-1.5 rounded-md text-sidebar-foreground hover:bg-sidebar-hover transition-colors"
+            className="p-2 rounded-xl text-sidebar-foreground hover:bg-sidebar-hover hover:text-white transition-all duration-200"
             aria-label={t('sidebar.closeMenu')}
           >
             <X className="w-5 h-5" />
@@ -172,7 +199,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
         <ChevronsLeft
           className={cn(
-            'w-4 h-4 text-muted-foreground cursor-pointer hover:text-sidebar-foreground ml-auto flex-shrink-0 hidden md:block',
+            'w-4 h-4 text-sidebar-foreground cursor-pointer hover:text-white ml-auto flex-shrink-0 hidden md:block transition-colors duration-200',
             textCls,
           )}
           onClick={() => {
@@ -182,34 +209,13 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         />
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden p-3">
+      <nav className="flex-1 space-y-1 overflow-y-auto overflow-x-hidden sidebar-scroll px-3 py-2">
         {/* Main navigation */}
-        {mainNav.map((item) => {
-          const Icon = item.icon;
-          const active = isActive(item);
-          return (
-            <Link
-              key={item.href}
-              to={item.href}
-              title={collapsed ? item.label : undefined}
-              className={cn(
-                'flex items-center gap-3 rounded-md text-sm h-9 px-2.5 whitespace-nowrap',
-                active
-                  ? 'bg-sidebar-hover text-white'
-                  : 'text-sidebar-foreground hover:bg-sidebar-hover hover:text-white',
-              )}
-            >
-              <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-              {/* On mobile always show text, on desktop respect collapse */}
-              <span className={cn('md:hidden')}>{item.label}</span>
-              <span className={cn('hidden md:inline', textCls)}>{item.label}</span>
-            </Link>
-          );
-        })}
+        {mainNav.map((item) => renderNavLink(item, isActive(item)))}
 
         {/* Company Switcher */}
         {companies.length > 0 && (
-          <div className="pt-4">
+          <div className="pt-5">
             <div className="relative">
               <button
                 onClick={() => {
@@ -221,20 +227,20 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                   }
                 }}
                 title={collapsed && activeCompany ? activeCompany.name : undefined}
-                className="w-full flex items-center gap-2 rounded-md text-sm text-sidebar-foreground hover:bg-sidebar-hover hover:text-white h-9 px-2.5 whitespace-nowrap"
+                className="w-full flex items-center gap-2.5 rounded-xl text-sm font-medium text-sidebar-foreground hover:bg-sidebar-hover hover:text-white h-11 px-3 whitespace-nowrap transition-all duration-200"
               >
                 {activeCompany ? (
                   <>
-                    <span className="w-6 h-6 rounded bg-accent text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
+                    <span className="w-7 h-7 rounded-lg bg-accent/20 text-sidebar-active-text flex items-center justify-center text-xs font-semibold flex-shrink-0">
                       {getInitials(activeCompany.name)}
                     </span>
                     {/* Mobile: always show */}
                     <span className="flex md:hidden items-center gap-1 flex-1 min-w-0">
                       <span className="truncate flex-1 text-left">{activeCompany.name}</span>
                       {switcherOpen ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        <ChevronUp className="w-3.5 h-3.5 text-sidebar-foreground flex-shrink-0" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        <ChevronDown className="w-3.5 h-3.5 text-sidebar-foreground flex-shrink-0" />
                       )}
                     </span>
                     {/* Desktop: respect collapse */}
@@ -243,19 +249,19 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
                     >
                       <span className="truncate flex-1 text-left">{activeCompany.name}</span>
                       {switcherOpen ? (
-                        <ChevronUp className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        <ChevronUp className="w-3.5 h-3.5 text-sidebar-foreground flex-shrink-0" />
                       ) : (
-                        <ChevronDown className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                        <ChevronDown className="w-3.5 h-3.5 text-sidebar-foreground flex-shrink-0" />
                       )}
                     </span>
                   </>
                 ) : (
                   <>
-                    <Building2 className="w-[18px] h-[18px] flex-shrink-0 text-muted-foreground" />
-                    <span className="md:hidden text-muted-foreground">
+                    <Building2 className="w-4.5 h-4.5 flex-shrink-0 text-sidebar-foreground" />
+                    <span className="md:hidden text-sidebar-foreground">
                       {t('sidebar.selectCompany')}
                     </span>
-                    <span className={cn('hidden md:inline text-muted-foreground', textCls)}>
+                    <span className={cn('hidden md:inline text-sidebar-foreground', textCls)}>
                       {t('sidebar.selectCompany')}
                     </span>
                   </>
@@ -263,19 +269,19 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               </button>
 
               {switcherOpen && (
-                <div className="absolute left-0 right-0 mt-1 bg-sidebar-hover border border-sidebar-border rounded-md shadow-lg z-10 max-h-48 overflow-y-auto">
+                <div className="absolute left-0 right-0 mt-1.5 bg-sidebar border border-sidebar-border rounded-xl shadow-xl shadow-black/20 z-10 max-h-48 overflow-y-auto backdrop-blur-sm">
                   {companies.map((company) => (
                     <button
                       key={company.id}
                       onClick={() => handleSwitchCompany(company)}
                       className={cn(
-                        'w-full flex items-center gap-2 px-3 py-2 text-sm text-left whitespace-nowrap',
+                        'w-full flex items-center gap-2.5 px-3 py-2.5 text-sm text-left whitespace-nowrap transition-all duration-200 first:rounded-t-xl last:rounded-b-xl',
                         company.id === activeCompany?.id
-                          ? 'bg-sidebar text-white'
-                          : 'text-sidebar-foreground hover:bg-sidebar hover:text-white',
+                          ? 'bg-sidebar-active text-sidebar-active-text'
+                          : 'text-sidebar-foreground hover:bg-sidebar-hover hover:text-white',
                       )}
                     >
-                      <span className="w-5 h-5 rounded bg-accent text-white flex items-center justify-center text-xs font-medium flex-shrink-0">
+                      <span className="w-6 h-6 rounded-md bg-accent/20 text-sidebar-active-text flex items-center justify-center text-xs font-semibold flex-shrink-0">
                         {getInitials(company.name)}
                       </span>
                       <span className="truncate">{company.name}</span>
@@ -290,16 +296,16 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
         {/* Company-scoped nav */}
         {companyNav.length > 0 && (
           <>
-            {/* Fixed-height separator — shows company name when expanded, border when collapsed */}
-            <div className="pt-2 pb-1 border-b border-sidebar-border">
+            {/* Separator with company name */}
+            <div className="pt-3 pb-2">
               {/* Mobile: always show */}
-              <p className="md:hidden px-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate whitespace-nowrap">
+              <p className="md:hidden px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-widest truncate whitespace-nowrap">
                 {activeCompany?.name}
               </p>
               {/* Desktop: respect collapse */}
               <p
                 className={cn(
-                  'hidden md:block px-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider truncate whitespace-nowrap',
+                  'hidden md:block px-3 text-xs font-semibold text-sidebar-foreground/50 uppercase tracking-widest truncate whitespace-nowrap',
                   textCls,
                 )}
               >
@@ -307,27 +313,10 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               </p>
             </div>
             {companyNav.map((item) => {
-              const Icon = item.icon;
               const active =
                 location.pathname === item.href ||
                 (item.icon !== Users && location.pathname.startsWith(item.href));
-              return (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  title={collapsed ? item.label : undefined}
-                  className={cn(
-                    'flex items-center gap-3 rounded-md text-sm h-9 px-2.5 whitespace-nowrap',
-                    active
-                      ? 'bg-sidebar-hover text-white'
-                      : 'text-sidebar-foreground hover:bg-sidebar-hover hover:text-white',
-                  )}
-                >
-                  <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-                  <span className="md:hidden">{item.label}</span>
-                  <span className={cn('hidden md:inline', textCls)}>{item.label}</span>
-                </Link>
-              );
+              return renderNavLink(item, active);
             })}
           </>
         )}
@@ -335,18 +324,25 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
 
       {/* Admin link — only visible for admins */}
       {user?.isAdmin && (
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="px-3 pb-3">
           <Link
             to={ROUTES.ADMIN}
             title={collapsed ? t('sidebar.adminPanel') : undefined}
             className={cn(
-              'flex items-center gap-3 rounded-md text-sm h-9 px-2.5 whitespace-nowrap',
+              'group flex items-center gap-3 rounded-xl text-sm font-medium h-11 px-3 whitespace-nowrap transition-all duration-200',
               location.pathname.startsWith('/admin')
-                ? 'bg-sidebar-hover text-white'
+                ? 'bg-sidebar-active text-sidebar-active-text'
                 : 'text-sidebar-foreground hover:bg-sidebar-hover hover:text-white',
             )}
           >
-            <Shield className="w-[18px] h-[18px] flex-shrink-0" />
+            <Shield
+              className={cn(
+                'w-4.5 h-4.5 flex-shrink-0 transition-colors duration-200',
+                location.pathname.startsWith('/admin')
+                  ? 'text-sidebar-active-text'
+                  : 'text-sidebar-foreground group-hover:text-white',
+              )}
+            />
             <span className="md:hidden">{t('sidebar.adminPanel')}</span>
             <span className={cn('hidden md:inline', textCls)}>{t('sidebar.adminPanel')}</span>
           </Link>
@@ -356,27 +352,23 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   );
 
   // ── Mobile drawer animation state ──
-  // Keep the drawer in the DOM during exit animation so CSS transitions play out
   const [mobileVisible, setMobileVisible] = useState(false);
   const [mobileAnimating, setMobileAnimating] = useState(false);
   const animationTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (mobileOpen) {
-      // Mount element off-screen first, then after browser paints trigger the slide-in
       setMobileVisible(true);
       clearTimeout(animationTimer.current);
-      // Small delay ensures the browser has painted the off-screen state before transitioning
       animationTimer.current = setTimeout(() => {
         setMobileAnimating(true);
       }, 20);
     } else {
-      // Trigger exit animation, then unmount after transition ends
       setMobileAnimating(false);
       clearTimeout(animationTimer.current);
       animationTimer.current = setTimeout(() => {
         setMobileVisible(false);
-      }, 350); // matches transition duration
+      }, 350);
     }
     return () => clearTimeout(animationTimer.current);
   }, [mobileOpen]);
@@ -392,7 +384,7 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           {/* Backdrop */}
           <div
             className={cn(
-              'fixed inset-0 bg-black/50 transition-opacity duration-[350ms] ease-in-out',
+              'fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-[350ms] ease-in-out',
               mobileAnimating ? 'opacity-100' : 'opacity-0',
             )}
             onClick={onMobileClose}

@@ -408,11 +408,11 @@ export function DashboardPage() {
     return Object.entries(analytics.byStatus)
       .filter(([, count]) => count > 0)
       .map(([status, count]) => ({
-        name: STATUS_LABELS[status] || status,
+        name: t(`status.${status}`) || STATUS_LABELS[status] || status,
         value: count,
         color: STATUS_CHART_COLORS[status] || '#9CA3AF',
       }));
-  }, [analytics?.byStatus]);
+  }, [analytics?.byStatus, t]);
 
   const monthlyBarData = useMemo(() => {
     if (!analytics?.byMonth) return [];
@@ -854,7 +854,7 @@ export function DashboardPage() {
                               STATUS_COLORS[doc.status] || 'bg-gray-100 text-gray-800'
                             }`}
                           >
-                            {STATUS_LABELS[doc.status] || doc.status}
+                            {t(`status.${doc.status}`) || STATUS_LABELS[doc.status] || doc.status}
                           </span>
                         </td>
                         <td className="px-4 py-3 text-xs text-foreground text-right whitespace-nowrap font-mono">

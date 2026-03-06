@@ -391,7 +391,15 @@
     "cancelling": "Cancelling...",
     "cancelConfirm": "Are you sure you want to cancel your subscription? You will be downgraded to the Free plan.",
     "passwordMinLength": "Password must be at least 8 characters",
-    "passwordChangeFailed": "Failed to change password. Please check your current password."
+    "passwordChangeFailed": "Failed to change password. Please check your current password.",
+    "font": "Font",
+    "fontInter": "Clean & Modern",
+    "fontNunito": "Soft & Rounded",
+    "fontGrotesk": "Techy & Bold",
+    "fontSize": "Font Size",
+    "fontSizeStandard": "Standard",
+    "fontSizeMedium": "Medium",
+    "fontSizeLarge": "Large"
   },
   "status": {
     "DRAFT": "Draft",

@@ -13,12 +13,12 @@ export function Header({ onMobileMenuToggle }: HeaderProps) {
   const user = useAuthStore((s) => s.user);
 
   return (
-    <header className="h-16 bg-card border-b border-border flex items-center justify-between px-4">
+    <header className="h-16 bg-card/80 backdrop-blur-md border-b border-border flex items-center justify-between px-4 sticky top-0 z-30">
       {/* Mobile burger button */}
       <button
         type="button"
         onClick={onMobileMenuToggle}
-        className="md:hidden p-2 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+        className="md:hidden p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-all duration-200"
         aria-label="Toggle sidebar"
       >
         <Menu className="w-6 h-6" />

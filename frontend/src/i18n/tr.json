@@ -391,7 +391,15 @@
     "cancelling": "Iptal ediliyor...",
     "cancelConfirm": "Aboneliginizi iptal etmek istediginizden emin misiniz? Ucretsiz plana dusuruleceksiniz.",
     "passwordMinLength": "Sifre en az 8 karakter olmalidir",
-    "passwordChangeFailed": "Sifre degistirilemedi. Lutfen mevcut sifrenizi kontrol edin."
+    "passwordChangeFailed": "Sifre degistirilemedi. Lutfen mevcut sifrenizi kontrol edin.",
+    "font": "Yazi Tipi",
+    "fontInter": "Temiz ve Modern",
+    "fontNunito": "Yumusak ve Yuvarlak",
+    "fontGrotesk": "Teknik ve Kalin",
+    "fontSize": "Yazi Boyutu",
+    "fontSizeStandard": "Standart",
+    "fontSizeMedium": "Orta",
+    "fontSizeLarge": "Buyuk"
   },
   "status": {
     "DRAFT": "Taslak",

@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Check, ArrowRight } from 'lucide-react';
 import { useAuthStore } from '../../stores/auth.store.ts';
 import { useUiStore } from '../../stores/ui.store.ts';
-import type { Theme } from '../../stores/ui.store.ts';
+import type { Theme, FontFamily, FontSize } from '../../stores/ui.store.ts';
 import { useAuth } from '../../hooks/use-auth.ts';
 import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { changePassword, updateProfile } from '../../api/auth.ts';
@@ -25,6 +25,18 @@ const THEMES: { value: Theme; labelKey: string }[] = [
   { value: 'light', labelKey: 'profile.light' },
   { value: 'dark', labelKey: 'profile.dark' },
   { value: 'system', labelKey: 'profile.system' },
+];
+
+const FONTS: { value: FontFamily; labelKey: string; preview: string; css: string }[] = [
+  { value: 'inter', labelKey: 'profile.fontInter', preview: 'Inter', css: "'Inter', sans-serif" },
+  { value: 'nunito', labelKey: 'profile.fontNunito', preview: 'Nunito Sans', css: "'Nunito Sans', sans-serif" },
+  { value: 'grotesk', labelKey: 'profile.fontGrotesk', preview: 'Space Grotesk', css: "'Space Grotesk', sans-serif" },
+];
+
+const FONT_SIZES: { value: FontSize; labelKey: string; icon: string }[] = [
+  { value: 'standard', labelKey: 'profile.fontSizeStandard', icon: 'A' },
+  { value: 'medium', labelKey: 'profile.fontSizeMedium', icon: 'A' },
+  { value: 'large', labelKey: 'profile.fontSizeLarge', icon: 'A' },
 ];
 
 function SubscriptionSection() {
@@ -90,7 +102,7 @@ function SubscriptionSection() {
     plans.find((p) => p.id === currentPlanId)?.price! > 0;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-6 mb-6">
+    <div className="bg-card border border-border rounded-2xl p-6 mb-6">
       <h2 className="text-lg font-semibold text-foreground mb-1">
         {t('profile.subscriptionPlan')}
       </h2>
@@ -240,6 +252,10 @@ export function ProfilePage() {
   const { logout } = useAuth();
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
+  const fontFamily = useUiStore((s) => s.fontFamily);
+  const setFontFamily = useUiStore((s) => s.setFontFamily);
+  const fontSize = useUiStore((s) => s.fontSize);
+  const setFontSize = useUiStore((s) => s.setFontSize);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   // Name form state
@@ -319,7 +335,7 @@ export function ProfilePage() {
       <h1 className="text-2xl font-bold text-foreground mb-6">{t('profile.title')}</h1>
 
       {/* Personal Information */}
-      <div className="bg-card border border-border rounded-lg p-6 mb-6">
+      <div className="bg-card border border-border rounded-2xl p-6 mb-6">
         <h2 className="text-lg font-semibold text-foreground mb-4">
           {t('profile.personalInfo')}
         </h2>
@@ -349,7 +365,7 @@ export function ProfilePage() {
                 setNameSuccess('');
                 setNameError('');
               }}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>
           <div>
@@ -364,7 +380,7 @@ export function ProfilePage() {
                 setNameSuccess('');
                 setNameError('');
               }}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>
         </div>
@@ -382,7 +398,7 @@ export function ProfilePage() {
             type="button"
             onClick={handleSaveName}
             disabled={isSavingName || !firstName.trim()}
-            className="mt-4 px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors"
+            className="mt-4 px-4 py-2 text-sm bg-accent text-white rounded-xl hover:bg-accent-hover disabled:opacity-50 transition-colors"
           >
             {isSavingName ? t('profile.saving') : t('profile.save')}
           </button>
@@ -393,7 +409,7 @@ export function ProfilePage() {
       <SubscriptionSection />
 
       {/* Change Password */}
-      <div className="bg-card border border-border rounded-lg p-6 mb-6">
+      <div className="bg-card border border-border rounded-2xl p-6 mb-6">
         <h2 className="text-lg font-semibold text-foreground mb-4">
           {t('profile.changePassword')}
         </h2>
@@ -407,7 +423,7 @@ export function ProfilePage() {
               type="password"
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>
 
@@ -419,7 +435,7 @@ export function ProfilePage() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>
 
@@ -431,7 +447,7 @@ export function ProfilePage() {
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-border rounded-lg text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
+              className="w-full px-3 py-2 border border-border rounded-xl text-sm bg-input text-foreground focus:ring-2 focus:ring-accent focus:border-accent outline-none"
             />
           </div>
 
@@ -447,7 +463,7 @@ export function ProfilePage() {
             type="button"
             onClick={handleChangePassword}
             disabled={isChangingPassword || !currentPassword || !newPassword || !confirmPassword}
-            className="px-4 py-2 text-sm bg-accent text-white rounded-lg hover:bg-accent-hover disabled:opacity-50 transition-colors"
+            className="px-4 py-2 text-sm bg-accent text-white rounded-xl hover:bg-accent-hover disabled:opacity-50 transition-colors"
           >
             {isChangingPassword ? t('profile.saving') : t('profile.changePassword')}
           </button>
@@ -455,7 +471,7 @@ export function ProfilePage() {
       </div>
 
       {/* Preferences */}
-      <div className="bg-card border border-border rounded-lg p-6">
+      <div className="bg-card border border-border rounded-2xl p-6">
         <h2 className="text-lg font-semibold text-foreground mb-4">
           {t('profile.preferences')}
         </h2>
@@ -473,10 +489,10 @@ export function ProfilePage() {
                   type="button"
                   onClick={() => handleLanguageChange(lang.code)}
                   className={cn(
-                    'px-3 py-2 text-sm rounded-lg border transition-colors flex items-center gap-2',
+                    'px-3 py-2.5 text-sm rounded-xl border transition-all duration-200 flex items-center gap-2',
                     i18n.language === lang.code
-                      ? 'bg-accent/10 border-accent text-accent'
-                      : 'bg-card border-border text-muted-foreground hover:bg-muted',
+                      ? 'bg-accent/10 border-accent text-accent shadow-sm'
+                      : 'bg-card border-border text-muted-foreground hover:bg-muted hover:border-muted-foreground/20',
                   )}
                 >
                   <span>{lang.flag}</span>
@@ -498,10 +514,10 @@ export function ProfilePage() {
                   type="button"
                   onClick={() => setTheme(themeOpt.value)}
                   className={cn(
-                    'px-4 py-2 text-sm rounded-lg border transition-colors flex items-center gap-2',
+                    'px-4 py-2.5 text-sm rounded-xl border transition-all duration-200 flex items-center gap-2',
                     theme === themeOpt.value
-                      ? 'bg-accent/10 border-accent text-accent'
-                      : 'bg-card border-border text-muted-foreground hover:bg-muted',
+                      ? 'bg-accent/10 border-accent text-accent shadow-sm'
+                      : 'bg-card border-border text-muted-foreground hover:bg-muted hover:border-muted-foreground/20',
                   )}
                 >
                   {themeOpt.value === 'light' && (
@@ -524,11 +540,71 @@ export function ProfilePage() {
               ))}
             </div>
           </div>
+
+          {/* Font */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              {t('profile.font')}
+            </label>
+            <div className="flex gap-2">
+              {FONTS.map((fontOpt) => (
+                <button
+                  key={fontOpt.value}
+                  type="button"
+                  onClick={() => setFontFamily(fontOpt.value)}
+                  className={cn(
+                    'px-4 py-2.5 text-sm rounded-xl border transition-all duration-200 flex flex-col items-start gap-0.5',
+                    fontFamily === fontOpt.value
+                      ? 'bg-accent/10 border-accent text-accent shadow-sm'
+                      : 'bg-card border-border text-muted-foreground hover:bg-muted hover:border-muted-foreground/20',
+                  )}
+                >
+                  <span
+                    className="text-base font-semibold"
+                    style={{ fontFamily: fontOpt.css }}
+                  >
+                    {fontOpt.preview}
+                  </span>
+                  <span className="text-xs opacity-70">{t(fontOpt.labelKey)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Font Size */}
+          <div>
+            <label className="block text-sm font-medium text-foreground mb-2">
+              {t('profile.fontSize')}
+            </label>
+            <div className="flex gap-2">
+              {FONT_SIZES.map((sizeOpt, idx) => (
+                <button
+                  key={sizeOpt.value}
+                  type="button"
+                  onClick={() => setFontSize(sizeOpt.value)}
+                  className={cn(
+                    'px-4 py-2.5 text-sm rounded-xl border transition-all duration-200 flex items-center gap-2',
+                    fontSize === sizeOpt.value
+                      ? 'bg-accent/10 border-accent text-accent shadow-sm'
+                      : 'bg-card border-border text-muted-foreground hover:bg-muted hover:border-muted-foreground/20',
+                  )}
+                >
+                  <span
+                    className="font-semibold"
+                    style={{ fontSize: [14, 17, 20][idx] }}
+                  >
+                    {sizeOpt.icon}
+                  </span>
+                  <span>{t(sizeOpt.labelKey)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Log Out */}
-      <div className="bg-card border border-border rounded-lg p-6 mt-6">
+      <div className="bg-card border border-border rounded-2xl p-6 mt-6">
         <h2 className="text-lg font-semibold text-foreground mb-2">
           {t('profile.logOut')}
         </h2>
@@ -542,7 +618,7 @@ export function ProfilePage() {
             await logout();
           }}
           disabled={isLoggingOut}
-          className="px-4 py-2 text-sm text-white bg-danger rounded-lg hover:bg-danger-hover disabled:opacity-50 transition-colors"
+          className="px-4 py-2 text-sm text-white bg-danger rounded-xl hover:bg-danger-hover disabled:opacity-50 transition-colors"
         >
           {isLoggingOut ? t('common.loading') : t('profile.logOut')}
         </button>

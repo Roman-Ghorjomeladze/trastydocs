@@ -49,9 +49,9 @@ export function ConfirmModal({
       className="fixed inset-0 z-50 flex items-center justify-center"
       onClick={onCancel}
     >
-      <div className="absolute inset-0 bg-black/50 animate-fade-in" />
+      <div className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-fade-in" />
       <div
-        className="relative bg-card border border-border rounded-lg shadow-xl w-full max-w-md mx-4 p-6 animate-fade-in"
+        className="relative bg-card border border-border rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
@@ -60,7 +60,7 @@ export function ConfirmModal({
           <button
             onClick={onCancel}
             disabled={isLoading}
-            className="px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-border rounded-lg transition-colors disabled:opacity-50"
+            className="px-4 py-2 text-sm font-medium text-foreground bg-muted hover:bg-border rounded-xl transition-all duration-200 disabled:opacity-50"
           >
             {cancelLabel || t('common.cancel')}
           </button>
@@ -68,7 +68,7 @@ export function ConfirmModal({
             onClick={onConfirm}
             disabled={isLoading}
             className={cn(
-              'px-4 py-2 text-sm font-medium text-white rounded-lg transition-colors disabled:opacity-50',
+              'px-4 py-2 text-sm font-medium text-white rounded-xl transition-all duration-200 disabled:opacity-50',
               variant === 'danger'
                 ? 'bg-danger hover:bg-danger-hover'
                 : 'bg-accent hover:bg-accent-hover',

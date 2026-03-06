@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
 import { useAdminStore } from '../../stores/admin.store.ts';
 import { STATUS_LABELS, STATUS_COLORS } from '../../lib/constants.ts';
 
 export function AdminDocumentsPage() {
+  const { t } = useTranslation();
   const { documents, documentsTotal, documentsLoading, fetchDocuments } = useAdminStore();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
@@ -76,7 +78,7 @@ export function AdminDocumentsPage() {
                       <span
                         className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[doc.status] || ''}`}
                       >
-                        {STATUS_LABELS[doc.status] || doc.status}
+                        {t(`status.${doc.status}`) || STATUS_LABELS[doc.status] || doc.status}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground">
