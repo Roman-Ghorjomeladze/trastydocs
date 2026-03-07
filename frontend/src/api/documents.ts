@@ -16,6 +16,7 @@ export interface DocumentFilters {
   buyerIds?: string[];
   dateFrom?: string;
   dateTo?: string;
+  vehiclePlate?: string;
 }
 
 export async function getDocuments(
@@ -29,6 +30,7 @@ export async function getDocuments(
   if (filters?.buyerIds?.length) params.set('buyerIds', filters.buyerIds.join(','));
   if (filters?.dateFrom) params.set('dateFrom', filters.dateFrom);
   if (filters?.dateTo) params.set('dateTo', filters.dateTo);
+  if (filters?.vehiclePlate) params.set('vehiclePlate', filters.vehiclePlate);
   const query = params.toString();
   const url = `/companies/${companyId}/documents${query ? `?${query}` : ''}`;
   const response = await apiClient.get<ApiResponse<Document[]>>(url);

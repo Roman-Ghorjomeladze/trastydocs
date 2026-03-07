@@ -65,6 +65,7 @@ export class CompanyDocumentsController {
     @Query('buyerIds') buyerIds?: string,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
+    @Query('vehiclePlate') vehiclePlate?: string,
   ) {
     return this.documentsService.findAll(companyId, {
       status,
@@ -73,6 +74,7 @@ export class CompanyDocumentsController {
       buyerIds: buyerIds ? buyerIds.split(',') : undefined,
       dateFrom,
       dateTo,
+      vehiclePlate,
     });
   }
 }

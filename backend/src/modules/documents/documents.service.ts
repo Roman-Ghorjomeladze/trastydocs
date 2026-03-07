@@ -17,8 +17,8 @@ const STATUS_TRANSITIONS: Record<string, string[]> = {
   DRAFT: ['PENDING_SIGNATURE', 'SIGNED', 'SENT', 'COMPLETED', 'CANCELLED'],
   PENDING_SIGNATURE: ['SIGNED', 'CANCELLED', 'DRAFT'],
   SIGNED: ['SENT', 'COMPLETED', 'CANCELLED'],
-  SENT: ['VIEWED', 'PAID', 'OVERDUE', 'CANCELLED'],
-  VIEWED: ['PAID', 'OVERDUE', 'CANCELLED'],
+  SENT: ['VIEWED', 'PAID', 'OVERDUE', 'CANCELLED', 'DRAFT'],
+  VIEWED: ['PAID', 'OVERDUE', 'CANCELLED', 'DRAFT'],
   COMPLETED: ['PAID', 'ARCHIVED', 'CANCELLED'],
   PAID: ['ARCHIVED'],
   OVERDUE: ['PAID', 'CANCELLED'],
@@ -130,6 +130,7 @@ export class DocumentsService {
       buyerIds?: string[];
       dateFrom?: string;
       dateTo?: string;
+      vehiclePlate?: string;
     },
   ) {
     const where: Prisma.DocumentWhereInput = { companyId };
@@ -144,6 +145,14 @@ export class DocumentsService {
     // Buyer filter (multi-select)
     if (filters?.buyerIds?.length) {
       where.buyerId = { in: filters.buyerIds };
+    }
+
+    // Vehicle plate filter (JSON path on inputData)
+    if (filters?.vehiclePlate) {
+      where.inputData = {
+        path: ['vehiclePlate'],
+        equals: filters.vehiclePlate,
+      };
     }
 
     // Date range filter
@@ -221,6 +230,12 @@ export class DocumentsService {
       if (input.baseCurrencyAmount !== undefined) data.baseCurrencyAmount = Number(input.baseCurrencyAmount) || null;
       if (input.exchangeRate !== undefined) data.exchangeRate = Number(input.exchangeRate) || null;
       if (input.dueDate !== undefined) data.dueDate = input.dueDate ? new Date(input.dueDate as string) : null;
+
+      // Sync document number from inputData to top-level field
+      if (input.invoiceNumber !== undefined) {
+        const newNumber = String(input.invoiceNumber).trim();
+        if (newNumber) data.documentNumber = newNumber;
+      }
     }
     if (dto.status !== undefined) {
       data.status = dto.status;

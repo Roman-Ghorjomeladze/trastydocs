@@ -603,6 +603,13 @@ export function DocumentDetailPage() {
 								>
 									{t('status.PAID')}
 								</button>
+								<button
+									type="button"
+									onClick={() => handleStatusChange("DRAFT")}
+									className="w-full px-3 py-2 text-sm text-left border rounded-lg hover:bg-amber-50 hover:border-amber-300"
+								>
+									{t('documents.revertToDraft')}
+								</button>
 							</div>
 						</div>
 					)}

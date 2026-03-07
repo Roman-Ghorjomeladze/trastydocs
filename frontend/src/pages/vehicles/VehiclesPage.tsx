@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { ChevronRight } from 'lucide-react';
 import { useVehicleStore } from '../../stores/vehicle.store.ts';
 import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { SearchSelect } from '../../components/shared/SearchSelect.tsx';
+import { TruckRouteHistory } from './TruckRouteHistory.tsx';
 import { cn } from '../../lib/utils.ts';
 import type { Vehicle, VehicleType } from '../../types/index.ts';
 
@@ -24,6 +26,7 @@ export function VehiclesPage() {
   const [filterType, setFilterType] = useState<VehicleType | ''>('');
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [expandedTruckId, setExpandedTruckId] = useState<string | null>(null);
 
   // Form state
   const [formModel, setFormModel] = useState('');
@@ -137,7 +140,7 @@ export function VehiclesPage() {
           <button
             key={filterVal}
             type="button"
-            onClick={() => setFilterType(filterVal)}
+            onClick={() => { setFilterType(filterVal); setExpandedTruckId(null); }}
             className={cn(
               'px-3 py-1.5 text-sm rounded-lg border transition-colors',
               filterType === filterVal
@@ -207,65 +210,97 @@ export function VehiclesPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {filteredVehicles.map((vehicle) => (
-                <tr key={vehicle.id} className="hover:bg-muted">
-                  <td className="px-4 py-3">
-                    <span
+              {filteredVehicles.map((vehicle) => {
+                const isTruck = vehicle.type === 'TRUCK';
+                const isExpanded = isTruck && expandedTruckId === vehicle.id;
+                return (
+                  <React.Fragment key={vehicle.id}>
+                    <tr
                       className={cn(
-                        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
-                        vehicle.type === 'TRUCK'
-                          ? 'bg-accent/15 text-accent'
-                          : 'bg-orange-100 text-orange-800',
+                        'hover:bg-muted transition-colors',
+                        isTruck && 'cursor-pointer',
+                        isExpanded && 'bg-muted/60',
                       )}
+                      onClick={isTruck ? () => setExpandedTruckId(isExpanded ? null : vehicle.id) : undefined}
                     >
-                      {vehicle.type === 'TRUCK' ? t('vehicles.truck') : t('vehicles.trailer')}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-foreground font-medium">
-                    {vehicle.model}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-foreground font-mono">
-                    {vehicle.licensePlate}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
-                    {vehicle.type === 'TRUCK' && vehicle.defaultTrailer
-                      ? `${vehicle.defaultTrailer.model} (${vehicle.defaultTrailer.licensePlate})`
-                      : vehicle.notes || '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <button
-                      type="button"
-                      onClick={() => handleToggleActive(vehicle)}
-                      className={cn(
-                        'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium cursor-pointer',
-                        vehicle.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-muted text-muted-foreground',
-                      )}
-                    >
-                      {vehicle.isActive ? t('vehicles.active') : t('vehicles.inactive')}
-                    </button>
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(vehicle)}
-                        className="text-xs text-accent hover:text-accent-hover"
-                      >
-                        {t('vehicles.edit')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setDeleteTarget(vehicle.id)}
-                        className="text-xs text-danger hover:text-danger-hover"
-                      >
-                        {t('common.delete')}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          {isTruck && (
+                            <ChevronRight
+                              className={cn(
+                                'w-4 h-4 text-muted-foreground transition-transform',
+                                isExpanded && 'rotate-90',
+                              )}
+                            />
+                          )}
+                          <span
+                            className={cn(
+                              'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium',
+                              isTruck
+                                ? 'bg-accent/15 text-accent'
+                                : 'bg-orange-100 text-orange-800',
+                            )}
+                          >
+                            {isTruck ? t('vehicles.truck') : t('vehicles.trailer')}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-foreground font-medium">
+                        {vehicle.model}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-foreground font-mono">
+                        {vehicle.licensePlate}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
+                        {isTruck && vehicle.defaultTrailer
+                          ? `${vehicle.defaultTrailer.model} (${vehicle.defaultTrailer.licensePlate})`
+                          : vehicle.notes || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleToggleActive(vehicle); }}
+                          className={cn(
+                            'inline-flex items-center px-2 py-0.5 rounded text-xs font-medium cursor-pointer',
+                            vehicle.isActive
+                              ? 'bg-green-100 text-green-800'
+                              : 'bg-muted text-muted-foreground',
+                          )}
+                        >
+                          {vehicle.isActive ? t('vehicles.active') : t('vehicles.inactive')}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openEditModal(vehicle); }}
+                            className="text-xs text-accent hover:text-accent-hover"
+                          >
+                            {t('vehicles.edit')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(vehicle.id); }}
+                            className="text-xs text-danger hover:text-danger-hover"
+                          >
+                            {t('common.delete')}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr>
+                        <TruckRouteHistory
+                          companyId={companyId!}
+                          licensePlate={vehicle.licensePlate}
+                          colSpan={6}
+                        />
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })}
             </tbody>
           </table>
         </div>
