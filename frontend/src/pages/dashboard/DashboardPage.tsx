@@ -20,6 +20,7 @@ import { getDashboardStats } from '../../api/documents.ts';
 import { fetchAnalytics } from '../../api/analytics.ts';
 import { exportAnalyticsToExcel } from '../../lib/excel-export.ts';
 import { ROUTES, STATUS_COLORS, STATUS_LABELS } from '../../lib/constants.ts';
+import { OverflowTooltip } from '../../components/shared/OverflowTooltip.tsx';
 import { formatDate } from '../../lib/utils.ts';
 import { getVehicles } from '../../api/vehicles.ts';
 import { getContractors } from '../../api/contractors.ts';
@@ -842,11 +843,11 @@ export function DashboardPage() {
                         <td className="px-4 py-3 text-xs font-mono text-foreground">
                           {doc.documentNumber || '-'}
                         </td>
-                        <td className="px-4 py-3 text-xs text-foreground truncate max-w-[150px]">
-                          {doc.companyName}
+                        <td className="px-4 py-3 text-xs text-foreground max-w-[150px]">
+                          <OverflowTooltip>{doc.companyName}</OverflowTooltip>
                         </td>
-                        <td className="px-4 py-3 text-xs text-foreground truncate max-w-[150px]">
-                          {doc.buyerName || '-'}
+                        <td className="px-4 py-3 text-xs text-foreground max-w-[150px]">
+                          <OverflowTooltip>{doc.buyerName || '-'}</OverflowTooltip>
                         </td>
                         <td className="px-4 py-3">
                           <span

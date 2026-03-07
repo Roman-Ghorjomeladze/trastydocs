@@ -11,13 +11,33 @@ import { ROUTES, STATUS_COLORS } from '../../lib/constants.ts';
 import { cn } from '../../lib/utils.ts';
 import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { Tooltip } from '../../components/shared/Tooltip.tsx';
+import { OverflowTooltip } from '../../components/shared/OverflowTooltip.tsx';
 import { MultiSelect } from '../../components/shared/MultiSelect.tsx';
 import type { MultiSelectOption } from '../../components/shared/MultiSelect.tsx';
 import type { DocumentStatus, Contractor, DocumentType } from '../../types/index.ts';
 
-type ColumnKey = 'documentNumber' | 'name' | 'contractorName' | 'amount' | 'currency' | 'baseAmount' | 'transportRoute' | 'status' | 'createdAt';
+type ColumnKey =
+  | 'documentNumber'
+  | 'name'
+  | 'contractorName'
+  | 'amount'
+  | 'currency'
+  | 'baseAmount'
+  | 'transportRoute'
+  | 'status'
+  | 'createdAt';
 
-const ALL_COLUMNS: ColumnKey[] = ['documentNumber', 'name', 'contractorName', 'amount', 'currency', 'baseAmount', 'transportRoute', 'status', 'createdAt'];
+const ALL_COLUMNS: ColumnKey[] = [
+  'documentNumber',
+  'name',
+  'contractorName',
+  'amount',
+  'currency',
+  'baseAmount',
+  'transportRoute',
+  'status',
+  'createdAt',
+];
 const DEFAULT_COLUMNS: ColumnKey[] = ['documentNumber', 'name', 'status', 'createdAt'];
 
 function getStoredColumns(companyId: string): ColumnKey[] {
@@ -25,10 +45,15 @@ function getStoredColumns(companyId: string): ColumnKey[] {
     const raw = localStorage.getItem(`doc-list-columns-${companyId}`);
     if (!raw) return DEFAULT_COLUMNS;
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && parsed.every((c: string) => ALL_COLUMNS.includes(c as ColumnKey))) {
+    if (
+      Array.isArray(parsed) &&
+      parsed.every((c: string) => ALL_COLUMNS.includes(c as ColumnKey))
+    ) {
       return parsed as ColumnKey[];
     }
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return DEFAULT_COLUMNS;
 }
 
@@ -272,7 +297,11 @@ export function DocumentListPage() {
   // Parse amount/currency from inputData
   const getDocAmount = (inputData: Record<string, unknown>): string => {
     const total = inputData?.total;
-    if (typeof total === 'number') return total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (typeof total === 'number')
+      return total.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
     return '-';
   };
 
@@ -356,7 +385,7 @@ export function DocumentListPage() {
         </Tooltip>
 
         {/* Column Picker */}
-        <div className="relative" ref={columnPickerRef}>
+        <div className="relative flex" ref={columnPickerRef}>
           <Tooltip content={t('documents.columnPicker')}>
             <button
               type="button"
@@ -558,16 +587,18 @@ export function DocumentListPage() {
                     onClick={() => navigate(ROUTES.DOCUMENT_DETAIL(companyId!, doc.id))}
                   >
                     {visibleColumns.includes('documentNumber') && (
-                      <td className="px-4 py-3 text-sm font-mono text-muted-foreground">
-                        {doc.documentNumber || '-'}
+                      <td className="px-4 py-3 text-sm font-mono text-muted-foreground max-w-[150px]">
+                        <OverflowTooltip>{doc.documentNumber || '-'}</OverflowTooltip>
                       </td>
                     )}
                     {visibleColumns.includes('name') && (
-                      <td className="px-4 py-3 text-sm font-medium text-foreground">{doc.name}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-foreground max-w-[200px]">
+                        <OverflowTooltip>{doc.name}</OverflowTooltip>
+                      </td>
                     )}
                     {visibleColumns.includes('contractorName') && (
-                      <td className="px-4 py-3 text-sm text-foreground">
-                        {doc.buyer?.name || '-'}
+                      <td className="px-4 py-3 text-sm text-foreground max-w-[200px]">
+                        <OverflowTooltip>{doc.buyer?.name || '-'}</OverflowTooltip>
                       </td>
                     )}
                     {visibleColumns.includes('amount') && (
@@ -581,13 +612,15 @@ export function DocumentListPage() {
                       </td>
                     )}
                     {visibleColumns.includes('baseAmount') && (
-                      <td className="px-4 py-3 text-sm text-foreground text-right font-mono">
-                        {getDocBaseAmount(inputData)}
+                      <td className="px-4 py-3 text-sm text-foreground text-right font-mono max-w-[150px]">
+                        <OverflowTooltip>{getDocBaseAmount(inputData)}</OverflowTooltip>
                       </td>
                     )}
                     {visibleColumns.includes('transportRoute') && (
-                      <td className="px-4 py-3 text-sm text-foreground truncate max-w-[200px]">
-                        {(inputData?.transportRoute as string) || '-'}
+                      <td className="px-4 py-3 text-sm text-foreground max-w-[200px]">
+                        <OverflowTooltip>
+                          {(inputData?.transportRoute as string) || '-'}
+                        </OverflowTooltip>
                       </td>
                     )}
                     {visibleColumns.includes('status') && (

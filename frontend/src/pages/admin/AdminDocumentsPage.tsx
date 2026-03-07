@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search } from 'lucide-react';
+import { OverflowTooltip } from '../../components/shared/OverflowTooltip.tsx';
 import { useAdminStore } from '../../stores/admin.store.ts';
 import { STATUS_LABELS, STATUS_COLORS } from '../../lib/constants.ts';
 
@@ -68,11 +69,11 @@ export function AdminDocumentsPage() {
               ) : (
                 documents.map((doc) => (
                   <tr key={doc.id} className="border-b border-border last:border-0 hover:bg-muted/30">
-                    <td className="px-4 py-3">
-                      <p className="font-medium text-foreground">{doc.name}</p>
+                    <td className="px-4 py-3 max-w-[200px]">
+                      <OverflowTooltip className="font-medium text-foreground">{doc.name}</OverflowTooltip>
                     </td>
-                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs">
-                      {doc.documentNumber || '-'}
+                    <td className="px-4 py-3 text-muted-foreground font-mono text-xs max-w-[150px]">
+                      <OverflowTooltip>{doc.documentNumber || '-'}</OverflowTooltip>
                     </td>
                     <td className="px-4 py-3">
                       <span

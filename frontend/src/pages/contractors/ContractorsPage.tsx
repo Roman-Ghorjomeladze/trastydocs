@@ -6,6 +6,7 @@ import { useContractorStore } from '../../stores/contractor.store.ts';
 import { useCompanyStore } from '../../stores/company.store.ts';
 import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { Tooltip } from '../../components/shared/Tooltip.tsx';
+import { OverflowTooltip } from '../../components/shared/OverflowTooltip.tsx';
 import type { CreateContractorDto, UpdateContractorDto, BankAccount, Translations } from '../../types/index.ts';
 
 export function ContractorsPage() {
@@ -640,20 +641,20 @@ export function ContractorsPage() {
               ) : (
                 /* Display row */
                 <div className="grid grid-cols-12 gap-4 px-4 py-3 items-center hover:bg-muted">
-                  <div className="col-span-12 md:col-span-3 font-medium text-foreground truncate">
-                    {contractor.name}
+                  <div className="col-span-12 md:col-span-3 font-medium text-foreground">
+                    <OverflowTooltip>{contractor.name}</OverflowTooltip>
                   </div>
-                  <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground truncate">
-                    {contractor.email || '\u2014'}
+                  <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground">
+                    <OverflowTooltip>{contractor.email || '\u2014'}</OverflowTooltip>
                   </div>
-                  <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground truncate">
-                    {contractor.phone || '\u2014'}
+                  <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground">
+                    <OverflowTooltip>{contractor.phone || '\u2014'}</OverflowTooltip>
                   </div>
-                  <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground truncate">
-                    {contractor.contactPerson || '\u2014'}
+                  <div className="col-span-12 md:col-span-2 text-sm text-muted-foreground">
+                    <OverflowTooltip>{contractor.contactPerson || '\u2014'}</OverflowTooltip>
                   </div>
-                  <div className="col-span-12 md:col-span-1 text-sm text-muted-foreground truncate">
-                    {contractor.taxId || '\u2014'}
+                  <div className="col-span-12 md:col-span-1 text-sm text-muted-foreground">
+                    <OverflowTooltip>{contractor.taxId || '\u2014'}</OverflowTooltip>
                   </div>
                   <div className="col-span-12 md:col-span-2 flex justify-end gap-1">
                     <Tooltip content={t('common.edit')}>

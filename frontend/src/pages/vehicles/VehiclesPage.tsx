@@ -6,6 +6,7 @@ import { useVehicleStore } from '../../stores/vehicle.store.ts';
 import { ConfirmModal } from '../../components/shared/ConfirmModal.tsx';
 import { SearchSelect } from '../../components/shared/SearchSelect.tsx';
 import { TruckRouteHistory } from './TruckRouteHistory.tsx';
+import { OverflowTooltip } from '../../components/shared/OverflowTooltip.tsx';
 import { cn } from '../../lib/utils.ts';
 import type { Vehicle, VehicleType } from '../../types/index.ts';
 
@@ -245,16 +246,17 @@ export function VehiclesPage() {
                           </span>
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-sm text-foreground font-medium">
-                        {vehicle.model}
+                      <td className="px-4 py-3 text-sm text-foreground font-medium max-w-[180px]">
+                        <OverflowTooltip>{vehicle.model}</OverflowTooltip>
                       </td>
-                      <td className="px-4 py-3 text-sm text-foreground font-mono">
-                        {vehicle.licensePlate}
+                      <td className="px-4 py-3 text-sm text-foreground font-mono max-w-[140px]">
+                        <OverflowTooltip>{vehicle.licensePlate}</OverflowTooltip>
                       </td>
-                      <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px] truncate">
-                        {isTruck && vehicle.defaultTrailer
-                          ? `${vehicle.defaultTrailer.model} (${vehicle.defaultTrailer.licensePlate})`
-                          : vehicle.notes || '—'}
+                      <td className="px-4 py-3 text-sm text-muted-foreground max-w-[200px]">
+                        <OverflowTooltip>
+                          {isTruck && vehicle.defaultTrailer
+                            ? `${vehicle.defaultTrailer.model} (${vehicle.defaultTrailer.licensePlate})`
+                            : vehicle.notes || '—'}</OverflowTooltip>
                       </td>
                       <td className="px-4 py-3">
                         <button

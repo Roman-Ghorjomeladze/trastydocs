@@ -44,7 +44,7 @@ export function Tooltip({ content, children, position = 'top', delay = 300 }: To
         onMouseLeave={hide}
         onFocus={show}
         onBlur={hide}
-        className="inline-flex"
+        className="inline-flex items-center shrink-0"
       >
         {children}
       </div>
@@ -56,9 +56,7 @@ export function Tooltip({ content, children, position = 'top', delay = 300 }: To
             style={{
               left: coords.x,
               top: position === 'top' ? coords.y - 6 : coords.y + 6,
-              transform: position === 'top'
-                ? 'translate(-50%, -100%)'
-                : 'translate(-50%, 0)',
+              transform: position === 'top' ? 'translate(-50%, -100%)' : 'translate(-50%, 0)',
             }}
           >
             <div className="px-2.5 py-1.5 text-xs font-medium rounded-md bg-foreground text-background shadow-lg whitespace-nowrap">

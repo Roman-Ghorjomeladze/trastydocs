@@ -118,18 +118,18 @@ const MAX_IMAGE_PX = 300;
  *  Preserves PNG format (and transparency) for PNGs; uses JPEG for JPEGs.
  *  Returns the original bytes unchanged if already within MAX_IMAGE_PX. */
 async function downscaleImage(bytes: Uint8Array): Promise<ArrayBuffer> {
-  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50;
   const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
+  const original = bytes.buffer as ArrayBuffer;
 
   return new Promise((resolve, reject) => {
-    const blob = new Blob([bytes]);
+    const blob = new Blob([original]);
     const url = URL.createObjectURL(blob);
     const img = new Image();
     img.onload = () => {
       URL.revokeObjectURL(url);
       const { naturalWidth: w, naturalHeight: h } = img;
       if (w <= MAX_IMAGE_PX && h <= MAX_IMAGE_PX) {
-        resolve(bytes.buffer);
+        resolve(original);
         return;
       }
       const scale = Math.min(MAX_IMAGE_PX / w, MAX_IMAGE_PX / h);
@@ -146,7 +146,7 @@ async function downscaleImage(bytes: Uint8Array): Promise<ArrayBuffer> {
       canvas.toBlob(
         (result) => {
           if (!result) {
-            resolve(bytes.buffer);
+            resolve(original);
             return;
           }
           result.arrayBuffer().then(resolve).catch(reject);
@@ -157,7 +157,7 @@ async function downscaleImage(bytes: Uint8Array): Promise<ArrayBuffer> {
     };
     img.onerror = () => {
       URL.revokeObjectURL(url);
-      resolve(bytes.buffer);
+      resolve(original);
     };
     img.src = url;
   });

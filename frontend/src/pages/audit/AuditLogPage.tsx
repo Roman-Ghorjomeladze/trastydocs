@@ -6,6 +6,7 @@ import {
   AUDIT_ACTION_COLORS,
 } from '../../lib/constants.ts';
 import { cn } from '../../lib/utils.ts';
+import { OverflowTooltip } from '../../components/shared/OverflowTooltip.tsx';
 import type { AuditAction, AuditLog } from '../../types/index.ts';
 
 const ENTITY_OPTIONS = [
@@ -160,16 +161,16 @@ export function AuditLogPage() {
                     <span className="text-sm font-medium text-foreground">
                       {log.entity}
                     </span>
-                    <span className="text-xs text-muted-foreground font-mono truncate max-w-[200px]">
+                    <OverflowTooltip className="text-xs text-muted-foreground font-mono max-w-[200px]">
                       {log.entityId}
-                    </span>
+                    </OverflowTooltip>
                   </div>
                   <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground flex-wrap">
-                    <span className="truncate">
+                    <OverflowTooltip className="max-w-[200px]">
                       {log.user
                         ? `${log.user.name} (${log.user.email})`
                         : 'System'}
-                    </span>
+                    </OverflowTooltip>
                     <span className="text-border hidden md:inline">|</span>
                     <span className="hidden md:inline">{formatDate(log.createdAt)}</span>
                     <span className="md:hidden text-muted-foreground block w-full">{formatDate(log.createdAt)}</span>
