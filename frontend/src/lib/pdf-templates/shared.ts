@@ -35,21 +35,12 @@ interface FontSet {
 let fontCacheLatinCyrillic: FontSet | null = null;
 let fontCacheGeorgian: FontSet | null = null;
 
-async function fetchFontPair(
-  regularPath: string,
-  boldPath: string,
-): Promise<FontSet> {
-  const [regularRes, boldRes] = await Promise.all([
-    fetch(regularPath),
-    fetch(boldPath),
-  ]);
+async function fetchFontPair(regularPath: string, boldPath: string): Promise<FontSet> {
+  const [regularRes, boldRes] = await Promise.all([fetch(regularPath), fetch(boldPath)]);
   if (!regularRes.ok || !boldRes.ok) {
     throw new Error(`Failed to fetch font files: ${regularPath}`);
   }
-  const [regular, bold] = await Promise.all([
-    regularRes.arrayBuffer(),
-    boldRes.arrayBuffer(),
-  ]);
+  const [regular, bold] = await Promise.all([regularRes.arrayBuffer(), boldRes.arrayBuffer()]);
   return { regular, bold };
 }
 
@@ -107,7 +98,9 @@ export interface TemplateContext {
   splitByScript: (text: string) => TextSegment[];
 
   // Image embedding
-  embedImage: (imageUrl: string) => Promise<Awaited<ReturnType<typeof PDFDocument.prototype.embedPng>> | null>;
+  embedImage: (
+    imageUrl: string,
+  ) => Promise<Awaited<ReturnType<typeof PDFDocument.prototype.embedPng>> | null>;
 
   // Page management
   addPage: (width?: number, height?: number) => PDFPage;
@@ -116,6 +109,60 @@ export interface TemplateContext {
 export type TemplateRenderFn = (ctx: TemplateContext) => Promise<void>;
 
 // ── Image embedding helper ──
+/** Max pixel dimension for images embedded in PDFs.
+ *  Stamps display at ~90pt and signatures at ~110pt.
+ *  300px is more than enough for crisp rendering at print DPI. */
+const MAX_IMAGE_PX = 300;
+
+/** Downscale an image blob using an off-screen canvas.
+ *  Preserves PNG format (and transparency) for PNGs; uses JPEG for JPEGs.
+ *  Returns the original bytes unchanged if already within MAX_IMAGE_PX. */
+async function downscaleImage(bytes: Uint8Array): Promise<ArrayBuffer> {
+  const isPng = bytes[0] === 0x89 && bytes[1] === 0x50;
+  const isJpeg = bytes[0] === 0xff && bytes[1] === 0xd8;
+
+  return new Promise((resolve, reject) => {
+    const blob = new Blob([bytes]);
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const { naturalWidth: w, naturalHeight: h } = img;
+      if (w <= MAX_IMAGE_PX && h <= MAX_IMAGE_PX) {
+        resolve(bytes.buffer);
+        return;
+      }
+      const scale = Math.min(MAX_IMAGE_PX / w, MAX_IMAGE_PX / h);
+      const nw = Math.round(w * scale);
+      const nh = Math.round(h * scale);
+      const canvas = document.createElement('canvas');
+      canvas.width = nw;
+      canvas.height = nh;
+      const ctx2d = canvas.getContext('2d')!;
+      ctx2d.drawImage(img, 0, 0, nw, nh);
+      // Use PNG to preserve transparency, JPEG only for source JPEGs
+      const mime = isJpeg ? 'image/jpeg' : 'image/png';
+      const quality = isJpeg ? 0.85 : undefined;
+      canvas.toBlob(
+        (result) => {
+          if (!result) {
+            resolve(bytes.buffer);
+            return;
+          }
+          result.arrayBuffer().then(resolve).catch(reject);
+        },
+        mime,
+        quality,
+      );
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(bytes.buffer);
+    };
+    img.src = url;
+  });
+}
+
 async function embedImageInDoc(
   pdfDoc: PDFDocument,
   imageUrl: string,
@@ -125,37 +172,39 @@ async function embedImageInDoc(
     let arrayBuffer: ArrayBuffer;
 
     if (imageUrl.startsWith('s3://')) {
-      // S3-compatible storage (Hetzner, AWS, etc.)
-      // Always proxy through the backend to avoid CORS issues.
-      // Direct fetch to S3/Hetzner presigned URLs fails in the browser
-      // because the storage host doesn't set Access-Control-Allow-Origin.
-      const key = imageUrl.slice(5); // strip "s3://"
-      console.log('[PDF Embed] Fetching S3 image via proxy:', `/files/${key}`);
+      const key = imageUrl.slice(5);
       const proxyRes = await apiClient.get(`/files/${key}`, { responseType: 'arraybuffer' });
       arrayBuffer = proxyRes.data;
-      console.log('[PDF Embed] S3 proxy success, bytes:', arrayBuffer.byteLength);
-    } else if (imageUrl.startsWith('/api/') || imageUrl.startsWith('api/') || imageUrl.startsWith('/uploads/') || imageUrl.startsWith('uploads/')) {
-      // Local file — fetch via authenticated proxy
+    } else if (
+      imageUrl.startsWith('/api/') ||
+      imageUrl.startsWith('api/') ||
+      imageUrl.startsWith('/uploads/') ||
+      imageUrl.startsWith('uploads/')
+    ) {
       let apiPath = imageUrl;
       if (apiPath.startsWith('/api/')) apiPath = apiPath.slice(4);
       if (apiPath.startsWith('/uploads/')) apiPath = '/files' + apiPath.slice(8);
       if (apiPath.startsWith('uploads/')) apiPath = '/files/' + apiPath.slice(8);
       if (!apiPath.startsWith('/')) apiPath = '/' + apiPath;
-      console.log('[PDF Embed] Fetching local image:', apiPath);
       const response = await apiClient.get(apiPath, { responseType: 'arraybuffer' });
       arrayBuffer = response.data;
-    } else if (imageUrl.startsWith('data:') || imageUrl.startsWith('blob:') || imageUrl.startsWith('http')) {
-      console.log('[PDF Embed] Fetching direct URL:', imageUrl.slice(0, 80));
+    } else if (
+      imageUrl.startsWith('data:') ||
+      imageUrl.startsWith('blob:') ||
+      imageUrl.startsWith('http')
+    ) {
       const response = await fetch(imageUrl);
       arrayBuffer = await response.arrayBuffer();
     } else {
-      console.log('[PDF Embed] Fetching unknown URL type:', imageUrl.slice(0, 80));
       const response = await fetch(imageUrl);
       arrayBuffer = await response.arrayBuffer();
     }
 
-    const bytes = new Uint8Array(arrayBuffer);
-    console.log('[PDF Embed] Image bytes received:', bytes.length, 'first bytes:', bytes[0], bytes[1]);
+    let bytes = new Uint8Array(arrayBuffer);
+
+    // Downscale large images before embedding
+    const downscaled = await downscaleImage(bytes);
+    bytes = new Uint8Array(downscaled);
 
     if (bytes[0] === 0x89 && bytes[1] === 0x50) {
       return await pdfDoc.embedPng(bytes);
@@ -172,20 +221,31 @@ async function embedImageInDoc(
 }
 
 // ── Factory: create a fully-initialized TemplateContext ──
-export async function createTemplateContext(
-  data: InvoiceData,
-): Promise<TemplateContext> {
+export async function createTemplateContext(data: InvoiceData): Promise<TemplateContext> {
   const labels = getInvoiceLabels((data.language || 'en') as InvoiceLanguage);
   const isTransport = data.documentType === 'transport_invoice';
 
   // Check if any text content contains Georgian characters (not just the language setting)
   const allTextContent = [
-    data.companyName, data.companyAddress, data.companyPhone, data.companyEmail,
-    data.buyerName, data.buyerAddress, data.buyerPhone, data.buyerEmail,
-    data.signerName, data.directorName, data.transportRoute,
-    data.serviceDescription, data.amountInWords, data.notes, data.paymentTerms,
-    ...(data.items?.map(i => i.description) || []),
-  ].filter(Boolean).join('');
+    data.companyName,
+    data.companyAddress,
+    data.companyPhone,
+    data.companyEmail,
+    data.buyerName,
+    data.buyerAddress,
+    data.buyerPhone,
+    data.buyerEmail,
+    data.signerName,
+    data.directorName,
+    data.transportRoute,
+    data.serviceDescription,
+    data.amountInWords,
+    data.notes,
+    data.paymentTerms,
+    ...(data.items?.map((i) => i.description) || []),
+  ]
+    .filter(Boolean)
+    .join('');
   const hasGeorgianContent = GEORGIAN_REGEX.test(allTextContent);
   const isGeorgian = (data.language || 'en') === 'ka' || hasGeorgianContent;
 
@@ -208,13 +268,13 @@ export async function createTemplateContext(
 
   try {
     const latinBytes = await loadLatinCyrillicFonts();
-    font = await pdfDoc.embedFont(new Uint8Array(latinBytes.regular), { subset: false });
-    fontBold = await pdfDoc.embedFont(new Uint8Array(latinBytes.bold), { subset: false });
+    font = await pdfDoc.embedFont(new Uint8Array(latinBytes.regular), { subset: true });
+    fontBold = await pdfDoc.embedFont(new Uint8Array(latinBytes.bold), { subset: true });
 
     if (isGeorgian) {
       const geoBytes = await loadGeorgianFonts();
-      fontGeo = await pdfDoc.embedFont(new Uint8Array(geoBytes.regular), { subset: false });
-      fontGeoBold = await pdfDoc.embedFont(new Uint8Array(geoBytes.bold), { subset: false });
+      fontGeo = await pdfDoc.embedFont(new Uint8Array(geoBytes.regular), { subset: true });
+      fontGeoBold = await pdfDoc.embedFont(new Uint8Array(geoBytes.bold), { subset: true });
     }
   } catch (err) {
     console.error('Failed to load Noto Sans fonts, falling back to Helvetica:', err);
@@ -256,9 +316,7 @@ export async function createTemplateContext(
     const segments = splitByScript(text);
     let width = 0;
     for (const seg of segments) {
-      const f = seg.isGeo
-        ? (bold ? fontGeoBold! : fontGeo!)
-        : (bold ? fontBold : font);
+      const f = seg.isGeo ? (bold ? fontGeoBold! : fontGeo!) : bold ? fontBold : font;
       width += f.widthOfTextAtSize(seg.text, size);
     }
     return width;
@@ -295,9 +353,7 @@ export async function createTemplateContext(
     const segments = splitByScript(displayText);
     let curX = x;
     for (const seg of segments) {
-      const f = seg.isGeo
-        ? (bold ? fontGeoBold! : fontGeo!)
-        : (bold ? fontBold : font);
+      const f = seg.isGeo ? (bold ? fontGeoBold! : fontGeo!) : bold ? fontBold : font;
       page.drawText(seg.text, { x: curX, y: yPos, size, font: f, color });
       curX += f.widthOfTextAtSize(seg.text, size);
     }
@@ -316,7 +372,12 @@ export async function createTemplateContext(
       lineHeight?: number;
     } = {},
   ): number => {
-    const { size = 10, color = rgb(0.13, 0.13, 0.13), bold = false, lineHeight = LINE_HEIGHT } = opts;
+    const {
+      size = 10,
+      color = rgb(0.13, 0.13, 0.13),
+      bold = false,
+      lineHeight = LINE_HEIGHT,
+    } = opts;
     const lines = text.split('\n').filter((l) => l.trim() !== '');
     let currentY = yPos;
     for (const line of lines) {
