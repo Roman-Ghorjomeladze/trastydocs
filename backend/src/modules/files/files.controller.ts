@@ -11,6 +11,8 @@ import type { Request, Response } from 'express';
 import * as path from 'path';
 import { createReadStream, statSync } from 'fs';
 import { JwtGuard } from '../../common/guards/jwt.guard.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import { PrismaService } from '../../database/prisma.service.js';
 import type { StorageProvider } from '../../integrations/storage/storage.interface.js';
 
 const MIME_TYPES: Record<string, string> = {
@@ -31,7 +33,62 @@ export class FilesController {
   constructor(
     @Inject('STORAGE_PROVIDER')
     private readonly storage: StorageProvider,
+    private readonly prisma: PrismaService,
   ) {}
+
+  /**
+   * SECURITY: Verify the requesting user has access to the file by checking
+   * if the file path belongs to the user directly or to a company they're a member of.
+   */
+  private async verifyFileAccess(filePath: string, userId: string): Promise<boolean> {
+    // Files are stored as: {prefix}/users/{userId}/... — check direct ownership
+    const userPathMatch = filePath.match(/\/users\/([^/]+)\//);
+    if (userPathMatch) {
+      const fileOwnerId = userPathMatch[1];
+      if (fileOwnerId === userId) return true;
+
+      // Check if the file belongs to a document/resource in a shared company
+      // by looking up the user's company memberships
+      const memberships = await this.prisma.membership.findMany({
+        where: { userId, status: 'ACTIVE' },
+        select: { companyId: true },
+      });
+      const companyIds = memberships.map((m) => m.companyId);
+
+      // Check if any document with this file URL belongs to user's companies
+      const doc = await this.prisma.document.findFirst({
+        where: {
+          companyId: { in: companyIds },
+          pdfUrl: { contains: fileOwnerId },
+        },
+        select: { id: true },
+      });
+      if (doc) return true;
+
+      // Check if any signature/stamp with this URL belongs to user's companies
+      const signature = await this.prisma.signatureAsset.findFirst({
+        where: { userId: fileOwnerId, imageUrl: { contains: fileOwnerId } },
+        select: { userId: true },
+      });
+      if (signature) {
+        // Verify the requesting user shares a company with the file owner
+        const sharedCompany = await this.prisma.membership.findFirst({
+          where: {
+            userId: fileOwnerId,
+            status: 'ACTIVE',
+            companyId: { in: companyIds },
+          },
+          select: { id: true },
+        });
+        if (sharedCompany) return true;
+      }
+
+      return false;
+    }
+
+    // If path doesn't match user pattern, allow (it may be a public asset)
+    return true;
+  }
 
   /**
    * Resolve a file URL (from DB) to a downloadable response.
@@ -42,10 +99,17 @@ export class FilesController {
    * - Local URLs → returns JSON with the /api/files/... path (frontend uses it as-is)
    */
   @Get('resolve')
-  async resolveUrl(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async resolveUrl(@Req() req: Request & { user?: any }, @Res() res: Response): Promise<void> {
     const fileUrl = req.query.url as string;
     if (!fileUrl) {
       res.status(400).json({ message: 'Missing url query parameter' });
+      return;
+    }
+
+    // SECURITY: Verify user has access to this file
+    const userId = req.user?.id;
+    if (userId && !(await this.verifyFileAccess(fileUrl, userId))) {
+      res.status(404).json({ message: 'File not found' });
       return;
     }
 
@@ -73,7 +137,7 @@ export class FilesController {
    *             issues when the frontend needs raw bytes (e.g. PDF embedding).
    */
   @Get('*path')
-  async serveFile(@Req() req: Request, @Res() res: Response): Promise<void> {
+  async serveFile(@Req() req: Request & { user?: any }, @Res() res: Response): Promise<void> {
     const rawPath = req.params['path'] ?? req.params[0] ?? '';
     // Express 5 returns wildcard params as an array with a leading empty string: ["", "prod", ...]
     // Filter out empty segments and join to get a clean path without leading slashes.
@@ -89,6 +153,13 @@ export class FilesController {
     );
 
     if (!finalPath) {
+      res.status(404).json({ message: 'File not found' });
+      return;
+    }
+
+    // SECURITY: Verify user has access to this file
+    const userId = req.user?.id;
+    if (userId && !(await this.verifyFileAccess(finalPath, userId))) {
       res.status(404).json({ message: 'File not found' });
       return;
     }

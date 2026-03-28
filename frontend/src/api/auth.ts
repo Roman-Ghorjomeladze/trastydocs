@@ -26,6 +26,15 @@ export async function googleLogin(): Promise<void> {
   window.location.href = `${apiClient.defaults.baseURL}/auth/google${refParam}`;
 }
 
+/**
+ * Exchange a one-time auth code (from OAuth callback) for an access token.
+ * The code is short-lived (60s) and single-use.
+ */
+export async function exchangeAuthCode(code: string): Promise<{ accessToken: string }> {
+  const response = await apiClient.post<ApiResponse<{ accessToken: string }>>('/auth/exchange', { code });
+  return response.data.data;
+}
+
 export async function getMe(): Promise<User> {
   const response = await apiClient.get<ApiResponse<User>>('/auth/me');
   return response.data.data;

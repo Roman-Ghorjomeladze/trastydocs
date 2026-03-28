@@ -4,6 +4,7 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { v4 as uuidv4 } from 'uuid';
 import { PrismaService } from '../../database/prisma.service.js';
 import { PaddleService } from '../../integrations/paddle/paddle.service.js';
 
@@ -59,24 +60,23 @@ export class PaymentsService {
   }
 
   async handleWebhook(eventType: string, data: any) {
+    // SECURITY: Use UUID for fallback event ID instead of Date.now() to avoid collisions
     const eventId = data?.id
       ? `${eventType}_${data.id}`
-      : `${eventType}_${Date.now()}`;
+      : `${eventType}_${uuidv4()}`;
 
-    // Idempotency check
-    const existingEvent = await this.prisma.webhookEvent.findUnique({
+    // SECURITY: Atomic idempotency check — use a single upsert and check the result.
+    // If the record already exists with processed=true, skip. The upsert prevents
+    // race conditions between concurrent webhook deliveries.
+    const event = await this.prisma.webhookEvent.upsert({
       where: { eventId },
+      create: { eventId, eventName: eventType, processed: false },
+      update: {}, // no-op if already exists
     });
-    if (existingEvent?.processed) {
+    if (event.processed) {
       this.logger.log(`Webhook event already processed: ${eventId}`);
       return;
     }
-
-    await this.prisma.webhookEvent.upsert({
-      where: { eventId },
-      create: { eventId, eventName: eventType, processed: false },
-      update: {},
-    });
 
     try {
       switch (eventType) {
@@ -129,6 +129,25 @@ export class PaymentsService {
     if (!userId) {
       this.logger.warn(
         'subscription.activated webhook missing user_id in customData',
+      );
+      return;
+    }
+
+    // SECURITY: Verify the user_id from webhook customData actually exists in our database
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, email: true, paddleCustomerId: true },
+    });
+    if (!user) {
+      this.logger.warn(`subscription.activated: user ${userId} not found — ignoring`);
+      return;
+    }
+
+    // Cross-reference Paddle customerId with stored user if we have a previous record
+    const webhookCustomerId = data.customerId || data.customer_id;
+    if (user.paddleCustomerId && webhookCustomerId && String(webhookCustomerId) !== user.paddleCustomerId) {
+      this.logger.warn(
+        `subscription.activated: customerId mismatch for user ${userId} (expected ${user.paddleCustomerId}, got ${webhookCustomerId})`,
       );
       return;
     }

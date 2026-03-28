@@ -9,6 +9,7 @@ import {
   Res,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { Throttle } from '@nestjs/throttler';
@@ -130,12 +131,33 @@ export class AuthController {
     this.setRefreshTokenCookie(res, result.refreshToken);
     this.setAccessTokenCookie(res, result.accessToken);
 
-    // Redirect to frontend with access token as query param
+    // SECURITY: Don't pass access token in URL (leaks via browser history, Referer headers, logs).
+    // Instead, use a short-lived one-time auth code that the frontend exchanges for the token.
+    const authCode = await this.authService.createAuthCode(result.user.id, result.accessToken);
+
     const frontendUrl =
       this.configService.get<string>('FRONTEND_URL') || 'http://localhost:5173';
     res.redirect(
-      `${frontendUrl}/auth/callback?token=${result.accessToken}`,
+      `${frontendUrl}/auth/callback?code=${authCode}`,
     );
+  }
+
+  /**
+   * Exchange a one-time auth code for an access token.
+   * The auth code is short-lived (60 seconds) and single-use.
+   */
+  @Post('exchange')
+  @Throttle({ default: { ttl: 60000, limit: 10 } })
+  @HttpCode(HttpStatus.OK)
+  async exchangeAuthCode(
+    @Body() body: { code: string },
+  ) {
+    if (!body.code) {
+      throw new BadRequestException('Missing auth code');
+    }
+
+    const result = await this.authService.exchangeAuthCode(body.code);
+    return { accessToken: result.accessToken };
   }
 
   @Post('refresh')

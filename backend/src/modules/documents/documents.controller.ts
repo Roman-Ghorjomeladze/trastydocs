@@ -8,6 +8,7 @@ import {
   Body,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import type { DocumentStatus } from '@prisma/client';
 import { DocumentsService } from './documents.service.js';
@@ -56,8 +57,11 @@ export class DocumentsController {
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    return this.documentsService.findById(id);
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.documentsService.findById(id, user.id);
   }
 
   @Patch(':id')
@@ -127,6 +131,16 @@ export class DocumentsController {
     @CurrentUser() user: { id: string },
     @Body() body: { status: string },
   ) {
+    // SECURITY: Validate status is a known DocumentStatus value
+    const validStatuses = [
+      'DRAFT', 'PENDING_SIGNATURE', 'SIGNED', 'SENT', 'VIEWED',
+      'COMPLETED', 'PAID', 'OVERDUE', 'CANCELLED', 'ARCHIVED',
+    ];
+    if (!body.status || !validStatuses.includes(body.status)) {
+      throw new BadRequestException(
+        `Invalid status: ${body.status}. Must be one of: ${validStatuses.join(', ')}`,
+      );
+    }
     return this.documentsService.updateStatus(
       id,
       body.status as DocumentStatus,
@@ -139,7 +153,7 @@ export class DocumentsController {
     @Param('id') id: string,
     @CurrentUser() user: { id: string },
   ) {
-    const doc = await this.documentsService.findById(id);
+    const doc = await this.documentsService.findById(id, user.id);
     return this.documentsService.duplicate(id, user.id, doc.companyId);
   }
 
@@ -162,12 +176,23 @@ export class DocumentsController {
   }
 
   @Get(':id/signatures')
-  async listSignatures(@Param('id') id: string) {
+  async listSignatures(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    // Verify user has access to the document before listing signatures
+    await this.documentsService.findById(id, user.id);
     return this.documentsService.listSignatures(id);
   }
 
   @Delete(':id/signatures/:signatureId')
-  async removeSignature(@Param('signatureId') signatureId: string) {
+  async removeSignature(
+    @Param('id') id: string,
+    @Param('signatureId') signatureId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    // Verify user has access to the document before removing signature
+    await this.documentsService.findById(id, user.id);
     return this.documentsService.removeSignature(signatureId);
   }
 }

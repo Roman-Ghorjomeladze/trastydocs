@@ -316,7 +316,18 @@ export class AuthService {
         // Non-critical
       }
     } else if (!user.googleId) {
-      // Link Google account to existing user
+      // SECURITY: Do not auto-link Google accounts to existing email-registered users.
+      // The existing user registered with email/password and hasn't verified Google ownership.
+      // Auto-linking would allow an attacker to take over accounts by using Google OAuth
+      // with a matching email address.
+      // Instead, only allow login if the user has no password (i.e. was created via Google).
+      if (user.passwordHash) {
+        throw new UnauthorizedException(
+          'An account with this email already exists. Please log in with your password first, then link your Google account from settings.',
+        );
+      }
+
+      // No password set — safe to link (user was likely created via invitation or other flow)
       user = await this.prisma.user.update({
         where: { id: user.id },
         data: {
@@ -403,6 +414,39 @@ export class AuthService {
     });
 
     return { message: 'Password changed successfully' };
+  }
+
+  /**
+   * Create a short-lived one-time auth code (stored in Redis) for OAuth callback.
+   * This avoids putting the JWT in the URL query string.
+   */
+  async createAuthCode(userId: string, accessToken: string): Promise<string> {
+    const code = uuidv4();
+    // Store in Redis with 60-second TTL
+    await this.redisService.setex(
+      `authcode:${code}`,
+      60,
+      JSON.stringify({ userId, accessToken }),
+    );
+    return code;
+  }
+
+  /**
+   * Exchange a one-time auth code for an access token.
+   * The code is deleted immediately after use (single-use).
+   */
+  async exchangeAuthCode(code: string): Promise<{ accessToken: string }> {
+    const key = `authcode:${code}`;
+    const stored = await this.redisService.get(key);
+    if (!stored) {
+      throw new UnauthorizedException('Invalid or expired auth code');
+    }
+
+    // Delete immediately — single use
+    await this.redisService.del(key);
+
+    const { accessToken } = JSON.parse(stored);
+    return { accessToken };
   }
 
   private async grantWelcomeCredits(userId: string) {

@@ -33,6 +33,14 @@ export class PaddleService implements OnModuleInit {
         env === 'production' ? Environment.production : Environment.sandbox,
     });
 
+    // SECURITY: Warn if webhook secret is missing — webhooks will be rejected
+    if (!this.webhookSecret) {
+      this.logger.warn(
+        'PADDLE_WEBHOOK_SECRET is not set — all webhook signature verifications will fail. ' +
+        'Set PADDLE_WEBHOOK_SECRET to enable webhook processing.',
+      );
+    }
+
     this._isConfigured = true;
     this.logger.log(`Paddle initialized in ${env} mode`);
   }

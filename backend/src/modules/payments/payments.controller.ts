@@ -9,6 +9,7 @@ import {
   HttpStatus,
   Get,
   BadRequestException,
+  UnauthorizedException,
 } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import { Request } from 'express';
@@ -75,7 +76,8 @@ export class PaymentsController {
       signature,
     );
     if (!isValid) {
-      throw new BadRequestException('Invalid webhook signature');
+      // SECURITY: Return 401 (not 400) for auth failures — Paddle expects this
+      throw new UnauthorizedException('Invalid webhook signature');
     }
 
     const payload = JSON.parse(rawBodyStr);

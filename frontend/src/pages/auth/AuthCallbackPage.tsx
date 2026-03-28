@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../stores/auth.store.ts';
+import { exchangeAuthCode } from '../../api/auth.ts';
 import { ROUTES } from '../../lib/constants.ts';
 
 export function AuthCallbackPage() {
@@ -12,10 +13,27 @@ export function AuthCallbackPage() {
   const fetchUser = useAuthStore((s) => s.fetchUser);
 
   useEffect(() => {
-    const token = searchParams.get('token');
+    // SECURITY: The backend now sends a short-lived one-time auth code instead of
+    // the JWT directly in the URL. Exchange the code for an access token via API.
+    const code = searchParams.get('code');
+    // Backward compatibility: also support legacy ?token= param during rollout
+    const legacyToken = searchParams.get('token');
 
-    if (token) {
-      setToken(token);
+    if (code) {
+      exchangeAuthCode(code)
+        .then(({ accessToken }) => {
+          setToken(accessToken);
+          localStorage.removeItem('referral_code');
+          return fetchUser();
+        })
+        .then(() => {
+          navigate(ROUTES.DASHBOARD, { replace: true });
+        })
+        .catch(() => {
+          navigate(ROUTES.LOGIN, { replace: true });
+        });
+    } else if (legacyToken) {
+      setToken(legacyToken);
       localStorage.removeItem('referral_code');
       fetchUser().then(() => {
         navigate(ROUTES.DASHBOARD, { replace: true });

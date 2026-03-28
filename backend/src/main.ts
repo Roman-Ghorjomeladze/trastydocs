@@ -14,10 +14,25 @@ async function bootstrap() {
     bodyParser: false, // We register our own body parsers below with a higher limit
   });
 
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
   app.use(
     helmet({
       crossOriginEmbedderPolicy: false, // Allow <object>/<embed> for PDF preview
-      contentSecurityPolicy: false, // Avoid blocking inline PDF rendering
+      // SECURITY: Configure CSP instead of disabling it entirely
+      contentSecurityPolicy: {
+        directives: {
+          defaultSrc: ["'self'"],
+          scriptSrc: ["'self'", "'unsafe-inline'", 'https://cdn.paddle.com'],
+          styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
+          fontSrc: ["'self'", 'https://fonts.gstatic.com'],
+          imgSrc: ["'self'", 'data:', 'blob:', 'https:'],
+          connectSrc: ["'self'", frontendUrl, 'https://cdn.paddle.com', 'https://sandbox-api.paddle.com', 'https://api.paddle.com'],
+          frameSrc: ["'self'", 'https://cdn.paddle.com', 'https://sandbox-buy.paddle.com', 'https://buy.paddle.com'],
+          objectSrc: ["'self'", 'blob:'], // For PDF preview with <object>/<embed>
+          workerSrc: ["'self'", 'blob:'],
+        },
+      },
     }),
   );
   app.disable('x-powered-by');
@@ -40,8 +55,13 @@ async function bootstrap() {
 
   app.use(cookieParser());
 
+  // SECURITY: Validate CORS origin is explicitly set — undefined would disable origin checks
+  if (!process.env.FRONTEND_URL && process.env.NODE_ENV === 'production') {
+    console.error('FATAL: FRONTEND_URL must be set in production for CORS security');
+    process.exit(1);
+  }
   app.enableCors({
-    origin: process.env.FRONTEND_URL,
+    origin: frontendUrl,
     credentials: true,
   });
 

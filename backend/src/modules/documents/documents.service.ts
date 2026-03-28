@@ -188,8 +188,9 @@ export class DocumentsService {
 
   /**
    * Get a single document by ID with full includes.
+   * If userId is provided, also verifies the user has access (is a member of the document's company).
    */
-  async findById(id: string) {
+  async findById(id: string, userId?: string) {
     const doc = await this.prisma.document.findUnique({
       where: { id },
       include: {
@@ -207,14 +208,34 @@ export class DocumentsService {
       throw new NotFoundException('Document not found');
     }
 
+    // Verify the requesting user is a member of the document's company
+    if (userId) {
+      await this.verifyCompanyMembership(userId, doc.companyId);
+    }
+
     return doc;
+  }
+
+  /**
+   * Verify that a user is an active member of a company.
+   * Throws NotFoundException if not (avoids leaking document existence).
+   */
+  private async verifyCompanyMembership(userId: string, companyId: string) {
+    const membership = await this.prisma.membership.findFirst({
+      where: { userId, companyId, status: 'ACTIVE' },
+      select: { id: true },
+    });
+
+    if (!membership) {
+      throw new NotFoundException('Document not found');
+    }
   }
 
   /**
    * Update a document.
    */
   async update(id: string, dto: UpdateDocumentDto, userId: string) {
-    await this.findById(id);
+    await this.findById(id, userId);
 
     const data: Record<string, unknown> = {};
     if (dto.name !== undefined) data.name = dto.name;
@@ -267,7 +288,7 @@ export class DocumentsService {
    * Permanently delete a document and its related records.
    */
   async remove(id: string, userId: string) {
-    const doc = await this.findById(id);
+    const doc = await this.findById(id, userId);
 
     // Delete related records first, then the document itself
     await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
@@ -305,7 +326,7 @@ export class DocumentsService {
    * Send a document to a recipient via email with PDF attachment.
    */
   async send(id: string, dto: SendDocumentDto, userId: string) {
-    const doc = await this.findById(id);
+    const doc = await this.findById(id, userId);
 
     if (!doc.pdfUrl) {
       throw new BadRequestException('Document has no PDF. Please generate the PDF first.');
@@ -346,7 +367,7 @@ export class DocumentsService {
   async duplicate(id: string, userId: string, companyId: string) {
     await this.limitsService.checkLimit(userId, 'documents');
 
-    const original = await this.findById(id);
+    const original = await this.findById(id, userId);
     const year = new Date().getFullYear();
 
     const dup = await this.prisma.$transaction(
@@ -394,7 +415,7 @@ export class DocumentsService {
    * Upload a generated PDF for a document.
    */
   async uploadPdf(id: string, dto: UploadPdfDto, userId: string) {
-    const doc = await this.findById(id);
+    const doc = await this.findById(id, userId);
 
     const buffer = Buffer.from(dto.pdfBase64, 'base64');
     const year = new Date().getFullYear();
@@ -439,7 +460,7 @@ export class DocumentsService {
     },
     userId: string,
   ) {
-    const doc = await this.findById(documentId);
+    const doc = await this.findById(documentId, userId);
 
     const docSig = await this.prisma.documentSignature.create({
       data: {
@@ -697,7 +718,7 @@ export class DocumentsService {
    * Transition a document to a new status with validation.
    */
   async updateStatus(id: string, newStatus: DocumentStatus, userId: string) {
-    const doc = await this.findById(id);
+    const doc = await this.findById(id, userId);
     const currentStatus = doc.status;
     const allowedTransitions = STATUS_TRANSITIONS[currentStatus] || [];
 
